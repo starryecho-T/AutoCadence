@@ -6,6 +6,27 @@ const ocr = await bundle('src/ocr.ts'), wave = await bundle('src/waveforms.ts'),
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })
 
+test('endpoint normalization accepts full endpoint and preserves provider paths', () => {
+  assert.equal(ocr.chatUrl(' https://model.test/v1/chat/completions/ '),'https://model.test/v1/chat/completions')
+  assert.equal(ocr.chatUrl('https://model.test/api/paas/v4'),'https://model.test/api/paas/v4/chat/completions')
+  assert.throws(()=>ocr.chatUrl('https://model.test/v1?key=secret'))
+})
+
+test('vision uses selected model and GLM fast mode; content blocks and truncation are handled', async () => {
+  let body
+  globalThis.fetch = async (_url,opts) => {body=JSON.parse(opts.body);return Response.json({choices:[{finish_reason:'stop',message:{content:[{type:'text',text:'{"title":"RL 阶跃响应","text":"R1 n1 0 100","issues":[]}'}]}}]})}
+  const result=await ocr.extractCircuit({baseUrl:'https://model.test/v1/chat/completions',apiKey:'fixture',model:'text-only',visionModel:'GLM-5.3-Flash'}, {text:'识别图',imageDataUrl:'data:image/png;base64,AA=='})
+  assert.equal(body.model,'GLM-5.3-Flash');assert.equal(body.thinking.type,'disabled');assert.equal(result.title,'RL 阶跃响应')
+  globalThis.fetch=async()=>Response.json({choices:[{finish_reason:'length',message:{content:'{"text":'}}]})
+  await assert.rejects(()=>ocr.extractCircuit({baseUrl:'https://model.test',apiKey:'fixture',model:'fixture'},{text:'x'}),/截断/)
+})
+
+test('generic history gets descriptive fallback while custom titles remain intact', () => {
+  const task={title:'通用电路仿真',components:[{type:'resistor'},{type:'inductor'}],analyses:[{type:'tran'}]}
+  assert.equal(circuit.circuitTitle(task),'RL 电路 · 瞬态响应')
+  assert.equal(circuit.circuitTitle({...task,title:'10mH 电感阶跃响应'}),'10mH 电感阶跃响应')
+})
+
 test('parameter cases remain distinct and reject duplicated or malformed case identities', () => {
   const s = {analysis:'dc',signal:'s1',unit:'A',original_samples:2,rows:[[0,0],[1,.001]]}
   const value = {series:[{...s,case:'base'},{...s,case:'s000',parameters:{'VG.dc':-1}}]}

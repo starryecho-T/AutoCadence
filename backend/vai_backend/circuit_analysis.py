@@ -173,7 +173,8 @@ def analyze(task, evidence_dir):
 def generate_report(task, metrics, evidence_dir, run_id, warnings):
     root = Path(evidence_dir)
     esc = lambda x: html.escape(str(x), quote=True)
-    title = task['title']
+    from .circuit_titles import circuit_title
+    title = circuit_title(task)
     content = [f'<h1>{esc(title)}</h1>', f'<p>运行编号：{esc(run_id)}<br>执行：succeeded；数据校验：{metrics["validation_status"]}；目标指标：{metrics["requirements_status"]}</p>']
     md = [f'# {title}', '', f'运行编号：{run_id}', f'执行：succeeded；数据校验：{metrics["validation_status"]}；目标指标：{metrics["requirements_status"]}', '']
     content.append('<table><tr><th>测量</th><th>结果</th><th>判定</th></tr>')
@@ -221,5 +222,5 @@ def generate_report(task, metrics, evidence_dir, run_id, warnings):
         md += ['', label, '', '```json', raw.replace('```', '\\u0060\\u0060\\u0060'), '```']
     notes = warnings + metrics['limitations']
     content += ['<ul>' + ''.join(f'<li>{esc(n)}</li>' for n in notes) + '</ul>']
-    (root/'report.html').write_text('<!doctype html><meta charset="utf-8"><style>body{font:15px/1.6 system-ui;max-width:1100px;margin:30px auto;padding:20px}img{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}td,th{border:1px solid #ddd;padding:8px}table{border-collapse:collapse}</style>'+''.join(content), encoding='utf-8')
+    (root/'report.html').write_text('<!doctype html><meta charset="utf-8"><title>'+esc(title)+'</title><style>body{font:15px/1.6 system-ui;max-width:1100px;margin:30px auto;padding:20px}img{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}td,th{border:1px solid #ddd;padding:8px}table{border-collapse:collapse}</style>'+''.join(content), encoding='utf-8')
     (root/'report.md').write_text('\n'.join(md+['']+['- '+n for n in notes]), encoding='utf-8')

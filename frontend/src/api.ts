@@ -13,6 +13,7 @@ import type {
 import { escapeHtml, formatNumber, rcValues, validateTask } from './circuit'
 import { fromBackendTask, toBackendTask, validateBackendTask, type BackendTask } from './contract'
 import { planQuestion } from './planning'
+import { circuitTitle } from './generalCircuit'
 import type { GeneralCircuit, CircuitPreview } from './types'
 
 export const API_BASE = '' // 同源；若前端独立部署，可改为 'http://127.0.0.1:8765'
@@ -91,7 +92,7 @@ function asTask(v: unknown): TaskSpec | undefined {
   const r = asRecord(v)
   if (!Object.keys(r).length) return undefined
   if (r.template_id === 'rc_lowpass' && 'r_ohm' in r && 'c_f' in r) return fromBackendTask(r as unknown as BackendTask)
-  if (r.template_id === 'general_circuit') return { kind: 'general_circuit', title: asString(r.title), circuit: r as unknown as GeneralCircuit }
+  if (r.template_id === 'general_circuit') return { kind: 'general_circuit', title: circuitTitle(r as unknown as GeneralCircuit), circuit: r as unknown as GeneralCircuit }
   const params = asRecord(r.params ?? r.parameters ?? r.defaults)
   return {
     kind: asString(r.kind ?? r.type),

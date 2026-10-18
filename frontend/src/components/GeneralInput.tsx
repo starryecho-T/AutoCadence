@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ParseResult, TaskDraft } from '../types'
 import { circuitCapabilities, isDemoMode, parseCircuit, type CircuitCapabilities } from '../api'
 import { extractCircuit, loadOcrConfig } from '../ocr'
+import { circuitTitle } from '../generalCircuit'
 import Icon from './Icon'
 import Modal from './Modal'
 
@@ -21,6 +22,7 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
   const [capabilityError, setCapabilityError] = useState('')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
+  const [elapsed, setElapsed] = useState(0)
   const [zoom, setZoom] = useState(false)
   const controller = useRef<AbortController | null>(null)
   const reader = useRef<FileReader | null>(null)
@@ -40,6 +42,13 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
     if (!isDemoMode()) void circuitCapabilities().then(x => { if (active) { setCapabilities(x); setExamples(x.examples) } }).catch(() => { if (active) setCapabilityError('暂时无法读取通用后端能力，可先准备题目；预检需要新版后端。') })
     return () => { active = false; controller.current?.abort(); reader.current?.abort() }
   }, [])
+  useEffect(() => {
+    setElapsed(0)
+    if (!busy) return
+    const started = Date.now()
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 1000)
+    return () => clearInterval(timer)
+  }, [busy])
   useEffect(() => { onBusyChange(locked); return () => onBusyChange(false) }, [locked, onBusyChange])
   function change(next: Partial<NonNullable<TaskDraft['general']>>) { onDraftChange({ ...draft, general: { ...general, ...next } }); setError('') }
   function cancel() { controller.current?.abort(); reader.current?.abort(); setBusy(''); setError('已取消，本次输入已保留。') }
@@ -52,7 +61,7 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
       const clarification = [...proposals.map(x => `${x.title}：${x.detail}\n用户决定：${x.decision === 'yes' ? '接受，保持此条件' : x.decision === 'no' ? '否决，请提出不同方案' : '尚未确认'}`), ...issues.map(x => `${x.question}\n回答：${x.answer || '请你提出合理建议，供我判断是或否'}`)].join('\n')
       const result = await extractCircuit(cfg, { text: draft.text, imageDataUrl: general.input === 'image' ? draft.image?.dataUrl : undefined, clarification, capabilities: capabilities ? { components: capabilities.components, analyses: capabilities.analyses, studies: capabilities.studies, limits: capabilities.limits, model_types: capabilities.model_types } : undefined, previousCandidate: connections, validationError: error || undefined }, abort.signal)
       if (abort.signal.aborted) return
-      onDraftChange({ ...draft, general: { ...general, connections: result.text, summary: result.summary, proposals: (result.proposals?.length ? result.proposals : result.text.trim() ? [{ id: 'candidate', title: '按这份候选方案继续，可以吗？', detail: result.summary || 'AI 已整理候选电路，下一步可查看元件、连接与参数。', reason: '请核对是否符合原意；缺失条件的建议仍需通过后端预检。' }] : []).map(p => ({ ...p, decision: 'pending' as const })), issues: result.issues.map(question => ({ question, answer: '', confirmed: false })), stale: false } })
+      onDraftChange({ ...draft, general: { ...general, connections: result.text, title: result.title, summary: result.summary, proposals: (result.proposals?.length ? result.proposals : result.text.trim() ? [{ id: 'candidate', title: '按这份候选方案继续，可以吗？', detail: result.summary || 'AI 已整理候选电路，下一步可查看元件、连接与参数。', reason: '请核对是否符合原意；缺失条件的建议仍需通过后端预检。' }] : []).map(p => ({ ...p, decision: 'pending' as const })), issues: result.issues.map(question => ({ question, answer: '', confirmed: false })), stale: false } })
     } catch (e) { if (!abort.signal.aborted) setError(e instanceof Error ? e.message : String(e)) }
     finally { if (controller.current === abort) { controller.current = null; setBusy('') } }
   }
@@ -63,7 +72,7 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
     try {
       const parsed = await parseCircuit(connections, abort.signal)
       const source = [draft.text, ...proposals.map(x => `已接受的建议：${x.title}\n${x.detail}\n依据：${x.reason}`), ...issues.map(x => `待确认：${x.question}\n补充：${x.answer}`)].filter(Boolean).join('\n\n')
-      const preview = source ? { ...parsed, task: { ...parsed.task, question: source.slice(0, 50000) } } : parsed
+      const preview = { ...parsed, task: { ...parsed.task, title: manual && connections.trim().startsWith('{') ? circuitTitle(parsed.task) : general.title?.trim() || circuitTitle(parsed.task), ...(source ? { question: source.slice(0, 50000) } : {}) } }
       if (!abort.signal.aborted) onParsed(draft.text, { ok: true, task: { kind: 'general_circuit', title: preview.task.title, circuit: preview.task }, circuitPreview: preview })
     } catch (e) { if (!abort.signal.aborted) setError(e instanceof Error ? e.message : String(e)) }
     finally { if (controller.current === abort) { controller.current = null; setBusy('') } }
@@ -93,7 +102,7 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
         <div className="recognize-row"><button className="btn" disabled={locked || (general.input === 'image' ? !draft.image : !draft.text.trim())} onClick={recognize}>{hasCandidate ? rejected ? '换一个方案' : '根据补充重新整理' : general.input === 'image' ? '识别元件与连接' : '生成建议方案'}</button><button className="btn ghost" disabled={locked} onClick={onOpenOcrSettings}><Icon name="settings" />AI 识别设置</button></div>
         <p className="muted small">识别会将题目{general.input === 'image' ? '和图片' : ''}发送给你配置的 AI 服务。结果需要核对。</p>
       </>}
-      {manual && <div className="manual-intro"><p className="sub">已有连接描述或完整电路 JSON，可以直接检查；也可以从示例开始。</p><label className="field-label">电路示例 <select aria-label="通用电路示例" disabled={locked} value="" onChange={e => { const x = examples.find(x => x.id === e.target.value); if (x) onDraftChange({ text: '', mode: 'general', general: { input: 'connections', connections: x.text } }) }}><option value="" disabled>选择一个示例</option>{examples.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select></label></div>}
+      {manual && <div className="manual-intro"><p className="sub">已有连接描述或完整电路 JSON，可以直接检查；也可以从示例开始。</p><label className="field-label">电路示例 <select aria-label="通用电路示例" disabled={locked} value="" onChange={e => { const x = examples.find(x => x.id === e.target.value); if (x) onDraftChange({ text: '', mode: 'general', general: { input: 'connections', title: x.label, connections: x.text } }) }}><option value="" disabled>选择一个示例</option>{examples.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select></label></div>}
     </div>
     {(hasCandidate || manual) && <div className="card extraction-card">
       <div className="section-heading"><h2>候选电路方案</h2><span className={`subtle-tag ${pending ? 'amber' : ''}`}>{pending ? `${pending} 项待确认` : '等待预检'}</span></div>
@@ -107,7 +116,7 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
       <details className="format-help"><summary>查看连接描述格式</summary><p>每行一个元件：R / C / L 编号后依次填写两个节点及数值；D 填阳极、阴极；U 填同相、反相、输出；W 填相连节点。地写 0，数值可用 k、m、u、n、p 前缀。</p><p>晶体管：Q1 集电极 基极 发射极 generic_npn（或 generic_pnp）；M1 漏极 栅极 源极 衬底 generic_pmos w=10u l=1u。</p><p>受控源：G / E 编号后填写输出正、输出负、控制正、控制负、增益；F / H 后填写输出正、输出负、控制电压源编号、增益。</p><p>电源：V1 正节点 负节点 DC 值；或 SINE 偏置 幅度 频率；或 PULSE 低 高 延迟 上升 下降 脉宽 周期。电流源以 I 开头，末尾可加 AC 幅度 相位。</p><p>分析：.op；.ac 起始Hz 终止Hz 每十倍频点数；.tran 终点秒 最大步长秒；.dc 源编号 起始 终止 步长。保存：.save V(out) I(Q1,c) P(Q1,region)。扫描：.step VG dc -1 -2 -3。二端口：.twoport V1 V2 1k。完整设置也可使用 JSON；示例涵盖转移分析和曲线比较。</p></details></details>
     </div>}
     {capabilityError && <div className="note warn">{capabilityError}</div>}{error && <div className="note err" role="alert">{error}{hasCandidate && !manual && <button className="btn ghost" disabled={locked} onClick={recognize}>让 AI 修正方案</button>}</div>}
-    <footer className="actionbar"><span className="action-status" role="status">{busy || (pending ? `请先处理 ${pending} 项待确认问题` : '预检通过后，仍需确认才会运行仿真')}</span><div className="actions">{locked && <button className="btn ghost" onClick={cancel}>取消处理</button>}<button className="btn" disabled={disabled || offline || locked || !connections.trim() || !!pending || (!manual && general.stale)} onClick={parse}>{manual ? '解析并检查电路' : '采用方案并核对'}<Icon name="arrow" /></button></div></footer>
+    <footer className="actionbar"><span className="action-status" role="status">{(busy ? `${busy} 已等待 ${elapsed} 秒${elapsed >= 30 ? '，模型仍在处理，可取消并保留输入' : ''}` : '') || (pending ? `请先处理 ${pending} 项待确认问题` : '预检通过后，仍需确认才会运行仿真')}</span><div className="actions">{locked && <button className="btn ghost" onClick={cancel}>取消处理</button>}<button className="btn" disabled={disabled || offline || locked || !connections.trim() || !!pending || (!manual && general.stale)} onClick={parse}>{manual ? '解析并检查电路' : '采用方案并核对'}<Icon name="arrow" /></button></div></footer>
     {zoom && draft.image && <Modal title="电路原图" onClose={() => setZoom(false)} wide><img className="zoom-image" src={draft.image.dataUrl} alt="电路原图" /></Modal>}
   </section>
 }

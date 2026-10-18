@@ -11,6 +11,7 @@ export interface TaskDraft {
     input: 'text' | 'image' | 'connections'
     connections?: string
     summary?: string
+    title?: string
     issues?: { question: string; answer: string; confirmed: boolean }[]
     proposals?: { id: string; title: string; detail: string; reason: string; decision: 'pending' | 'yes' | 'no' }[]
     stale?: boolean

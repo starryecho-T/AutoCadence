@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
-import { OCR_PRESETS, loadOcrConfig, saveOcrConfig, testOcrConfig } from '../ocr'
+import { OCR_PRESETS, chatUrl, loadOcrConfig, saveOcrConfig, testOcrConfig, testVisionConfig } from '../ocr'
 
 interface Props {
   onClose: () => void
@@ -11,12 +11,15 @@ export default function OcrSettings({ onClose }: Props) {
   const [baseUrl, setBaseUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState('')
+  const [visionModel, setVisionModel] = useState('')
+  const [timeoutSeconds, setTimeoutSeconds] = useState(180)
+  const [deepThinking, setDeepThinking] = useState(false)
   const [testing, setTesting] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
 
   useEffect(() => {
     const saved = loadOcrConfig()
-    if (saved) { setBaseUrl(saved.baseUrl); setApiKey(saved.apiKey); setModel(saved.model) }
+    if (saved) { setBaseUrl(saved.baseUrl); setApiKey(saved.apiKey); setModel(saved.model); setVisionModel(saved.visionModel || ''); setTimeoutSeconds(saved.timeoutSeconds || 180); setDeepThinking(saved.deepThinking || false) }
     else { const p = OCR_PRESETS[0]; setBaseUrl(p.baseUrl); setModel(p.model) }
   }, [])
 
@@ -24,15 +27,17 @@ export default function OcrSettings({ onClose }: Props) {
     const p = OCR_PRESETS[i]
     if (p.baseUrl) setBaseUrl(p.baseUrl)
     if (p.model) setModel(p.model)
+    setVisionModel('')
     setResult(null)
   }
 
-  async function doTest() {
+  async function doTest(vision = false) {
     if (!baseUrl || !apiKey || !model) { setResult({ ok: false, msg: '请先填完 Base URL、API Key 和模型名' }); return }
     setTesting(true); setResult(null)
     try {
-      const reply = await testOcrConfig({ baseUrl, apiKey, model })
-      setResult({ ok: true, msg: `连通正常（模型回复：${reply.slice(0, 40)}）` })
+      const cfg = { baseUrl, apiKey, model, visionModel, timeoutSeconds, deepThinking }
+      const reply = vision ? await testVisionConfig(cfg) : await testOcrConfig(cfg)
+      setResult({ ok: true, msg: vision ? reply : `文字连通正常（${reply.slice(0, 40)}）；图片能力请点击“测试图片识别”。` })
     } catch (e) {
       setResult({ ok: false, msg: e instanceof Error ? e.message : String(e) })
     } finally { setTesting(false) }
@@ -41,9 +46,9 @@ export default function OcrSettings({ onClose }: Props) {
   function doSave() {
     if (!baseUrl || !apiKey || !model) { setResult({ ok: false, msg: '请先填完三项再保存' }); return }
     try {
-      const url = new URL(baseUrl)
-      if (!['http:', 'https:'].includes(url.protocol)) throw new Error('请输入 HTTP 或 HTTPS 服务地址')
-      saveOcrConfig({ baseUrl, apiKey, model })
+      chatUrl(baseUrl)
+      if (!Number.isFinite(timeoutSeconds) || timeoutSeconds < 30 || timeoutSeconds > 300) throw new Error('等待时间请设为 30～300 秒')
+      saveOcrConfig({ baseUrl, apiKey, model, visionModel, timeoutSeconds, deepThinking })
       onClose()
     } catch (error) {
       setResult({ ok: false, msg: error instanceof Error ? error.message : '无法保存设置，请检查浏览器存储权限' })
@@ -78,6 +83,17 @@ export default function OcrSettings({ onClose }: Props) {
             onChange={(e) => { setModel(e.target.value.trim()); setResult(null) }} />
         </div>
 
+        <div className="param-item">
+          <label htmlFor="ocr-vision-model">图片模型（可选，留空使用上面的模型）</label>
+          <input id="ocr-vision-model" disabled={testing} value={visionModel} onChange={e => { setVisionModel(e.target.value.trim()); setResult(null) }} placeholder="服务商提供的视觉模型名称" />
+        </div>
+        <div className="param-item">
+          <label htmlFor="ocr-timeout">识别最长等待时间（秒）</label>
+          <input id="ocr-timeout" type="number" min={30} max={300} disabled={testing} value={timeoutSeconds} onChange={e => setTimeoutSeconds(Number(e.target.value))} />
+        </div>
+        <label className="issue-check"><input type="checkbox" checked={deepThinking} disabled={testing} onChange={e => setDeepThinking(e.target.checked)} />启用 GLM 深度思考（耗时更长，默认关闭）</label>
+        <p className="muted small">文字测试不能证明模型能读图。图片测试只发送自动生成的数字图片；不会发送你的电路图。</p>
+
         {result && (
           <div className={`note ${result.ok ? 'info' : 'err'}`} style={{ marginTop: 10, wordBreak: 'break-all' }}>
             {result.ok ? '✓ ' : '✗ '}{result.msg}
@@ -85,7 +101,8 @@ export default function OcrSettings({ onClose }: Props) {
         )}
 
         <div className="btnrow">
-          <button className="btn ghost" disabled={testing} onClick={doTest}>{testing ? '测试中…' : '测试连通'}</button>
+          <button className="btn ghost" disabled={testing} onClick={() => doTest()}>{testing ? '测试中…' : '测试连通'}</button>
+          <button className="btn ghost" disabled={testing} onClick={() => doTest(true)}>测试图片识别</button>
           <button className="btn" disabled={testing} onClick={doSave}>保存设置</button>
           <button className="btn ghost" onClick={onClose}>取消</button>
         </div>

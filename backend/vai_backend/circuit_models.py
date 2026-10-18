@@ -367,6 +367,8 @@ class CircuitTask(Strict):
 
     @model_validator(mode='after')
     def references(self):
+        from .circuit_titles import circuit_title
+        self.title = circuit_title(self.model_dump())
         for label, items in [('component', self.components), ('model', self.models), ('signal', self.signals), ('measurement', self.measurements)]:
             ids = [x.id.lower() for x in items]
             if len(ids) != len(set(ids)):

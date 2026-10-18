@@ -54,6 +54,7 @@ export default function GeneralConfirm({ preview, draft, busy, onConfirm, onBack
   return <section className="fade-in general-review">
     <div className="card review-intro"><div className="section-heading"><div><h2>核对元件与连接</h2><p className="sub">确认每个端点、数值和观察目标。修改后重新检查，才可提交仿真。</p></div><span className={`subtle-tag ${dirty ? 'amber' : ''}`}>{dirty ? '有待检查的修改' : '连接预检通过'}</span></div>
       {!!draft?.general?.proposals?.length && <details className="detail-section"><summary>已确认的 AI 建议 · {draft.general.proposals.length} 项</summary>{draft.general.proposals.map(p => <p key={p.id}><strong>{p.title}</strong><br />{p.detail}<br /><span className="muted small">{p.reason}</span></p>)}</details>}
+      {circuit && <label className="field-label">任务名称<input aria-label="任务名称" maxLength={120} value={circuit.title} disabled={locked} onChange={e => update({ ...circuit, title: e.target.value })} /></label>}
       <div className="circuit-summary"><span><strong>{circuit?.components.length ?? '—'}</strong> 个元件</span><span><strong>{circuit?.signals.length ?? '—'}</strong> 个观察量</span><span>{circuit?.analyses.map(a => ANALYSIS_LABELS[a.type] ?? a.type).join(' · ')}</span></div>
       {Array.isArray(circuit?.parameter_sweeps) && circuit.parameter_sweeps.length > 0 && <p className="note">参数扫描：{circuit.parameter_sweeps.map((s: any) => `${s.component}.${s.parameter} = ${s.values.join(', ')}`).join('；')}。另保留原参数基准组。</p>}
       {!!circuit?.two_port && <p className="note">提取二端口 Y 参数，并在原直流偏置下验证交流小信号等效。参考频率的复数 Y 无法用实数受控源表达时，会在结果中说明。</p>}
