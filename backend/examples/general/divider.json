@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "template_id": "general_circuit",
-  "title": "通用电路仿真",
+  "title": "电阻分压与导线",
   "question": "V1 vin 0 DC 10\nR1 vin mid 1k\nW1 mid out\nR2 out 0 1k\n.op\n.save V(out) I(R1)",
   "components": [
     {
@@ -12,8 +12,8 @@
       },
       "type": "voltage_source",
       "dc": 10.0,
-      "ac_magnitude": 0.0,
-      "ac_phase_deg": 0.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
       "waveform": null
     },
     {
@@ -59,9 +59,14 @@
     {
       "id": "s2",
       "type": "current",
-      "component": "R1"
+      "component": "R1",
+      "terminal": null
     }
   ],
   "measurements": [],
-  "temperature_c": 27.0
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
 }

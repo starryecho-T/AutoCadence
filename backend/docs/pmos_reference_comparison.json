@@ -1,0 +1,67 @@
+{
+  "source_reference_run": "vai_general_pmos_families_608d571ec5",
+  "ground_reference_run": "vai_general_pmos_ground_reference_22e965ee52",
+  "coordinate_transform": "VSD=-VD (source reference); VSD=5-VD (ground reference). Same VSG and VSD at each comparison point.",
+  "checks": [
+    {
+      "case": "base",
+      "status": "PASS",
+      "samples_compared": 101,
+      "max_absolute_error": 1.6263032587282567e-18,
+      "rmse": 5.865781801239113e-19,
+      "max_tolerance_ratio": 3.627004005786414e-10,
+      "worst_coordinate": -0.15,
+      "relative_tolerance": 1e-05,
+      "absolute_tolerance": 1e-10,
+      "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+    },
+    {
+      "case": "s000",
+      "status": "PASS",
+      "samples_compared": 101,
+      "max_absolute_error": 8.131516293641283e-20,
+      "rmse": 1.6670132036422002e-20,
+      "max_tolerance_ratio": 2.2233104457963625e-10,
+      "worst_coordinate": -0.1,
+      "relative_tolerance": 1e-05,
+      "absolute_tolerance": 1e-10,
+      "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+    },
+    {
+      "case": "s001",
+      "status": "PASS",
+      "samples_compared": 101,
+      "max_absolute_error": 5.963111948670274e-19,
+      "rmse": 1.6926160930083812e-19,
+      "max_tolerance_ratio": 2.9166874558080614e-10,
+      "worst_coordinate": -0.05,
+      "relative_tolerance": 1e-05,
+      "absolute_tolerance": 1e-10,
+      "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+    },
+    {
+      "case": "s002",
+      "status": "PASS",
+      "samples_compared": 101,
+      "max_absolute_error": 1.6263032587282567e-18,
+      "rmse": 5.865781801239113e-19,
+      "max_tolerance_ratio": 3.627004005786414e-10,
+      "worst_coordinate": -0.15,
+      "relative_tolerance": 1e-05,
+      "absolute_tolerance": 1e-10,
+      "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+    },
+    {
+      "case": "s003",
+      "status": "PASS",
+      "samples_compared": 101,
+      "max_absolute_error": 3.903127820947816e-18,
+      "rmse": 1.3696917620612038e-18,
+      "max_tolerance_ratio": 3.419228541110509e-10,
+      "worst_coordinate": -0.15,
+      "relative_tolerance": 1e-05,
+      "absolute_tolerance": 1e-10,
+      "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+    }
+  ]
+}

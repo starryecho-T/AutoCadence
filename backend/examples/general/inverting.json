@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "template_id": "general_circuit",
-  "title": "通用电路仿真",
+  "title": "理想运放反相放大",
   "question": "V1 vin 0 SINE 0 1 1000 AC 1\nR1 vin feedback 10k\nR2 feedback out 20k\nU1 0 feedback out\n.op\n.ac 10 100k 30\n.tran 4m 1u\n.save V(vin) V(out) V(feedback)",
   "components": [
     {
@@ -19,8 +19,8 @@
         "offset": 0.0,
         "amplitude": 1.0,
         "frequency_hz": 1000.0,
-        "phase_deg": 0.0,
-        "delay_s": 0.0
+        "phase_deg": 0,
+        "delay_s": 0
       }
     },
     {
@@ -65,7 +65,7 @@
     {
       "type": "tran",
       "stop_s": 0.004,
-      "max_step_s": 1e-6,
+      "max_step_s": 1e-06,
       "use_initial_conditions": false,
       "initial_condition_resistance_ohm": 0.001
     }
@@ -91,5 +91,9 @@
     }
   ],
   "measurements": [],
-  "temperature_c": 27.0
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
 }

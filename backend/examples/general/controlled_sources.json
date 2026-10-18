@@ -1,0 +1,169 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "四种线性受控源",
+  "question": "V1 input 0 DC 1 AC 1\nRin input sense 1k\nVS sense 0 DC 0\nE1 ev 0 input 0 2\nRE ev 0 1k\nG1 gi 0 input 0 0.001\nRG gi 0 1k\nF1 fi 0 VS 3\nRF fi 0 1k\nH1 hv 0 VS 2k\nRH hv 0 1k\n.op\n.ac 10 100k 10\n.save V(ev) V(gi) V(fi) V(hv) I(VS)",
+  "components": [
+    {
+      "id": "V1",
+      "pins": {
+        "p": "input",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 1.0,
+      "ac_magnitude": 1.0,
+      "ac_phase_deg": 0.0,
+      "waveform": null
+    },
+    {
+      "id": "Rin",
+      "pins": {
+        "p": "input",
+        "n": "sense"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "VS",
+      "pins": {
+        "p": "sense",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 0.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "E1",
+      "type": "vcvs",
+      "pins": {
+        "p": "ev",
+        "n": "0",
+        "cp": "input",
+        "cn": "0"
+      },
+      "gain": 2.0
+    },
+    {
+      "id": "RE",
+      "pins": {
+        "p": "ev",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "G1",
+      "type": "vccs",
+      "pins": {
+        "p": "gi",
+        "n": "0",
+        "cp": "input",
+        "cn": "0"
+      },
+      "gain": 0.001
+    },
+    {
+      "id": "RG",
+      "pins": {
+        "p": "gi",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "F1",
+      "pins": {
+        "p": "fi",
+        "n": "0"
+      },
+      "type": "cccs",
+      "control_source": "VS",
+      "gain": 3.0
+    },
+    {
+      "id": "RF",
+      "pins": {
+        "p": "fi",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "H1",
+      "pins": {
+        "p": "hv",
+        "n": "0"
+      },
+      "type": "ccvs",
+      "control_source": "VS",
+      "gain": 2000.0
+    },
+    {
+      "id": "RH",
+      "pins": {
+        "p": "hv",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "op"
+    },
+    {
+      "type": "ac",
+      "start_hz": 10.0,
+      "stop_hz": 100000.0,
+      "points_per_decade": 10
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "ev",
+      "n": "0"
+    },
+    {
+      "id": "s2",
+      "type": "voltage",
+      "p": "gi",
+      "n": "0"
+    },
+    {
+      "id": "s3",
+      "type": "voltage",
+      "p": "fi",
+      "n": "0"
+    },
+    {
+      "id": "s4",
+      "type": "voltage",
+      "p": "hv",
+      "n": "0"
+    },
+    {
+      "id": "s5",
+      "type": "current",
+      "component": "VS",
+      "terminal": null
+    }
+  ],
+  "measurements": [],
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
+}

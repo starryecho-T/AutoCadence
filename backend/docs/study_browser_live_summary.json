@@ -1,0 +1,65 @@
+{
+  "status": "PASS",
+  "example": "common_base_y",
+  "mode": "real_browser_to_v2_to_remote_eda",
+  "remote_simulation": true,
+  "run_id": "vai_20261018_093246_497df2202e32",
+  "data_dir": "D:\\GitHub\\circuit-sim\\backend\\runs\\general_browser_d1d97cae2e",
+  "two_port": {
+    "matrix": [
+      [
+        {
+          "real": 0.04101,
+          "imag": 0
+        },
+        {
+          "real": -0.00001,
+          "imag": 0
+        }
+      ],
+      [
+        {
+          "real": -0.04001,
+          "imag": 0
+        },
+        {
+          "real": 0.00001,
+          "imag": 0
+        }
+      ]
+    ],
+    "equivalence": {
+      "status": "PASS",
+      "checks": [
+        {
+          "signal": "TP_I1",
+          "status": "PASS",
+          "samples_compared": 41,
+          "max_absolute_error": 0,
+          "rmse": 0,
+          "max_tolerance_ratio": 0,
+          "worst_coordinate": 10,
+          "relative_tolerance": 0.001,
+          "absolute_tolerance": 1e-9,
+          "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+        },
+        {
+          "signal": "TP_I2",
+          "status": "PASS",
+          "samples_compared": 41,
+          "max_absolute_error": 0,
+          "rmse": 0,
+          "max_tolerance_ratio": 0,
+          "worst_coordinate": 10,
+          "relative_tolerance": 0.001,
+          "absolute_tolerance": 1e-9,
+          "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+        }
+      ],
+      "run_id": "vai_20261018_093246_497df2202e32_yeq",
+      "scope": "Independent Cadence/Spectre equivalent circuit, both ports excited at once (1∠0°, 0.37∠37° V), full requested AC band."
+    }
+  },
+  "stages": 14,
+  "browser_errors": []
+}

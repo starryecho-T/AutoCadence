@@ -1,4 +1,5 @@
-export interface WaveSeries { analysis: string; signal: string; unit: string; original_samples: number; rows: number[][] }
+export interface WaveSeries { analysis: string; signal: string; unit: string; original_samples: number; rows: number[][]; case?: string; role?: string; parameters?: Record<string, number>; source?: string }
+export const waveKey = (s: WaveSeries) => `${s.case ?? 'base'}.${s.analysis}.${s.signal}`
 export type WaveMode = 'real' | 'imag' | 'magnitude' | 'phase'
 export function waveValue(row: number[], mode: WaveMode): number {
   if (row.length < 3) return row[1]
@@ -7,13 +8,14 @@ export function waveValue(row: number[], mode: WaveMode): number {
 export function waveUnit(s: WaveSeries, mode: WaveMode): string { return s.analysis === 'ac' && s.rows[0]?.length === 3 && mode === 'phase' ? '°' : s.unit }
 export function validateWaveforms(value: unknown): WaveSeries[] {
   const series = (value as { series?: unknown } | null)?.series
-  if (!Array.isArray(series) || series.length > 64) throw new Error('波形数据格式异常')
+  if (!Array.isArray(series) || series.length > 1600) throw new Error('波形数据格式异常')
   const keys = new Set<string>()
   for (const s of series) {
     if (!s || !['ac', 'dc', 'tran', 'op'].includes(s.analysis) || typeof s.signal !== 'string' || typeof s.unit !== 'string' ||
       !Number.isInteger(s.original_samples) || !Array.isArray(s.rows) || !s.rows.length || s.rows.length > 200000 || s.original_samples < s.rows.length ||
       !s.rows.every((r: unknown) => Array.isArray(r) && r.length === (s.analysis === 'ac' && s.unit !== 'dB' ? 3 : 2) && r.every(x => typeof x === 'number' && Number.isFinite(x)) && (s.analysis !== 'ac' || r[0] > 0))) throw new Error('波形数据含有缺失、无效数值或频率')
-    const key = `${s.analysis}.${s.signal}`
+    if (s.case !== undefined && (typeof s.case !== 'string' || !/^(base|s\d{3}|yp1|yp2|ypcheck|equivalent)$/.test(s.case))) throw new Error('扫描组编号异常')
+    const key = waveKey(s)
     if (keys.has(key)) throw new Error('波形数据包含重复的信号')
     keys.add(key)
     const direction = Math.sign((s.rows[1]?.[0] ?? s.rows[0][0]) - s.rows[0][0])

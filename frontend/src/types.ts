@@ -12,6 +12,7 @@ export interface TaskDraft {
     connections?: string
     summary?: string
     issues?: { question: string; answer: string; confirmed: boolean }[]
+    proposals?: { id: string; title: string; detail: string; reason: string; decision: 'pending' | 'yes' | 'no' }[]
     stale?: boolean
   }
 }

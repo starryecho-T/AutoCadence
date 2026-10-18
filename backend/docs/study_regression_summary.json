@@ -1,0 +1,1026 @@
+{
+  "status": "PASS",
+  "checked_at": "2026-10-18T09:35:23.839930+00:00",
+  "engine": "Cadence IC617 / Spectre MMSIM151",
+  "mode": "Audit of actual saved EDA runs; no fixture-generated numerical results",
+  "cases_passed": 8,
+  "pmos_reference_comparison_status": "PASS",
+  "cases": [
+    {
+      "case": "controlled_sources",
+      "label": "四种线性受控源",
+      "run_id": "vai_general_controlled_sources_500376b678",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "protected_unchanged": true,
+      "protected_files_checked": 2,
+      "numerical_cases": 1,
+      "measurements": [
+        {
+          "id": "vcvs",
+          "analysis": "op",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.9999,
+          "maximum": 2.0001,
+          "case": "base",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "vccs",
+          "analysis": "op",
+          "signal": "s2",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -1.0001,
+          "maximum": -0.9999,
+          "case": "base",
+          "value": -1.0,
+          "status": "PASS"
+        },
+        {
+          "id": "cccs",
+          "analysis": "op",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -3.0001,
+          "maximum": -2.9999,
+          "case": "base",
+          "value": -3.0,
+          "status": "PASS"
+        },
+        {
+          "id": "ccvs",
+          "analysis": "op",
+          "signal": "s4",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.9999,
+          "maximum": 2.0001,
+          "case": "base",
+          "value": 2.0,
+          "status": "PASS"
+        }
+      ],
+      "comparisons": [],
+      "hashes": {
+        "input.scs": "1b01cc38aac81815bcc6af6fe7af4e04bb7243d8269e0242300ceb0ae75234ce",
+        "jobs.json": "a9bf3fc7f5ca95efe703aadf5c3582030434431d816ecf85736731510c755409",
+        "provenance.json": "426ff5618cd7bf641bf6deb566cfc3fd02db95c36ebf85b8e194a2da4331d61c",
+        "schematic_window.png": "838b9f4bf2a49eb0d77cb2c1d6b7f441413793c452ff8d90ca27ab444340d893",
+        "waveform_window.png": "7d98146bf83b0ec432979d72f14080563210e31532a7cd3819a4876f5debded8",
+        "metrics.json": "afcafbde326bfd0b19fa88c682eb846994681a1c935de5980d51d5113a001ec3"
+      }
+    },
+    {
+      "case": "bjt_transfer",
+      "label": "NPN 共射转移曲线与工作区",
+      "run_id": "vai_general_bjt_transfer_22e29d22ff",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "protected_unchanged": true,
+      "protected_files_checked": 2,
+      "numerical_cases": 1,
+      "measurements": [
+        {
+          "id": "cutoff",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "at",
+          "representation": "real",
+          "at": 0.0,
+          "minimum": 4.999,
+          "maximum": 5.001,
+          "case": "base",
+          "value": 4.999999949985124,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 0.2,
+          "case": "base",
+          "value": 0.02918569405959264,
+          "status": "PASS"
+        },
+        {
+          "id": "base_current",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.0001,
+          "maximum": 0.001,
+          "case": "base",
+          "value": 0.0004761400684405076,
+          "status": "PASS"
+        }
+      ],
+      "comparisons": [],
+      "hashes": {
+        "input.scs": "d4a33766422f50326b86b62d7423105b45ada613ac30cbb2b06737c6046a77ed",
+        "jobs.json": "0a6de9d37dd926bbcd11838114ef48963d08b963a957144c97613a1aa36a585f",
+        "provenance.json": "38040e08763520306a0e5969ec1df7aaa100778491cb91ff8f7a919079f50715",
+        "schematic_window.png": "2006b5f49effb6a9c68228991b58ba4b8e7aed7aba6c6a1e4b9252b026750508",
+        "waveform_window.png": "f17ad633c02584b5c271cb0fc10655f98e542ff6170b13e6ef51e40bc7310c83",
+        "metrics.json": "c7e07a1287bb1a0baec62ada228938854a412dd9a643a10dd3112e279d13b537"
+      },
+      "bjt_transfer": [
+        {
+          "case": "base",
+          "parameters": {},
+          "regions": [
+            {
+              "region": "cutoff",
+              "code": 0,
+              "start_v": 0.0,
+              "stop_v": 0.1950000000000001,
+              "samples": 40
+            },
+            {
+              "region": "forward_active",
+              "code": 1,
+              "start_v": 0.2000000000000001,
+              "stop_v": 0.6950000000000005,
+              "samples": 100
+            },
+            {
+              "region": "saturation",
+              "code": 3,
+              "start_v": 0.7000000000000005,
+              "stop_v": 1.2,
+              "samples": 101
+            }
+          ],
+          "max_absolute_error_v": 4.706856322077001,
+          "rmse_v": 0.5775803484094908,
+          "theory_cutoff_boundary_v": 0.7,
+          "theory_saturation_boundary_v": 0.7048,
+          "theory": "Ic=clamp(beta*(Vin-VBEon)/RB, 0, (VCC-VCEsat)/RC); Vout=VCC-Ic*RC",
+          "scope": "分段近似与连续 BJT 模型的误差为测量值，不按精确相等判定；工作区代码来自 Spectre。",
+          "base_resistor_role": "限制基极电流；移除后输入电压源直接驱动 BE 结，模型不再适用。"
+        }
+      ]
+    },
+    {
+      "case": "pnp_bias",
+      "label": "PNP 工作点",
+      "run_id": "vai_general_pnp_bias_23b3d6f904",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "protected_unchanged": true,
+      "protected_files_checked": 2,
+      "numerical_cases": 1,
+      "measurements": [
+        {
+          "id": "collector_voltage",
+          "analysis": "op",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.1,
+          "maximum": 4.9,
+          "case": "base",
+          "value": 0.5885297670473049,
+          "status": "PASS"
+        },
+        {
+          "id": "collector_current",
+          "analysis": "op",
+          "signal": "s2",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.005,
+          "maximum": -0.0001,
+          "case": "base",
+          "value": -0.0005885297670473048,
+          "status": "PASS"
+        },
+        {
+          "id": "gain",
+          "analysis": "op",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.001,
+          "maximum": 1.0,
+          "case": "base",
+          "value": 0.02274894649753765,
+          "status": "PASS"
+        }
+      ],
+      "comparisons": [],
+      "hashes": {
+        "input.scs": "5e17d69d6f5503b831e1f2fd51fd5d32ab091e1c7f94ea68205ae98cba4357f7",
+        "jobs.json": "def37c123236ce6e47cee8cf1eab80f91d3c9e446af846341c85109d5ea5e357",
+        "provenance.json": "8f177a0b75166468bc5d1a2440e48907642f0c5fbf0e864d09f4dececb457f9f",
+        "schematic_window.png": "3c3abe8937a645d41c6f4b422e6a4721baa0e752627b3796b995550958624c11",
+        "waveform_window.png": "56884e3fc3e3c0fb2b09f0613c93dda7bcce31c9d28c1fc3eb6a7ffd93c16f74",
+        "metrics.json": "b413aaeee55cdfcc15ef79c0f850cdf3f2bc2a993b88b9357231f6da7ae7ee73"
+      }
+    },
+    {
+      "case": "pmos_families",
+      "label": "PMOS 输出特性与栅压扫描",
+      "run_id": "vai_general_pmos_families_608d571ec5",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "protected_unchanged": true,
+      "protected_files_checked": 2,
+      "numerical_cases": 5,
+      "measurements": [
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "base",
+          "value": -0.0009295000000100002,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "base",
+          "value": 3.031770280160843e-20,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "base",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "s000",
+          "value": -4.950000001000002e-05,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "s000",
+          "value": 3.21264848947082e-21,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "s000",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "s001",
+          "value": -0.00035200000001,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "s001",
+          "value": 2.389240582266679e-20,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "s001",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "s002",
+          "value": -0.0009295000000100002,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "s002",
+          "value": 3.031770280160843e-20,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "s002",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "s003",
+          "value": -0.00178200000001,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "s003",
+          "value": 3.031770280160843e-20,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "s003",
+          "value": 2.0,
+          "status": "PASS"
+        }
+      ],
+      "comparisons": [],
+      "hashes": {
+        "input.scs": "44fe94e3cdbb47a1e148a6b6a0ad5e4dfaa8e8d7166a37a7f8c45dde53d0274d",
+        "jobs.json": "45b1d123370a397edd4f1006cc4a9b5b1ae06fdfd06e5a08e0fd7bf27a702f90",
+        "provenance.json": "20c04361eec8d5020ba93f023df8b1e232d3d0a0a09031e6bbe1a42ec691c576",
+        "schematic_window.png": "0a7d2b7922417c8cbcfa5d8013b22cb943a1d3489ef72ee7fa847c67d9f3079d",
+        "waveform_window.png": "c72530dfd7854e508ca715dbe7b9fb9d11ef72a6358cd9e29fcedf989436d676",
+        "metrics.json": "e3aa7623d7a55be2172e10da16a4dbd4ae3845bfb932688fb047095cad495cc8"
+      },
+      "independent_mos1_checks": [
+        {
+          "case": "base",
+          "vsg_v": 2,
+          "vsd_v": 5,
+          "current_a": -0.0009295000000100002,
+          "mos1_square_law_a": -0.0009295000000000001,
+          "absolute_error_a": 1.000013873792005e-14,
+          "status": "PASS"
+        },
+        {
+          "case": "s000",
+          "vsg_v": 1,
+          "vsd_v": 5,
+          "current_a": -4.950000001000002e-05,
+          "mos1_square_law_a": -4.9500000000000024e-05,
+          "absolute_error_a": 9.999996436384911e-15,
+          "status": "PASS"
+        },
+        {
+          "case": "s001",
+          "vsg_v": 1.5,
+          "vsd_v": 5,
+          "current_a": -0.00035200000001,
+          "mos1_square_law_a": -0.0003520000000000001,
+          "absolute_error_a": 9.999921897485553e-15,
+          "status": "PASS"
+        },
+        {
+          "case": "s002",
+          "vsg_v": 2,
+          "vsd_v": 5,
+          "current_a": -0.0009295000000100002,
+          "mos1_square_law_a": -0.0009295000000000001,
+          "absolute_error_a": 1.000013873792005e-14,
+          "status": "PASS"
+        },
+        {
+          "case": "s003",
+          "vsg_v": 2.5,
+          "vsd_v": 5,
+          "current_a": -0.00178200000001,
+          "mos1_square_law_a": -0.0017820000000000004,
+          "absolute_error_a": 9.999596636833807e-15,
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "case": "pmos_ground_reference",
+      "label": "PMOS 接 VDD 的输出特性",
+      "run_id": "vai_general_pmos_ground_reference_22e965ee52",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "protected_unchanged": true,
+      "protected_files_checked": 2,
+      "numerical_cases": 5,
+      "measurements": [
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "base",
+          "value": -0.0009295000000100002,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "base",
+          "value": 3.031770280160843e-20,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "base",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "s000",
+          "value": -4.950000001000002e-05,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "s000",
+          "value": 3.21264848947082e-21,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "s000",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "s001",
+          "value": -0.00035200000001,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "s001",
+          "value": 2.389240582266679e-20,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "s001",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "s002",
+          "value": -0.0009295000000100002,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "s002",
+          "value": 3.031770280160843e-20,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "s002",
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "drain_current",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.01,
+          "maximum": -1e-06,
+          "case": "s003",
+          "value": -0.00178200000001,
+          "status": "PASS"
+        },
+        {
+          "id": "gate_leakage",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-10,
+          "case": "s003",
+          "value": 3.031770280160843e-20,
+          "status": "PASS"
+        },
+        {
+          "id": "saturation_region",
+          "analysis": "dc",
+          "signal": "s3",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 1.99,
+          "maximum": 2.01,
+          "case": "s003",
+          "value": 2.0,
+          "status": "PASS"
+        }
+      ],
+      "comparisons": [],
+      "hashes": {
+        "input.scs": "ffe20231ab5c1c698fb6cddcb393bafe60ed73bf52b90c5e2a2b7da118f6f0c2",
+        "jobs.json": "9d45d836238004faa9c2001697ac09ad3025e9071298bafe7cac4bda3e002c2e",
+        "provenance.json": "b7c21406a571ba887f5b5dcf62fe7c2d13ba909c5f668010505a1d96f5c8c1b9",
+        "schematic_window.png": "c794dee36cf180f774f247db1976793cb906e1669c2020648dec92c97dcbae1c",
+        "waveform_window.png": "5326c55fbf091bcd75ce868ae3f592d8a6a8db84f296a921c4149d54a25dfad9",
+        "metrics.json": "42268a41fbeec85aa265277d78b4d13a0f871218bb8816cee72d63519f09834f"
+      },
+      "independent_mos1_checks": [
+        {
+          "case": "base",
+          "vsg_v": 2,
+          "vsd_v": 5,
+          "current_a": -0.0009295000000100002,
+          "mos1_square_law_a": -0.0009295000000000001,
+          "absolute_error_a": 1.000013873792005e-14,
+          "status": "PASS"
+        },
+        {
+          "case": "s000",
+          "vsg_v": 1,
+          "vsd_v": 5,
+          "current_a": -4.950000001000002e-05,
+          "mos1_square_law_a": -4.9500000000000024e-05,
+          "absolute_error_a": 9.999996436384911e-15,
+          "status": "PASS"
+        },
+        {
+          "case": "s001",
+          "vsg_v": 1.5,
+          "vsd_v": 5,
+          "current_a": -0.00035200000001,
+          "mos1_square_law_a": -0.0003520000000000001,
+          "absolute_error_a": 9.999921897485553e-15,
+          "status": "PASS"
+        },
+        {
+          "case": "s002",
+          "vsg_v": 2,
+          "vsd_v": 5,
+          "current_a": -0.0009295000000100002,
+          "mos1_square_law_a": -0.0009295000000000001,
+          "absolute_error_a": 1.000013873792005e-14,
+          "status": "PASS"
+        },
+        {
+          "case": "s003",
+          "vsg_v": 2.5,
+          "vsd_v": 5,
+          "current_a": -0.00178200000001,
+          "mos1_square_law_a": -0.0017820000000000004,
+          "absolute_error_a": 9.999596636833807e-15,
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "case": "common_base_y",
+      "label": "共基极小信号模型：Y 参数与等效验证",
+      "run_id": "vai_general_common_base_y_3ee0b2dd3e",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "protected_unchanged": true,
+      "protected_files_checked": 2,
+      "numerical_cases": 4,
+      "measurements": [],
+      "comparisons": [],
+      "hashes": {
+        "input.scs": "3b1adec2b51b55e9453174c6796c3320042b55df7ee52cce9ad802fcaa501c7f",
+        "jobs.json": "d53e7c65dbe4e96eb7c83cc52d28ef7c763113957625864dea0592bc556788d0",
+        "provenance.json": "5a9acaf8256bb8944734f6760dbd8db0affb7a5ea700bb7205a3c6ecba439b83",
+        "schematic_window.png": "67ac9c7a265a718f109140d41cc5ac25acbf4b0cdf8c002c2e31586c3b6cbb80",
+        "waveform_window.png": "d63b822522d28028fec4440d3aaa179264ded368de36f1e9cff8d91215f48816",
+        "metrics.json": "d027ffee11f6b9d5e6c68dae43cfc30981ca6536e0062f87cd11293c6a901aab"
+      },
+      "two_port": {
+        "definition": "[I1,I2]^T = Y [V1,V2]^T; current positive into DUT, Iport = -I(test voltage source p).",
+        "scope": "AC small-signal at the original DC bias; other independent AC excitations set to zero.",
+        "unit": "S",
+        "reference_hz": 1000.0,
+        "reference_matrix": [
+          [
+            {
+              "real": 0.04101,
+              "imag": -0.0
+            },
+            {
+              "real": -1e-05,
+              "imag": -0.0
+            }
+          ],
+          [
+            {
+              "real": -0.04001,
+              "imag": -0.0
+            },
+            {
+              "real": 1e-05,
+              "imag": -0.0
+            }
+          ]
+        ],
+        "frequency_points": 41,
+        "linearity_checks": [
+          {
+            "port": 1,
+            "status": "PASS",
+            "samples_compared": 41,
+            "max_absolute_error": 4.504861303551341e-08,
+            "rmse": 4.504861303551341e-08,
+            "max_tolerance_ratio": 0.0010985311032432215,
+            "worst_coordinate": 10.0,
+            "relative_tolerance": 0.001,
+            "absolute_tolerance": 1e-09,
+            "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+          },
+          {
+            "port": 2,
+            "status": "PASS",
+            "samples_compared": 41,
+            "max_absolute_error": 4.504861303551341e-08,
+            "rmse": 4.504861303551341e-08,
+            "max_tolerance_ratio": 0.0011259888582659152,
+            "worst_coordinate": 10.0,
+            "relative_tolerance": 0.001,
+            "absolute_tolerance": 1e-09,
+            "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+          }
+        ],
+        "status": "PASS",
+        "equivalent_requested": true,
+        "equivalent_supported": true,
+        "max_reference_imaginary_s": 0.0,
+        "equivalent_scope": "Four real VCCS, coefficients taken at reference_hz; full-band equivalence is separately tested.",
+        "equivalence": {
+          "status": "PASS",
+          "checks": [
+            {
+              "signal": "TP_I1",
+              "status": "PASS",
+              "samples_compared": 41,
+              "max_absolute_error": 0.0,
+              "rmse": 0.0,
+              "max_tolerance_ratio": 0.0,
+              "worst_coordinate": 10.0,
+              "relative_tolerance": 0.001,
+              "absolute_tolerance": 1e-09,
+              "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+            },
+            {
+              "signal": "TP_I2",
+              "status": "PASS",
+              "samples_compared": 41,
+              "max_absolute_error": 0.0,
+              "rmse": 0.0,
+              "max_tolerance_ratio": 0.0,
+              "worst_coordinate": 10.0,
+              "relative_tolerance": 0.001,
+              "absolute_tolerance": 1e-09,
+              "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+            }
+          ],
+          "run_id": "vai_general_common_base_y_3ee0b2dd3e_yeq",
+          "scope": "Independent Cadence/Spectre equivalent circuit, both ports excited at once (1∠0°, 0.37∠37° V), full requested AC band."
+        }
+      }
+    },
+    {
+      "case": "bjt_biased_y",
+      "label": "有偏置 BJT：小信号二端口等效",
+      "run_id": "vai_general_bjt_biased_y_4480447b80",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "protected_unchanged": true,
+      "protected_files_checked": 2,
+      "numerical_cases": 4,
+      "measurements": [],
+      "comparisons": [],
+      "hashes": {
+        "input.scs": "a64595738f8ffcff109337648883bdcc599726bc60abc9e226a84538d9dac12f",
+        "jobs.json": "5c2f546650ddad7646e63e782768807dfcf918f635014dd1ea6c7b77c6c594b2",
+        "provenance.json": "9700b9c18d1788507c8b12801703266ff3af6198756641c7c2d43f5658998afb",
+        "schematic_window.png": "dc00f7be9fa031b3c17bdb037714517cd9ab9c6e045db1b5b9baf498c6abae9d",
+        "waveform_window.png": "ebff48e531ebe235d9e1ec64a6532234c16c3e4d2df7f0bc1e31061de4433ba4",
+        "metrics.json": "d4afa77b4ab4764e90939bff6f647aa855dc8b444c2864364198f4168e64a91f"
+      },
+      "two_port": {
+        "definition": "[I1,I2]^T = Y [V1,V2]^T; current positive into DUT, Iport = -I(test voltage source p).",
+        "scope": "AC small-signal at the original DC bias; other independent AC excitations set to zero.",
+        "unit": "S",
+        "reference_hz": 1000.0,
+        "reference_matrix": [
+          [
+            {
+              "real": 0.00336497,
+              "imag": -0.0
+            },
+            {
+              "real": -8.21059e-07,
+              "imag": -0.0
+            }
+          ],
+          [
+            {
+              "real": -0.00333323,
+              "imag": -0.0
+            },
+            {
+              "real": 8.2106e-07,
+              "imag": -0.0
+            }
+          ]
+        ],
+        "frequency_points": 41,
+        "linearity_checks": [
+          {
+            "port": 1,
+            "status": "PASS",
+            "samples_compared": 41,
+            "max_absolute_error": 2.6189431454635854e-09,
+            "rmse": 2.6189431454635854e-09,
+            "max_tolerance_ratio": 0.0007781209958770413,
+            "worst_coordinate": 10.0,
+            "relative_tolerance": 0.001,
+            "absolute_tolerance": 1e-09,
+            "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+          },
+          {
+            "port": 2,
+            "status": "PASS",
+            "samples_compared": 41,
+            "max_absolute_error": 7.380761410097771e-09,
+            "rmse": 7.380761410097771e-09,
+            "max_tolerance_ratio": 0.0022137940418093045,
+            "worst_coordinate": 10.0,
+            "relative_tolerance": 0.001,
+            "absolute_tolerance": 1e-09,
+            "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+          }
+        ],
+        "status": "PASS",
+        "equivalent_requested": true,
+        "equivalent_supported": true,
+        "max_reference_imaginary_s": 0.0,
+        "equivalent_scope": "Four real VCCS, coefficients taken at reference_hz; full-band equivalence is separately tested.",
+        "equivalence": {
+          "status": "PASS",
+          "checks": [
+            {
+              "signal": "TP_I1",
+              "status": "PASS",
+              "samples_compared": 41,
+              "max_absolute_error": 0.0,
+              "rmse": 0.0,
+              "max_tolerance_ratio": 0.0,
+              "worst_coordinate": 10.0,
+              "relative_tolerance": 0.001,
+              "absolute_tolerance": 1e-09,
+              "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+            },
+            {
+              "signal": "TP_I2",
+              "status": "PASS",
+              "samples_compared": 41,
+              "max_absolute_error": 9.999999999940612e-09,
+              "rmse": 9.999999999940614e-09,
+              "max_tolerance_ratio": 0.002999418108357088,
+              "worst_coordinate": 10.0,
+              "relative_tolerance": 0.001,
+              "absolute_tolerance": 1e-09,
+              "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+            }
+          ],
+          "run_id": "vai_general_bjt_biased_y_4480447b80_yeq",
+          "scope": "Independent Cadence/Spectre equivalent circuit, both ports excited at once (1∠0°, 0.37∠37° V), full requested AC band."
+        }
+      }
+    },
+    {
+      "case": "parameter_comparison",
+      "label": "参数扫描与跨组曲线比较",
+      "run_id": "vai_general_parameter_comparison_e27a0f7e7d",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "protected_unchanged": true,
+      "protected_files_checked": 2,
+      "numerical_cases": 3,
+      "measurements": [],
+      "comparisons": [
+        {
+          "id": "repeat",
+          "analysis": "dc",
+          "signal": "s1",
+          "case": "base",
+          "reference_signal": "s1",
+          "reference_case": "s000",
+          "scale": 1.0,
+          "relative_tolerance": 0.0001,
+          "absolute_tolerance": 1e-09,
+          "status": "PASS",
+          "samples_compared": 101,
+          "max_absolute_error": 0.0,
+          "rmse": 0.0,
+          "max_tolerance_ratio": 0.0,
+          "worst_coordinate": 0.0,
+          "method": "Complex values, linear interpolation on union of sample coordinates; |error| <= atol + rtol*|reference|."
+        }
+      ],
+      "hashes": {
+        "input.scs": "85ec0f44ad140bf79f68e49f63773d23427d46188760f62fbb49d2bdefba50f1",
+        "jobs.json": "305ce9c3c1163be0118fb4bb3f8d55ae3dbd45bf52d857195077789de890dfb7",
+        "provenance.json": "6e6d3d2afabf61082d3d3d054643bdf3108cdc8edb5c32fa903d65d25a1f47b8",
+        "schematic_window.png": "13e0109afd5fc4393f9ecc2141df0dba1a7f746e600c0742c41ffae168b52a0f",
+        "waveform_window.png": "7fd0d1178acc39498cf6896beca14af12d45b527bb137f394349fa82fdbfa2fa",
+        "metrics.json": "6dc489df4007d44a447d096820fa5ad93c30901e129c1a70f53e94dad90775c5"
+      }
+    }
+  ]
+}

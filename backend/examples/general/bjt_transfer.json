@@ -1,0 +1,105 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "NPN 共射转移曲线与工作区",
+  "question": "VIN input 0 DC 0\nVCC supply 0 DC 5\nRB input base 1k\nRC supply out 10k\nQ1 out base 0 generic_npn\n.dc VIN 0 1.2 0.005\n.save V(out) I(Q1,c) I(Q1,b)\n.transfer Q1 VIN VCC RB RC",
+  "components": [
+    {
+      "id": "VIN",
+      "pins": {
+        "p": "input",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 0.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "VCC",
+      "pins": {
+        "p": "supply",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 5.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "RB",
+      "pins": {
+        "p": "input",
+        "n": "base"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "RC",
+      "pins": {
+        "p": "supply",
+        "n": "out"
+      },
+      "type": "resistor",
+      "resistance_ohm": 10000.0
+    },
+    {
+      "id": "Q1",
+      "type": "bjt",
+      "pins": {
+        "c": "out",
+        "b": "base",
+        "e": "0"
+      },
+      "model": "generic_npn",
+      "area": 1
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "dc",
+      "source": "VIN",
+      "start": 0.0,
+      "stop": 1.2,
+      "step": 0.005
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "out",
+      "n": "0"
+    },
+    {
+      "id": "s2",
+      "type": "current",
+      "component": "Q1",
+      "terminal": "c"
+    },
+    {
+      "id": "s3",
+      "type": "current",
+      "component": "Q1",
+      "terminal": "b"
+    }
+  ],
+  "measurements": [],
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": {
+    "transistor": "Q1",
+    "input_source": "VIN",
+    "supply_source": "VCC",
+    "base_resistor": "RB",
+    "collector_resistor": "RC",
+    "be_on_v": 0.7,
+    "ce_saturation_v": 0.2
+  },
+  "temperature_c": 27
+}

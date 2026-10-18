@@ -21,6 +21,7 @@ page.on('request', (request) => {
 try {
   await page.goto(base)
   await page.getByText(/后端在线/).waitFor()
+  await page.getByRole('button', { name: 'RC 低通题目', exact: true }).click()
   await page.getByRole('button', { name: '填入示例题目' }).click()
   await page.getByRole('button', { name: '解析题目', exact: true }).click()
   await page.getByText(/参数预检通过/).waitFor()

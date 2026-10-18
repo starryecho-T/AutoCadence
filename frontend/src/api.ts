@@ -460,9 +460,14 @@ export async function previewCircuit(task: unknown, signal?: AbortSignal): Promi
   return req('/api/v2/preview', 'POST', task, signal)
 }
 
+export interface CircuitCapabilities { schema_version: string; components: string[]; analyses: string[]; studies?: string[]; examples: { id: string; label: string; text: string }[]; [key: string]: unknown }
+export async function circuitCapabilities(signal?: AbortSignal): Promise<CircuitCapabilities> {
+  const result = await req<CircuitCapabilities>('/api/v2/capabilities', 'GET', undefined, signal)
+  if (!Array.isArray(result.components) || !Array.isArray(result.examples)) throw new ApiError('后端未提供通用电路能力，请更新并重新连接后端')
+  return result
+}
 export async function circuitExamples(): Promise<{ id: string; label: string; text: string }[]> {
-  const r = await req<{ examples: { id: string; label: string; text: string }[] }>('/api/v2/capabilities', 'GET')
-  return r.examples
+  return (await circuitCapabilities()).examples
 }
 
 export async function listRuns(signal?: AbortSignal): Promise<RunRecord[]> {

@@ -8,7 +8,7 @@
     {
       "case": "divider",
       "label": "电阻分压与导线",
-      "run_id": "vai_general_divider_dc_6d3d1309de",
+      "run_id": "vai_general_divider_be6a26f8c9",
       "status": "PASS",
       "remote_eda_executed": true,
       "devices_checked": 3,
@@ -28,27 +28,27 @@
           "status": "PASS"
         },
         {
-          "id": "sweep_end",
-          "analysis": "dc",
-          "signal": "s1",
+          "id": "current",
+          "analysis": "op",
+          "signal": "s2",
           "operation": "final",
           "representation": "real",
           "at": null,
-          "minimum": -1e-09,
-          "maximum": 1e-09,
-          "value": 0.0,
+          "minimum": 0.004999,
+          "maximum": 0.005001,
+          "value": 0.005,
           "status": "PASS"
         }
       ],
       "evidence_sha256": {
-        "task.json": "a0bf62eea70b1ee1f8f04a8a0a134b58e1bcd347c2ee9612da00fc92a8970c75",
-        "input.scs": "611a5c66ab3b89235675c3bf6680ab886912eb7053af51f28e49def90e97fbe5",
-        "metrics.json": "d27794daf4bb8b7388193cb92c41b7a0767c1a4c6a134b33df1dd9a85a3a87f2",
-        "waveforms.json": "3244be7558e1ddc680f3db0c7e345427d58d844ca4e9e0859279ce2a54d70b41",
+        "task.json": "e960edb67231ad5a66dbd1b4aa69bc2ecad67d2eaa15bd7ceb3fc83eaf2f50e7",
+        "input.scs": "54fb62a283a375d78d309171080ed88ee7a1b029e85c0780e80814f0a4251db9",
+        "metrics.json": "c6b9a2b3e50d389095c51204c9878eeb3f309d193593f439aa79bb4046101056",
+        "waveforms.json": "91db87dae8a1ef01c229857616281145a1cf554b48556bea018d441c516d7c89",
         "schematic_window.png": "473a07c81393e25f488f99c012cb6837d990a2d776f9d858ca0110b66b5e1338",
-        "waveform_window.png": "c47d2d24384733bfe2f8b7a512576f5be8908b0a2fd846a85e8a949264cdab19",
-        "spectre.out": "52744445ee7b73324cb210cdae6f36ea93e811036110b08441a839be9585c644",
-        "provenance.json": "6a32b963b0ce649f09003d6bcaea52ecd6b25b209d0d28d75486805864231500"
+        "waveform_window.png": "f9146df5a723bee6d25c14ecb275c9afa2a7fc7d11a8ed1c2500799b9933f46b",
+        "spectre.out": "143888e6537e5b18b4f8d1caf669c0c8099c2216f784fe6766d968d4efd613d8",
+        "provenance.json": "d7891640626e8cfcc443757e1f8ff132d1b080adcee5f420a2610c9dac66646a"
       }
     },
     {

@@ -1,7 +1,7 @@
 import type { GeneralCircuit } from './types'
 
-export const COMPONENT_LABELS: Record<string, string> = { resistor: '电阻', capacitor: '电容', inductor: '电感', diode: '二极管', voltage_source: '电压源', current_source: '电流源', ideal_opamp: '理想运放', wire: '导线' }
-export const PIN_LABELS: Record<string, string> = { p: '正端 / 端点 1', n: '负端 / 端点 2', a: '阳极', k: '阴极', plus: '同相端 +', minus: '反相端 −', out: '输出端' }
+export const COMPONENT_LABELS: Record<string, string> = { resistor: '电阻', capacitor: '电容', inductor: '电感', diode: '二极管', voltage_source: '电压源', current_source: '电流源', ideal_opamp: '理想运放', wire: '导线', bjt:'双极型晶体管', pmos:'PMOS', vccs:'压控电流源', vcvs:'压控电压源', cccs:'流控电流源', ccvs:'流控电压源' }
+export const PIN_LABELS: Record<string, string> = { p: '正端 / 端点 1', n: '负端 / 端点 2', a: '阳极', k: '阴极', plus: '同相端 +', minus: '反相端 −', out: '输出端', c:'集电极', b:'基极 / 衬底', e:'发射极', d:'漏极', g:'栅极', s:'源极', cp:'控制正端', cn:'控制负端' }
 export const ANALYSIS_LABELS: Record<string, string> = { op: '直流工作点', ac: '交流扫频', tran: '瞬态响应', dc: '直流扫描' }
 export const FIELDS: Record<string, [string, string]> = {
   resistance_ohm: ['阻值', 'Ω'], capacitance_f: ['电容', 'F'], inductance_h: ['电感', 'H'],
@@ -11,7 +11,8 @@ export const FIELDS: Record<string, [string, string]> = {
   stop_s: ['仿真时长', 's'], max_step_s: ['最大步长', 's'], source: ['扫描电源', ''], start: ['起始值', ''], stop: ['结束值', ''], step: ['步长', ''],
   use_initial_conditions: ['使用初始条件', ''], initial_condition_resistance_ohm: ['初值辅助电阻', 'Ω'],
   offset: ['偏置', ''], amplitude: ['幅度', ''], frequency_hz: ['频率', 'Hz'], phase_deg: ['相位', '°'], delay_s: ['延迟', 's'],
-  low: ['低电平', ''], high: ['高电平', ''], period_s: ['周期', 's'], width_s: ['脉宽', 's'], rise_s: ['上升时间', 's'], fall_s: ['下降时间', 's'], model: ['二极管模型', ''],
+  low: ['低电平', ''], high: ['高电平', ''], period_s: ['周期', 's'], width_s: ['脉宽', 's'], rise_s: ['上升时间', 's'], fall_s: ['下降时间', 's'], model: ['器件模型', ''],
+  width_m:['沟道宽度','m'], length_m:['沟道长度','m'], multiplicity:['并联倍数',''], area:['面积倍数',''], gain:['增益（G: S；E/F: 1；H: Ω）',''], control_source:['控制电流的电压源',''],
 }
 const PREFIX: Record<string, number> = { p: 1e-12, n: 1e-9, u: 1e-6, 'µ': 1e-6, 'μ': 1e-6, m: 1e-3, k: 1e3, K: 1e3, M: 1e6, meg: 1e6, G: 1e9 }
 export function parseEngineering(raw: string): number | string {

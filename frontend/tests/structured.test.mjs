@@ -5,6 +5,15 @@ async function bundle(path) { const r = await build({ entryPoints: [path], bundl
 const ocr = await bundle('src/ocr.ts'), wave = await bundle('src/waveforms.ts'), circuit = await bundle('src/generalCircuit.ts')
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })
+
+test('parameter cases remain distinct and reject duplicated or malformed case identities', () => {
+  const s = {analysis:'dc',signal:'s1',unit:'A',original_samples:2,rows:[[0,0],[1,.001]]}
+  const value = {series:[{...s,case:'base'},{...s,case:'s000',parameters:{'VG.dc':-1}}]}
+  assert.equal(wave.validateWaveforms(value).length,2)
+  assert.equal(wave.groupWaveforms(value.series)[0].length,2)
+  assert.throws(()=>wave.validateWaveforms({series:[s,{...s,case:'base'}]}),/重复/)
+  assert.throws(()=>wave.validateWaveforms({series:[{...s,case:'../bad'}]}),/编号/)
+})
 test('extraction rejects incomplete, oversized and malformed model replies', () => {
   for (const value of ['not json', 'null', '{}', '{"text":"x","issues":[2]}', '{"text":"","issues":[]}', JSON.stringify({text:'x'.repeat(50001),issues:[]})]) assert.throws(() => ocr.parseCircuitExtraction(value))
   assert.deepEqual(ocr.parseCircuitExtraction('```json\n{"text":"R1 a 0 1k", "issues":["缺少激励"], "summary":"电阻电路"}\n```'), {text:'R1 a 0 1k',issues:['缺少激励'],summary:'电阻电路'})
@@ -23,6 +32,24 @@ test('cancelled recognition aborts the provider request', async () => {
   globalThis.fetch = (_url, {signal}) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(new DOMException('Cancelled','AbortError'))))
   const request = ocr.extractCircuit({baseUrl:'https://model.test',apiKey:'fixture',model:'fixture'},{text:'test'},ctrl.signal)
   ctrl.abort();await assert.rejects(request,{name:'AbortError'})
+})
+
+test('proposal cards reject missing fields and ambiguous identities', () => {
+  const proposal = {id:'topology',title:'采用低通吗？',detail:'R=1kΩ，C=159nF 接地。',reason:'目标截止频率约 1kHz。'}
+  const reply = proposals => JSON.stringify({text:'R1 in out 1k',summary:'候选方案',issues:[],proposals})
+  assert.deepEqual(ocr.parseCircuitExtraction(reply([proposal])).proposals,[proposal])
+  for (const proposals of [[proposal,proposal],[{...proposal,id:''}],[{...proposal,detail:null}],[null],{}]) assert.throws(()=>ocr.parseCircuitExtraction(reply(proposals)),/建议卡片/)
+})
+
+test('design skill receives current capabilities, decisions and preflight feedback in one request', async () => {
+  let body
+  globalThis.fetch = async (_url,opts) => {body=JSON.parse(opts.body);return Response.json({choices:[{message:{content:'{"text":"R1 a 0 1k","issues":[]}'}}]})}
+  await ocr.extractCircuit({baseUrl:'https://model.test',apiKey:'fixture',model:'fixture'}, {text:'设计一个放大器',capabilities:{components:['bjt'],studies:['bjt_transfer']},previousCandidate:'Q1 c b 0 generic_npn',clarification:'否决原阻值，保持电源电压',validationError:'浮空节点'})
+  assert.match(body.messages[0].content,/circuit-design-assistant/)
+  assert.match(body.messages[0].content,/bjt_transfer/)
+  assert.match(JSON.stringify(body.messages),/否决原阻值/)
+  assert.match(JSON.stringify(body.messages),/浮空节点/)
+  assert.match(JSON.stringify(body.messages),/Q1 c b 0/)
 })
 test('engineering input preserves real circuit values and rejects empty or nonfinite input', () => {
   assert.equal(circuit.parseEngineering('1k'),1000);assert.equal(circuit.parseEngineering('100n'),1e-7)

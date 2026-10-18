@@ -95,7 +95,7 @@ def main():
         if mutex is None:
             return
         config_path = directory / 'config.json'
-        config = {'backend_url': 'http://127.0.0.1:8765', 'desktop_port': 18765}
+        config = {'backend_url': 'http://127.0.0.1:8766', 'desktop_port': 18765}
         if config_path.exists():
             config.update(json.loads(config_path.read_text(encoding='utf-8')))
         else:

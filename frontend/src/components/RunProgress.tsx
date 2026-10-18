@@ -5,13 +5,13 @@ const LABELS: Record<string, string> = {
   upload: '上传任务', preflight: '检查运行环境', build: '建立原理图', probe: '检查电路',
   netlist: '生成网表', netlist_validation: '核对网表参数', spectre: '运行仿真',
   export: '导出数据', capture: '获取原始截图', download: '回传结果',
-  image_validation: '校验截图', validation: '校验数值', report: '生成报告'
+  image_validation: '校验截图', validation: '校验数值', equivalent:'搭建并验证 Y 参数等效电路', report: '生成报告'
 }
 const GROUPS = [
   { label: '准备电路', names: ['upload', 'preflight', 'build', 'probe', 'netlist', 'netlist_validation'] },
   { label: '运行仿真', names: ['spectre'] },
   { label: '整理结果', names: ['export', 'capture', 'download'] },
-  { label: '验证与报告', names: ['image_validation', 'validation', 'report'] },
+  { label: '验证与报告', names: ['image_validation', 'validation', 'equivalent', 'report'] },
 ]
 export default function RunProgress({ run }: Props) {
   const stages: StageInfo[] = run.stages ?? []

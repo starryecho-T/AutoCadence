@@ -1,0 +1,93 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "PMOS 输出特性与栅压扫描",
+  "question": "VG gate 0 DC -2\nVD drain 0 DC 0\nM1 drain gate 0 0 generic_pmos w=10u l=1u\n.dc VD 0 -5 -0.05\n.step VG dc -1 -1.5 -2 -2.5\n.save I(M1,d) I(M1,g) P(M1,region)",
+  "components": [
+    {
+      "id": "VG",
+      "pins": {
+        "p": "gate",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": -2.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "VD",
+      "pins": {
+        "p": "drain",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 0.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "M1",
+      "type": "pmos",
+      "pins": {
+        "d": "drain",
+        "g": "gate",
+        "s": "0",
+        "b": "0"
+      },
+      "model": "generic_pmos",
+      "width_m": 9.999999999999999e-06,
+      "length_m": 1e-06,
+      "multiplicity": 1
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "dc",
+      "source": "VD",
+      "start": 0.0,
+      "stop": -5.0,
+      "step": -0.05
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "current",
+      "component": "M1",
+      "terminal": "d"
+    },
+    {
+      "id": "s2",
+      "type": "current",
+      "component": "M1",
+      "terminal": "g"
+    },
+    {
+      "id": "s3",
+      "type": "device_parameter",
+      "component": "M1",
+      "parameter": "region"
+    }
+  ],
+  "measurements": [],
+  "parameter_sweeps": [
+    {
+      "component": "VG",
+      "parameter": "dc",
+      "values": [
+        -1.0,
+        -1.5,
+        -2.0,
+        -2.5
+      ]
+    }
+  ],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
+}

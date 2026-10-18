@@ -37,13 +37,14 @@ class Runner(object):
         self.entry.update({'status':'succeeded' if code==0 else 'failed','finished_at':utc(),'elapsed_s':round(time.time()-self.started,3),'exit_code':code})
         if message:self.entry['message']=message
         self.stages.append(dict(self.entry));save(os.path.join(self.evidence,'stages.json'),self.stages);self.event(self.entry)
-    def process(self,name,args,marker=None,cwd=None):
-        self.begin(name);logpath=os.path.join(self.logs,name+'.log')
+    def process(self,name,args,marker=None,cwd=None,grouped=False):
+        if not grouped:self.begin(name)
+        process_started=time.time();logpath=os.path.join(self.logs,name+'.log')
         f=open(logpath,'w');null=open('/dev/null','r')
         p=subprocess.Popen(args,cwd=cwd or self.root,env=self.env,stdin=null,stdout=f,stderr=subprocess.STDOUT,preexec_fn=os.setsid)
         timed=False
         while p.poll() is None:
-            if time.time()-self.started>self.config.get('stage_timeout_s',120):
+            if time.time()-process_started>self.config.get('stage_timeout_s',120):
                 timed=True
                 try:os.killpg(p.pid,signal.SIGTERM)
                 except OSError:pass
@@ -59,7 +60,8 @@ class Runner(object):
         if bad:
             self.end(rc if rc else 1,'timeout' if timed else 'process or required marker failed')
             raise WorkerError('STAGE_TIMEOUT' if timed else 'PROCESS_FAILED',name+' failed; see '+self.entry['log_path'])
-        self.end(rc);return text
+        if not grouped:self.end(rc)
+        return text
     def ocean(self,name,filename,marker):
         if self.task.get('template_id') == 'general_circuit':
             guarded='guarded_'+filename

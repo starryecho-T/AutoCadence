@@ -68,6 +68,55 @@ class Wire(Part):
     type: Literal['wire']
 
 
+class BJTPins(Strict):
+    c: Node
+    b: Node
+    e: Node
+
+
+class BJT(Strict):
+    id: Name
+    type: Literal['bjt']
+    pins: BJTPins
+    model: Name = 'generic_npn'
+    area: float = Field(default=1, gt=0, le=1e6)
+
+
+class MOSPins(Strict):
+    d: Node
+    g: Node
+    s: Node
+    b: Node
+
+
+class PMOS(Strict):
+    id: Name
+    type: Literal['pmos']
+    pins: MOSPins
+    model: Name = 'generic_pmos'
+    width_m: float = Field(default=10e-6, gt=0, le=1)
+    length_m: float = Field(default=1e-6, gt=0, le=1)
+    multiplicity: float = Field(default=1, gt=0, le=1e6)
+
+
+class ControlledPins(Pins):
+    cp: Node
+    cn: Node
+
+
+class VoltageControlled(Strict):
+    id: Name
+    type: Literal['vccs', 'vcvs']
+    pins: ControlledPins
+    gain: float = Field(ge=-1e12, le=1e12)
+
+
+class CurrentControlled(Part):
+    type: Literal['cccs', 'ccvs']
+    control_source: Name
+    gain: float = Field(ge=-1e12, le=1e12)
+
+
 class Sine(Strict):
     type: Literal['sine']
     offset: float = Field(default=0, ge=-1e6, le=1e6)
@@ -115,17 +164,90 @@ class Source(Part):
     waveform: Annotated[Sine | Pulse | Pwl, Field(discriminator='type')] | None = None
 
 
-Component = Annotated[Resistor | Capacitor | Inductor | Diode | Opamp | Wire | Source, Field(discriminator='type')]
+Component = Annotated[Resistor | Capacitor | Inductor | Diode | Opamp | Wire | Source | BJT | PMOS | VoltageControlled | CurrentControlled, Field(discriminator='type')]
 
 
 class DiodeModel(Strict):
     id: Name
+    type: Literal['diode'] = 'diode'
     saturation_current_a: float = Field(default=1e-14, gt=0, le=1)
     emission_coefficient: float = Field(default=1, ge=.1, le=10)
     series_resistance_ohm: float = Field(default=0, ge=0, le=1e9)
     junction_capacitance_f: float = Field(default=0, ge=0, le=1)
     transit_time_s: float = Field(default=0, ge=0, le=1)
     breakdown_voltage_v: float | None = Field(default=None, gt=0, le=1e6)
+
+
+class BJTModel(Strict):
+    id: Name
+    type: Literal['bjt']
+    polarity: Literal['npn', 'pnp'] = 'npn'
+    saturation_current_a: float = Field(default=1e-15, gt=0, le=1)
+    forward_beta: float = Field(default=100, gt=0, le=1e6)
+    reverse_beta: float = Field(default=1, gt=0, le=1e6)
+    forward_early_voltage_v: float = Field(default=100, gt=0, le=1e9)
+    forward_emission_coefficient: float = Field(default=1, ge=.1, le=10)
+    reverse_emission_coefficient: float = Field(default=1, ge=.1, le=10)
+    base_resistance_ohm: float = Field(default=0, ge=0, le=1e9)
+    collector_resistance_ohm: float = Field(default=0, ge=0, le=1e9)
+    emitter_resistance_ohm: float = Field(default=0, ge=0, le=1e9)
+    be_capacitance_f: float = Field(default=0, ge=0, le=1)
+    bc_capacitance_f: float = Field(default=0, ge=0, le=1)
+    forward_transit_time_s: float = Field(default=0, ge=0, le=1)
+
+
+class MOS1Model(Strict):
+    id: Name
+    type: Literal['mos1']
+    threshold_voltage_v: float = Field(default=-.7, lt=0, ge=-1e3)
+    transconductance_a_v2: float = Field(default=1e-4, gt=0, le=1e3)
+    channel_length_modulation_per_v: float = Field(default=.02, ge=0, le=100)
+    body_effect_sqrt_v: float = Field(default=0, ge=0, le=100)
+    surface_potential_v: float = Field(default=.7, gt=0, le=100)
+    gate_source_overlap_f_m: float = Field(default=0, ge=0, le=1)
+    gate_drain_overlap_f_m: float = Field(default=0, ge=0, le=1)
+
+
+# Untagged diode models from the original v2 contract remain valid.
+DeviceModel = DiodeModel | BJTModel | MOS1Model
+
+
+class ParameterSweep(Strict):
+    component: Name
+    parameter: Literal['dc', 'resistance_ohm', 'capacitance_f', 'inductance_h', 'gain', 'width_m', 'length_m', 'area']
+    values: list[float] = Field(min_length=1, max_length=20)
+
+
+class TwoPort(Strict):
+    port1_source: Name
+    port2_source: Name
+    reference_hz: float = Field(gt=0, le=1e12)
+    generate_equivalent: bool = True
+    relative_tolerance: float = Field(default=1e-3, ge=0, le=1)
+    absolute_tolerance_a: float = Field(default=1e-9, gt=0, le=1)
+    max_imaginary_admittance_s: float = Field(default=1e-9, ge=0, le=1)
+
+
+class CurveComparison(Strict):
+    id: Name
+    analysis: Literal['op', 'dc', 'ac', 'tran']
+    signal: Name
+    case: str = Field(default='base', pattern=r'^(?:base|s[0-9]{3})$')
+    reference_signal: Name
+    reference_case: str = Field(default='base', pattern=r'^(?:base|s[0-9]{3})$')
+    scale: float = Field(default=1, ge=-1e12, le=1e12)
+    relative_tolerance: float = Field(default=1e-3, ge=0, le=1)
+    absolute_tolerance: float = Field(default=1e-9, gt=0, le=1e6)
+
+
+class BJTTransfer(Strict):
+    transistor: Name
+    input_source: Name
+    supply_source: Name
+    base_resistor: Name
+    collector_resistor: Name
+    be_on_v: float = Field(default=.7, gt=0, le=2)
+    ce_saturation_v: float = Field(default=.2, ge=0, le=2)
 
 
 class OP(Strict):
@@ -195,9 +317,17 @@ class Current(Strict):
     id: Name
     type: Literal['current']
     component: Name
+    terminal: Literal['p', 'n', 'c', 'b', 'e', 'd', 'g', 's', 'bulk'] | None = None
 
 
-Signal = Annotated[Voltage | Current, Field(discriminator='type')]
+class DeviceParameter(Strict):
+    id: Name
+    type: Literal['device_parameter']
+    component: Name
+    parameter: Literal['region', 'gm', 'gds', 'vbe', 'vbc', 'vce', 'vgs', 'vds', 'vth', 'ib', 'ic', 'ids']
+
+
+Signal = Annotated[Voltage | Current | DeviceParameter, Field(discriminator='type')]
 
 
 class Measurement(Strict):
@@ -225,10 +355,14 @@ class CircuitTask(Strict):
     title: str = Field(default='通用电路仿真', max_length=120)
     question: str | None = Field(default=None, max_length=50000)
     components: list[Component] = Field(min_length=1, max_length=100)
-    models: list[DiodeModel] = Field(default_factory=list, max_length=30)
+    models: list[DeviceModel] = Field(default_factory=list, max_length=30)
     analyses: list[Analysis] = Field(min_length=1, max_length=4)
     signals: list[Signal] = Field(min_length=1, max_length=16)
     measurements: list[Measurement] = Field(default_factory=list, max_length=100)
+    parameter_sweeps: list[ParameterSweep] = Field(default_factory=list, max_length=2)
+    two_port: TwoPort | None = None
+    comparisons: list[CurveComparison] = Field(default_factory=list, max_length=30)
+    bjt_transfer: BJTTransfer | None = None
     temperature_c: float = Field(default=27, ge=-100, le=200)
 
     @model_validator(mode='after')
@@ -241,13 +375,15 @@ class CircuitTask(Strict):
         if len(kinds) != len(set(kinds)):
             raise ValueError('only one analysis of each type is allowed')
         parts = {c.id: c for c in self.components}
-        model_ids = {'generic_diode'} | {m.id for m in self.models}
+        model_types = {'generic_diode':'diode', 'generic_npn':'bjt', 'generic_pnp':'bjt', 'generic_pmos':'mos1', **{m.id:m.type for m in self.models}}
         nodes = {n for c in self.components for n in c.pins.model_dump().values()}
         if len({n.lower() for n in nodes}) != len(nodes):
             raise ValueError('node names differing only by case are ambiguous')
         for c in self.components:
-            if c.type == 'diode' and c.model not in model_ids:
-                raise ValueError(f'{c.id}: unknown diode model {c.model}')
+            if c.type in ('diode','bjt','pmos') and model_types.get(c.model) != {'diode':'diode','bjt':'bjt','pmos':'mos1'}[c.type]:
+                raise ValueError(f'{c.id}: missing or incompatible device model {c.model}')
+            if c.type in ('cccs','ccvs') and (c.control_source not in parts or parts[c.control_source].type != 'voltage_source'):
+                raise ValueError('Current-controlled sources require an independent voltage-source current probe')
         for a in self.analyses:
             if a.type == 'dc' and (a.source not in parts or parts[a.source].type not in ('voltage_source', 'current_source')):
                 raise ValueError('DC sweep must reference an independent source')
@@ -256,8 +392,20 @@ class CircuitTask(Strict):
         for s in self.signals:
             if s.type == 'voltage' and any(n not in nodes and n != '0' for n in (s.p, s.n)):
                 raise ValueError(f'{s.id}: unknown voltage node')
-            if s.type == 'current' and (s.component not in parts or parts[s.component].type in ('wire', 'ideal_opamp')):
-                raise ValueError(f'{s.id}: current must reference a two-terminal component, not a wire or opamp')
+            if s.type in ('current','device_parameter'):
+                part = parts.get(s.component)
+                if part is None or part.type in ('wire','ideal_opamp'):
+                    raise ValueError(f'{s.id}: invalid current/device reference')
+                if s.type == 'current':
+                    allowed = {'bjt':('c','b','e'), 'pmos':('d','g','s','bulk')}.get(part.type, ('p','n'))
+                    if s.terminal is not None and s.terminal not in allowed:
+                        raise ValueError(f'{s.id}: incompatible current terminal')
+                else:
+                    if 'ac' in kinds:
+                        raise ValueError('器件工作点参数请在不含 AC 的 OP/DC/TRAN 任务中保存；AC 任务可保存端电流和节点电压')
+                    allowed = {'bjt':('region','gm','vbe','vbc','vce','ib','ic'), 'pmos':('region','gm','gds','vgs','vds','vth','ids')}.get(part.type, ())
+                    if s.parameter not in allowed:
+                        raise ValueError(f'{s.id}: incompatible operating parameter')
         signals = {s.id for s in self.signals}
         for m in self.measurements:
             if m.analysis not in kinds or m.signal not in signals:
@@ -271,4 +419,6 @@ class CircuitTask(Strict):
                     raise ValueError(f'{m.id}: measurement coordinate outside analysis range')
         from .circuits import normalize
         normalize(self)  # deterministic topology checks before anything is queued
+        from .circuit_studies import validate_studies
+        validate_studies(self)
         return self

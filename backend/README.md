@@ -1,6 +1,6 @@
 # vai_backend — Virtuoso (Cadence) 自动化后端
 
-通用电路 v2 已实现，支持 R/C/L、二极管、独立源、理想运放和导线，以及 OP/DC/AC/TRAN。新增 `/api/v2/parse`、`/preview`、`/runs`，保留原 RC v1 接口与冻结契约文件。新接口、初始条件、连接描述、测试命令及 11 类真实回归记录见 [通用电路_v2.md](docs/通用电路_v2.md)。下文 M1～M5 描述原 RC 工作流。
+通用电路 v2 支持 R/C/L、二极管、独立源、理想运放、导线、BJT（NPN/PNP）、PMOS 和四类线性受控源，以及 OP/DC/AC/TRAN。现已加入参数扫描、Y 参数提取、独立等效仿真、BJT 分段理论和曲线误差比较。接口为 `/api/v2/parse`、`/preview`、`/runs`，保留原 RC v1 接口与冻结契约文件。用法和真实回归见 [通用电路_v2.md](docs/通用电路_v2.md) 与 [晶体管与二端口研究](docs/晶体管与二端口研究.md)。下文 M1～M5 描述原 RC 工作流。
 
 把"读题 → 建原理图 → 网表 → Spectre 仿真 → 数值校验 → 真实截图 → 证据报告"整条 RC 低通滤波器实验流水线做成可编程调用的 HTTP 服务。本地 FastAPI 负责任务编排与验收，远程 Linux 服务器上的 Cadence IC617 / MMSIM151 完成真实 EDA 执行；全程不产生任何合成数据，所有数值与截图均可溯源到当次运行的 Spectre 输出。后端无 key、纯确定性；产品应用内由用户自配 API 的 agent 通过 `skill/` 工具库驱动全流程。
 

@@ -52,7 +52,7 @@ export default function OcrSettings({ onClose }: Props) {
 
   return (
     <Modal title="AI 识别设置" onClose={onClose}>
-        <div className="sub">用于整理题目文字和识别电路图片。点击识别时，题目、补充说明及所选图片会发送给你配置的服务商；密钥保存在本机。</div>
+        <div className="sub">已内置电路设计助手：整理文字和图片，推测缺失连接与参数，并交给你逐项判断是否采用。点击识别时，题目、补充说明及所选图片会发送给你配置的服务商；密钥保存在本机。</div>
 
         <div className="preset-buttons" aria-label="识别服务商">
           {OCR_PRESETS.map((p, i) => (

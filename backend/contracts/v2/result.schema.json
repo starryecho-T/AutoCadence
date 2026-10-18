@@ -44,6 +44,238 @@
       "title": "Artifact",
       "type": "object"
     },
+    "BJT": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "bjt",
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/BJTPins"
+        },
+        "model": {
+          "default": "generic_npn",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Model",
+          "type": "string"
+        },
+        "area": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Area",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "pins"
+      ],
+      "title": "BJT",
+      "type": "object"
+    },
+    "BJTModel": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "bjt",
+          "title": "Type",
+          "type": "string"
+        },
+        "polarity": {
+          "default": "npn",
+          "enum": [
+            "npn",
+            "pnp"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
+        "saturation_current_a": {
+          "default": 1e-15,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Saturation Current A",
+          "type": "number"
+        },
+        "forward_beta": {
+          "default": 100,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Forward Beta",
+          "type": "number"
+        },
+        "reverse_beta": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Reverse Beta",
+          "type": "number"
+        },
+        "forward_early_voltage_v": {
+          "default": 100,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000.0,
+          "title": "Forward Early Voltage V",
+          "type": "number"
+        },
+        "forward_emission_coefficient": {
+          "default": 1,
+          "maximum": 10,
+          "minimum": 0.1,
+          "title": "Forward Emission Coefficient",
+          "type": "number"
+        },
+        "reverse_emission_coefficient": {
+          "default": 1,
+          "maximum": 10,
+          "minimum": 0.1,
+          "title": "Reverse Emission Coefficient",
+          "type": "number"
+        },
+        "base_resistance_ohm": {
+          "default": 0,
+          "maximum": 1000000000.0,
+          "minimum": 0,
+          "title": "Base Resistance Ohm",
+          "type": "number"
+        },
+        "collector_resistance_ohm": {
+          "default": 0,
+          "maximum": 1000000000.0,
+          "minimum": 0,
+          "title": "Collector Resistance Ohm",
+          "type": "number"
+        },
+        "emitter_resistance_ohm": {
+          "default": 0,
+          "maximum": 1000000000.0,
+          "minimum": 0,
+          "title": "Emitter Resistance Ohm",
+          "type": "number"
+        },
+        "be_capacitance_f": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Be Capacitance F",
+          "type": "number"
+        },
+        "bc_capacitance_f": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Bc Capacitance F",
+          "type": "number"
+        },
+        "forward_transit_time_s": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Forward Transit Time S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "BJTModel",
+      "type": "object"
+    },
+    "BJTPins": {
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "C",
+          "type": "string"
+        },
+        "b": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "B",
+          "type": "string"
+        },
+        "e": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "E",
+          "type": "string"
+        }
+      },
+      "required": [
+        "c",
+        "b",
+        "e"
+      ],
+      "title": "BJTPins",
+      "type": "object"
+    },
+    "BJTTransfer": {
+      "additionalProperties": false,
+      "properties": {
+        "transistor": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Transistor",
+          "type": "string"
+        },
+        "input_source": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Input Source",
+          "type": "string"
+        },
+        "supply_source": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Supply Source",
+          "type": "string"
+        },
+        "base_resistor": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Base Resistor",
+          "type": "string"
+        },
+        "collector_resistor": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Collector Resistor",
+          "type": "string"
+        },
+        "be_on_v": {
+          "default": 0.7,
+          "exclusiveMinimum": 0,
+          "maximum": 2,
+          "title": "Be On V",
+          "type": "number"
+        },
+        "ce_saturation_v": {
+          "default": 0.2,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Ce Saturation V",
+          "type": "number"
+        }
+      },
+      "required": [
+        "transistor",
+        "input_source",
+        "supply_source",
+        "base_resistor",
+        "collector_resistor"
+      ],
+      "title": "BJTTransfer",
+      "type": "object"
+    },
     "Capacitor": {
       "additionalProperties": false,
       "properties": {
@@ -128,12 +360,18 @@
           "items": {
             "discriminator": {
               "mapping": {
+                "bjt": "#/$defs/BJT",
                 "capacitor": "#/$defs/Capacitor",
+                "cccs": "#/$defs/CurrentControlled",
+                "ccvs": "#/$defs/CurrentControlled",
                 "current_source": "#/$defs/Source",
                 "diode": "#/$defs/Diode",
                 "ideal_opamp": "#/$defs/Opamp",
                 "inductor": "#/$defs/Inductor",
+                "pmos": "#/$defs/PMOS",
                 "resistor": "#/$defs/Resistor",
+                "vccs": "#/$defs/VoltageControlled",
+                "vcvs": "#/$defs/VoltageControlled",
                 "voltage_source": "#/$defs/Source",
                 "wire": "#/$defs/Wire"
               },
@@ -160,6 +398,18 @@
               },
               {
                 "$ref": "#/$defs/Source"
+              },
+              {
+                "$ref": "#/$defs/BJT"
+              },
+              {
+                "$ref": "#/$defs/PMOS"
+              },
+              {
+                "$ref": "#/$defs/VoltageControlled"
+              },
+              {
+                "$ref": "#/$defs/CurrentControlled"
               }
             ]
           },
@@ -170,7 +420,17 @@
         },
         "models": {
           "items": {
-            "$ref": "#/$defs/DiodeModel"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DiodeModel"
+              },
+              {
+                "$ref": "#/$defs/BJTModel"
+              },
+              {
+                "$ref": "#/$defs/MOS1Model"
+              }
+            ]
           },
           "maxItems": 30,
           "title": "Models",
@@ -212,6 +472,7 @@
             "discriminator": {
               "mapping": {
                 "current": "#/$defs/Current",
+                "device_parameter": "#/$defs/DeviceParameter",
                 "voltage": "#/$defs/Voltage"
               },
               "propertyName": "type"
@@ -222,6 +483,9 @@
               },
               {
                 "$ref": "#/$defs/Current"
+              },
+              {
+                "$ref": "#/$defs/DeviceParameter"
               }
             ]
           },
@@ -238,6 +502,44 @@
           "title": "Measurements",
           "type": "array"
         },
+        "parameter_sweeps": {
+          "items": {
+            "$ref": "#/$defs/ParameterSweep"
+          },
+          "maxItems": 2,
+          "title": "Parameter Sweeps",
+          "type": "array"
+        },
+        "two_port": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TwoPort"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "comparisons": {
+          "items": {
+            "$ref": "#/$defs/CurveComparison"
+          },
+          "maxItems": 30,
+          "title": "Comparisons",
+          "type": "array"
+        },
+        "bjt_transfer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BJTTransfer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "temperature_c": {
           "default": 27,
           "maximum": 200,
@@ -252,6 +554,39 @@
         "signals"
       ],
       "title": "CircuitTask",
+      "type": "object"
+    },
+    "ControlledPins": {
+      "additionalProperties": false,
+      "properties": {
+        "p": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "P",
+          "type": "string"
+        },
+        "n": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "N",
+          "type": "string"
+        },
+        "cp": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Cp",
+          "type": "string"
+        },
+        "cn": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Cn",
+          "type": "string"
+        }
+      },
+      "required": [
+        "p",
+        "n",
+        "cp",
+        "cn"
+      ],
+      "title": "ControlledPins",
       "type": "object"
     },
     "Current": {
@@ -271,6 +606,29 @@
           "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
           "title": "Component",
           "type": "string"
+        },
+        "terminal": {
+          "anyOf": [
+            {
+              "enum": [
+                "p",
+                "n",
+                "c",
+                "b",
+                "e",
+                "d",
+                "g",
+                "s",
+                "bulk"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Terminal"
         }
       },
       "required": [
@@ -279,6 +637,118 @@
         "component"
       ],
       "title": "Current",
+      "type": "object"
+    },
+    "CurrentControlled": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/Pins"
+        },
+        "type": {
+          "enum": [
+            "cccs",
+            "ccvs"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "control_source": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Control Source",
+          "type": "string"
+        },
+        "gain": {
+          "maximum": 1000000000000.0,
+          "minimum": -1000000000000.0,
+          "title": "Gain",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "pins",
+        "type",
+        "control_source",
+        "gain"
+      ],
+      "title": "CurrentControlled",
+      "type": "object"
+    },
+    "CurveComparison": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "analysis": {
+          "enum": [
+            "op",
+            "dc",
+            "ac",
+            "tran"
+          ],
+          "title": "Analysis",
+          "type": "string"
+        },
+        "signal": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Signal",
+          "type": "string"
+        },
+        "case": {
+          "default": "base",
+          "pattern": "^(?:base|s[0-9]{3})$",
+          "title": "Case",
+          "type": "string"
+        },
+        "reference_signal": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Reference Signal",
+          "type": "string"
+        },
+        "reference_case": {
+          "default": "base",
+          "pattern": "^(?:base|s[0-9]{3})$",
+          "title": "Reference Case",
+          "type": "string"
+        },
+        "scale": {
+          "default": 1,
+          "maximum": 1000000000000.0,
+          "minimum": -1000000000000.0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "relative_tolerance": {
+          "default": 0.001,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Relative Tolerance",
+          "type": "number"
+        },
+        "absolute_tolerance": {
+          "default": 1e-09,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Absolute Tolerance",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "analysis",
+        "signal",
+        "reference_signal"
+      ],
+      "title": "CurveComparison",
       "type": "object"
     },
     "DC": {
@@ -321,6 +791,52 @@
       "title": "DC",
       "type": "object"
     },
+    "DeviceParameter": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "device_parameter",
+          "title": "Type",
+          "type": "string"
+        },
+        "component": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Component",
+          "type": "string"
+        },
+        "parameter": {
+          "enum": [
+            "region",
+            "gm",
+            "gds",
+            "vbe",
+            "vbc",
+            "vce",
+            "vgs",
+            "vds",
+            "vth",
+            "ib",
+            "ic",
+            "ids"
+          ],
+          "title": "Parameter",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "component",
+        "parameter"
+      ],
+      "title": "DeviceParameter",
+      "type": "object"
+    },
     "Diode": {
       "additionalProperties": false,
       "properties": {
@@ -358,6 +874,12 @@
         "id": {
           "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
           "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "diode",
+          "default": "diode",
+          "title": "Type",
           "type": "string"
         },
         "saturation_current_a": {
@@ -481,6 +1003,109 @@
         "inductance_h"
       ],
       "title": "Inductor",
+      "type": "object"
+    },
+    "MOS1Model": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "mos1",
+          "title": "Type",
+          "type": "string"
+        },
+        "threshold_voltage_v": {
+          "default": -0.7,
+          "exclusiveMaximum": 0,
+          "minimum": -1000.0,
+          "title": "Threshold Voltage V",
+          "type": "number"
+        },
+        "transconductance_a_v2": {
+          "default": 0.0001,
+          "exclusiveMinimum": 0,
+          "maximum": 1000.0,
+          "title": "Transconductance A V2",
+          "type": "number"
+        },
+        "channel_length_modulation_per_v": {
+          "default": 0.02,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Channel Length Modulation Per V",
+          "type": "number"
+        },
+        "body_effect_sqrt_v": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Body Effect Sqrt V",
+          "type": "number"
+        },
+        "surface_potential_v": {
+          "default": 0.7,
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "title": "Surface Potential V",
+          "type": "number"
+        },
+        "gate_source_overlap_f_m": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gate Source Overlap F M",
+          "type": "number"
+        },
+        "gate_drain_overlap_f_m": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gate Drain Overlap F M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "MOS1Model",
+      "type": "object"
+    },
+    "MOSPins": {
+      "additionalProperties": false,
+      "properties": {
+        "d": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "D",
+          "type": "string"
+        },
+        "g": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "G",
+          "type": "string"
+        },
+        "s": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "S",
+          "type": "string"
+        },
+        "b": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "B",
+          "type": "string"
+        }
+      },
+      "required": [
+        "d",
+        "g",
+        "s",
+        "b"
+      ],
+      "title": "MOSPins",
       "type": "object"
     },
     "Measurement": {
@@ -641,6 +1266,98 @@
         "out"
       ],
       "title": "OpampPins",
+      "type": "object"
+    },
+    "PMOS": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "pmos",
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/MOSPins"
+        },
+        "model": {
+          "default": "generic_pmos",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Model",
+          "type": "string"
+        },
+        "width_m": {
+          "default": 1e-05,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Width M",
+          "type": "number"
+        },
+        "length_m": {
+          "default": 1e-06,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Length M",
+          "type": "number"
+        },
+        "multiplicity": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Multiplicity",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "pins"
+      ],
+      "title": "PMOS",
+      "type": "object"
+    },
+    "ParameterSweep": {
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Component",
+          "type": "string"
+        },
+        "parameter": {
+          "enum": [
+            "dc",
+            "resistance_ohm",
+            "capacitance_f",
+            "inductance_h",
+            "gain",
+            "width_m",
+            "length_m",
+            "area"
+          ],
+          "title": "Parameter",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "component",
+        "parameter",
+        "values"
+      ],
+      "title": "ParameterSweep",
       "type": "object"
     },
     "Pins": {
@@ -1107,6 +1824,60 @@
       "title": "Transient",
       "type": "object"
     },
+    "TwoPort": {
+      "additionalProperties": false,
+      "properties": {
+        "port1_source": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Port1 Source",
+          "type": "string"
+        },
+        "port2_source": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Port2 Source",
+          "type": "string"
+        },
+        "reference_hz": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000.0,
+          "title": "Reference Hz",
+          "type": "number"
+        },
+        "generate_equivalent": {
+          "default": true,
+          "title": "Generate Equivalent",
+          "type": "boolean"
+        },
+        "relative_tolerance": {
+          "default": 0.001,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Relative Tolerance",
+          "type": "number"
+        },
+        "absolute_tolerance_a": {
+          "default": 1e-09,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Absolute Tolerance A",
+          "type": "number"
+        },
+        "max_imaginary_admittance_s": {
+          "default": 1e-09,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Max Imaginary Admittance S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "port1_source",
+        "port2_source",
+        "reference_hz"
+      ],
+      "title": "TwoPort",
+      "type": "object"
+    },
     "Voltage": {
       "additionalProperties": false,
       "properties": {
@@ -1138,6 +1909,41 @@
         "p"
       ],
       "title": "Voltage",
+      "type": "object"
+    },
+    "VoltageControlled": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "vccs",
+            "vcvs"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/ControlledPins"
+        },
+        "gain": {
+          "maximum": 1000000000000.0,
+          "minimum": -1000000000000.0,
+          "title": "Gain",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "pins",
+        "gain"
+      ],
+      "title": "VoltageControlled",
       "type": "object"
     },
     "Wire": {

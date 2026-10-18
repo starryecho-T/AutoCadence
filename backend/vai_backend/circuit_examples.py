@@ -1,6 +1,68 @@
 """Reviewable explicit topologies, used by the UI and real regression runner."""
 import json
 EXAMPLES = {
+    'bjt_transfer': ('NPN 共射转移曲线与工作区', '''VIN input 0 DC 0
+VCC supply 0 DC 5
+RB input base 1k
+RC supply out 10k
+Q1 out base 0 generic_npn
+.dc VIN 0 1.2 0.005
+.save V(out) I(Q1,c) I(Q1,b)
+.transfer Q1 VIN VCC RB RC'''),
+    'pnp_bias': ('PNP 工作点', '''VCC supply 0 DC 5
+VB base 0 DC 4.3
+RC out 0 1k
+Q1 out base supply generic_pnp
+.op
+.save V(out) I(Q1,c) P(Q1,gm) P(Q1,region)'''),
+    'pmos_families': ('PMOS 输出特性与栅压扫描', '''VG gate 0 DC -2
+VD drain 0 DC 0
+M1 drain gate 0 0 generic_pmos w=10u l=1u
+.dc VD 0 -5 -0.05
+.step VG dc -1 -1.5 -2 -2.5
+.save I(M1,d) I(M1,g) P(M1,region)'''),
+    'pmos_ground_reference': ('PMOS 接 VDD 的输出特性', '''VDD source 0 DC 5
+VG gate 0 DC 3
+VD drain 0 DC 5
+M1 drain gate source source generic_pmos w=10u l=1u
+.dc VD 5 0 -0.05
+.step VG dc 4 3.5 3 2.5
+.save I(M1,d) I(M1,g) P(M1,region)'''),
+    'controlled_sources': ('四种线性受控源', '''V1 input 0 DC 1 AC 1
+Rin input sense 1k
+VS sense 0 DC 0
+E1 ev 0 input 0 2
+RE ev 0 1k
+G1 gi 0 input 0 0.001
+RG gi 0 1k
+F1 fi 0 VS 3
+RF fi 0 1k
+H1 hv 0 VS 2k
+RH hv 0 1k
+.op
+.ac 10 100k 10
+.save V(ev) V(gi) V(fi) V(hv) I(VS)'''),
+    'common_base_y': ('共基极小信号模型：Y 参数与等效验证', '''VE emitter 0 DC 0 AC 1
+VC collector 0 DC 0
+RBE emitter 0 1k
+RCE emitter collector 100k
+GM emitter collector emitter 0 0.04
+.ac 10 100k 10
+.save I(VE) I(VC)
+.twoport VE VC 1k'''),
+    'bjt_biased_y': ('有偏置 BJT：小信号二端口等效', '''VE emitter 0 DC -0.65 AC 1
+VC collector 0 DC 5
+Q1 collector 0 emitter generic_npn
+.ac 10 100k 10
+.save I(VE) I(VC)
+.twoport VE VC 1k'''),
+    'parameter_comparison': ('参数扫描与跨组曲线比较', '''V1 input 0 DC 10
+R1 input out 1k
+R2 out 0 1k
+.dc V1 0 10 0.1
+.step R1 resistance_ohm 1k 2k
+.save V(out)
+.compare repeat dc s1 s1 base s000 0.0001 1n'''),
     'divider': ('电阻分压与导线', '''V1 vin 0 DC 10
 R1 vin mid 1k
 W1 mid out

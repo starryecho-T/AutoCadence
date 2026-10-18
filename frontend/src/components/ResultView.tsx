@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Artifact, JsonValue, RunRecord } from '../types'
 import { artifactUrl } from '../api'
 import GeneralWaveforms from './GeneralWaveforms'
+import GeneralStudyResults from './GeneralStudyResults'
 import { formatNumber, METRIC_LABELS } from '../circuit'
 import { engineering } from '../units'
 import Icon from './Icon'
@@ -76,6 +77,7 @@ export default function ResultView({ run, onRestart, onEdit }: Props) {
       </div>
       }
       {warnings}
+      {run.task?.circuit && <GeneralStudyResults metrics={m} />}
       {!run.task?.circuit && arts.some(a => ['waveforms.json', 'tran_in.txt', 'tran_out.txt', 'ac_vdb_in.txt', 'ac_vdb_out.txt'].includes(a.filename ?? '')) && <GeneralWaveforms run={run} />}
       <div className="card result-card">
         <div className="tabs" role="tablist" aria-label="结果内容">{tabs.map(([id, label], index) => <button key={id} role="tab" id={`tab-${id}`} aria-controls={`panel-${id}`} aria-selected={tab === id} tabIndex={tab === id ? 0 : -1} className={tab === id ? 'active' : ''}

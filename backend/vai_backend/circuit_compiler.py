@@ -29,7 +29,11 @@ procedure(gPos(master name)
 procedure(gConnect(cv inst master name node index)
   let((point endpoint wire)
     point=dbTransformPoint(gPos(master name) inst~>transform)
-    endpoint=list(car(point)+if(equal(name "out") then 0.5 else -0.5) cadr(point))
+    cond(
+      ((member(master~>cellName list("pmos4" "nmos4" "npn" "pnp")) && member(name list("D" "S" "C" "E"))) endpoint=list(car(point) cadr(point)+if(cadr(gPos(master name))>0 then 0.5 else -0.5)))
+      ((member(master~>cellName list("pmos4" "nmos4")) && equal(name "B")) endpoint=list(car(point)+0.5 cadr(point)))
+      (t endpoint=list(car(point)+if(equal(name "out") then 0.5 else -0.5) cadr(point)))
+    )
     wire=schCreateWire(cv "draw" "orthogonal" list(point endpoint) 0.0625 0.0625 0)
     unless(wire error("WIRE_FAILED"))
     schCreateWireLabel(cv car(wire) endpoint node "lowerCenter" "R0" "stick" 0.0625 nil)
@@ -39,8 +43,15 @@ procedure(gConnect(cv inst master name node index)
 
 
 def scripts(task):
-    t = task.model_dump()
+    from .circuit_studies import study_jobs
+    jobs = study_jobs(task)
+    t = jobs[0]['task']
     c = compile_task(task)
+    # Parallel two-terminal circuits use explicit rails. More complex circuits
+    # retain the named-net layout; their connectivity is still probed/netlisted.
+    nodes = {n for d in c['devices'] for n in d['nodes']}
+    rails = (len(nodes) == 2 and '0' in nodes and len(c['devices']) <= 12 and
+             all(len(d['terminals']) == 2 and set(d['nodes']) == nodes for d in c['devices']))
     lines = [BUILD_HEADER]
     if any(d['type'] == 'ideal_opamp' for d in c['devices']):
         lines += [r'''
@@ -66,11 +77,18 @@ dbSave(stopView) dbClose(stopView)
     lines += ['when(ddGetObj(LIB "general" "schematic") error("REFUSE_EXISTING_CELL"))',
               'cv=dbOpenCellViewByType(LIB "general" "schematic" "schematic" "a")']
     expected = []
+    if rails:
+        lines.append('railPins=nil')
     for i, d in enumerate(c['devices']):
         library = 'LIB' if d['type'] == 'ideal_opamp' else '"analogLib"'
         lines += [f'master=dbOpenCellViewByType({library} {q(d["symbol"])} "symbol" "schematicSymbol" "r")',
-                  'unless(master error("SYMBOL_MISSING"))',
-                  f'inst=schCreateInst(cv master {q(d["instance"])} list({i%4*4.0} {-(i//4)*2.5}) "R0")',
+                  'unless(master error("SYMBOL_MISSING"))']
+        if rails:
+            top = d['terminals'][next(j for j, node in enumerate(d['nodes']) if node != '0')]
+            bottom = d['terminals'][d['nodes'].index('0')]
+            lines += [f'orientation=if(yCoord(gPos(master {q(top)}))>yCoord(gPos(master {q(bottom)})) then "R0" else "R180")']
+        orientation = 'orientation' if rails else '"R0"'
+        lines += [f'inst=schCreateInst(cv master {q(d["instance"])} list({i*2.0 if rails else i%4*4.0} {0 if rails else -(i//4)*2.5}) {orientation})',
                   'unless(inst error("INSTANCE_FAILED"))']
         for prop, value in d['properties'].items():
             ptype = 'int' if isinstance(value, int) else 'string'
@@ -78,11 +96,36 @@ dbSave(stopView) dbClose(stopView)
             lines.append(f'dbReplaceProp(inst {q(prop)} "{ptype}" {val})')
         for j, (term, node) in enumerate(zip(d['terminals'], d['nodes'])):
             node = 'gnd!' if node == '0' else node
-            lines.append(f'gConnect(cv inst master {q(term)} {q(node)} {j})')
+            if rails:
+                lines.append(f'railPins=cons(list({q(node)} dbTransformPoint(gPos(master {q(term)}) inst~>transform)) railPins)')
+            else:
+                lines.append(f'gConnect(cv inst master {q(term)} {q(node)} {j})')
             expected.append((d['instance'], term, node))
-    lines += ['gm=dbOpenCellViewByType("analogLib" "gnd" "symbol" "schematicSymbol" "r")',
-              'gi=schCreateInst(cv gm "GND0" list(-2 -1) "R0")',
-              'schCheck(cv)', 'dbSave(cv)', 'dbClose(cv)', 'println("BUILD_PASSED")', 'exit()']
+    lines.append('gm=dbOpenCellViewByType("analogLib" "gnd" "symbol" "schematicSymbol" "r")')
+    if rails:
+        live_node = next(n for n in nodes if n != '0')
+        lines += [r'''
+xs=mapcar(lambda((entry) xCoord(cadr(entry))) railPins)
+ys=mapcar(lambda((entry) yCoord(cadr(entry))) railPins)
+left=apply('min xs)-0.75 right=apply('max xs)+0.5
+upper=apply('max ys)+0.5 lower=apply('min ys)-0.5
+foreach(entry railPins
+  point=cadr(entry)
+  target=list(xCoord(point) if(equal(car(entry) "gnd!") then lower else upper))
+  unless(schCreateWire(cv "draw" "orthogonal" list(point target) 0.0625 0.0625 0) error("RAIL_BRANCH_FAILED"))
+)
+''', f'foreach(entry list(list({q(live_node)} upper) list("gnd!" lower))',
+                  '  point=list(left cadr(entry))',
+                  '  wire=schCreateWire(cv "draw" "orthogonal" list(point list(right cadr(entry))) 0.0625 0.0625 0)',
+                  '  unless(wire error("RAIL_FAILED"))',
+                  '  schCreateWireLabel(cv car(wire) point car(entry) "lowerCenter" "R0" "stick" 0.0625 nil)',
+                  ')',
+                  'gp=gPos(gm car(gm~>terminals)~>name)',
+                  'gi=schCreateInst(cv gm "GND0" list(left-xCoord(gp) lower-0.5-yCoord(gp)) "R0")',
+                  'unless(schCreateWire(cv "draw" "orthogonal" list(list(left lower) list(left lower-0.5)) 0.0625 0.0625 0) error("GROUND_WIRE_FAILED"))']
+    else:
+        lines.append('gi=schCreateInst(cv gm "GND0" list(-2 -1) "R0")')
+    lines += ['schCheck(cv)', 'dbSave(cv)', 'dbClose(cv)', 'println("BUILD_PASSED")', 'exit()']
     probe = ['cv=dbOpenCellViewByType("@LIB@" "general" "schematic" "schematic" "r")',
              f'unless(length(cv~>instances)=={len(c["devices"])+1} error("PROBE_INSTANCE_COUNT"))']
     for inst, term, node in expected:
@@ -105,18 +148,28 @@ exit()
     models = 'simulator lang=spectre\n' + c['model_text'] + '\n'
     if any(d['type'] == 'ideal_opamp' for d in c['devices']):
         models += 'ahdl_include "@ROOT@/ideal_opamp.va"\n'
-    export, manifest = export_program(t, c)
+    exports, manifest = [], []
+    for job in jobs:
+        job['compiled'] = compile_task(job['task'])
+        job['netlist'] = render_netlist(job['task'],job['compiled'])
+        program, entries = export_program(job['task'],job['compiled'],job['id'])
+        exports.append(program)
+        manifest.extend(entries)
+    export = EXPORT_HEADER + '\n' + '\n'.join(exports) + '\nprintln("EXPORT_DONE")\nexit()'
     return {'compiled.json': json.dumps(c), 'build.il': '\n'.join(lines), 'probe.il': '\n'.join(probe),
             'netlist.il': netlist, 'models.scs': models, 'ideal_opamp.va': IDEAL_OPAMP,
             'expected.scs': render_netlist(task, c), 'export.il': export,
-            'signals.json': json.dumps(manifest), 'capture_config.json': json.dumps(capture_config(t, c))}
+            'signals.json': json.dumps(manifest), 'jobs.json':json.dumps(jobs),
+            'capture_config.json': json.dumps(capture_config(t, c))}
 
 
 def expression(s, c):
+    if s['type'] == 'device_parameter':
+        return f'getData({q(c["instance_map"][s["component"]]+":"+s["parameter"])})'
     if s['type'] == 'current':
         part = next(p for p in c['devices'] if p['id'] == s['component'])
-        terminal = 'a' if part['type'] == 'diode' else 'p' if part['type'] == 'voltage_source' else 'sink' if part['type'] == 'current_source' else '1'
-        return f'i({q(part["instance"]+":"+terminal)})'
+        terminal, sign = current_terminal(part['type'],s.get('terminal'))
+        return ('-' if sign < 0 else '') + f'i({q(part["instance"]+":"+terminal)})'
     def v(node):
         n = c['node_map'][c['aliases'][node]]
         return '0' if n == '0' else f'v({q(n)})'
@@ -143,22 +196,37 @@ procedure(gExport(path wave complexData)
     close(f)
   )
 )
-openResults("@ROOT@/batch/psf")
 '''
 
 
-def export_program(task, c):
-    lines, manifest = [EXPORT_HEADER], []
+def current_terminal(kind, requested=None):
+    if kind in ('bjt','pmos'):
+        return ('b' if requested == 'bulk' else requested or ('c' if kind == 'bjt' else 'd')), 1
+    return ('a' if kind == 'diode' else 'p' if kind in ('voltage_source','vcvs','ccvs') else 'sink' if kind in ('current_source','vccs','cccs') else '1'), (-1 if requested == 'n' else 1)
+
+
+def signal_unit(s):
+    if s['type'] == 'voltage':
+        return 'V'
+    if s['type'] == 'current':
+        return 'A'
+    p = s['parameter']
+    return '1' if p == 'region' else 'S' if p in ('gm','gds') else 'V' if p.startswith('v') else 'A'
+
+
+def export_program(task, c, case='base'):
+    batch = 'batch' if case == 'base' else 'batch_' + case
+    lines, manifest = [f'openResults("@ROOT@/{batch}/psf")'], []
     for a in task['analyses']:
         kind = a['type']
         if kind != 'op':
             lines.append('selectResults("dc-dc")' if kind == 'dc' else f"selectResults('{kind})")
         for i, s in enumerate(task['signals']):
-            filename = f'{kind}_s{i}.txt'
+            filename = ('' if case == 'base' else case+'_') + f'{kind}_s{i}.txt'
             if kind != 'op':
                 lines.append(f'gExport("@ROOT@/evidence/{filename}" {expression(s,c)} {"t" if kind == "ac" else "nil"})')
-            manifest.append({'analysis': kind, 'signal': s['id'], 'filename': filename, 'unit': 'V' if s['type'] == 'voltage' else 'A'})
-    return '\n'.join(lines + ['println("EXPORT_DONE")', 'exit()']), manifest
+            manifest.append({'case':case, 'analysis': kind, 'signal': s['id'], 'filename': filename, 'unit': signal_unit(s)})
+    return '\n'.join(lines), manifest
 
 
 def capture_config(task, c):

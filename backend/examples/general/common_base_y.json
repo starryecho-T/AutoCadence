@@ -1,0 +1,98 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "共基极小信号模型：Y 参数与等效验证",
+  "question": "VE emitter 0 DC 0 AC 1\nVC collector 0 DC 0\nRBE emitter 0 1k\nRCE emitter collector 100k\nGM emitter collector emitter 0 0.04\n.ac 10 100k 10\n.save I(VE) I(VC)\n.twoport VE VC 1k",
+  "components": [
+    {
+      "id": "VE",
+      "pins": {
+        "p": "emitter",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 0.0,
+      "ac_magnitude": 1.0,
+      "ac_phase_deg": 0.0,
+      "waveform": null
+    },
+    {
+      "id": "VC",
+      "pins": {
+        "p": "collector",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 0.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "RBE",
+      "pins": {
+        "p": "emitter",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "RCE",
+      "pins": {
+        "p": "emitter",
+        "n": "collector"
+      },
+      "type": "resistor",
+      "resistance_ohm": 100000.0
+    },
+    {
+      "id": "GM",
+      "type": "vccs",
+      "pins": {
+        "p": "emitter",
+        "n": "collector",
+        "cp": "emitter",
+        "cn": "0"
+      },
+      "gain": 0.04
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "ac",
+      "start_hz": 10.0,
+      "stop_hz": 100000.0,
+      "points_per_decade": 10
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "current",
+      "component": "VE",
+      "terminal": null
+    },
+    {
+      "id": "s2",
+      "type": "current",
+      "component": "VC",
+      "terminal": null
+    }
+  ],
+  "measurements": [],
+  "parameter_sweeps": [],
+  "two_port": {
+    "port1_source": "VE",
+    "port2_source": "VC",
+    "reference_hz": 1000.0,
+    "generate_equivalent": true,
+    "relative_tolerance": 0.001,
+    "absolute_tolerance_a": 1e-09,
+    "max_imaginary_admittance_s": 1e-09
+  },
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
+}

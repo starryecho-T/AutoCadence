@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "template_id": "general_circuit",
-  "title": "通用电路仿真",
+  "title": "RC 高通",
   "question": "V1 vin 0 PULSE 0 1 1u 1u 1u 1m 2m AC 1\nC1 vin out 100n\nR1 out 0 1k\n.ac 10 1meg 50\n.tran 5m 1u\n.save V(vin) V(out) I(C1)",
   "components": [
     {
@@ -20,9 +20,9 @@
         "high": 1.0,
         "period_s": 0.002,
         "width_s": 0.001,
-        "rise_s": 1e-6,
-        "fall_s": 1e-6,
-        "delay_s": 1e-6
+        "rise_s": 1e-06,
+        "fall_s": 1e-06,
+        "delay_s": 1e-06
       }
     },
     {
@@ -32,7 +32,7 @@
         "n": "out"
       },
       "type": "capacitor",
-      "capacitance_f": 1.0000000000000001e-7,
+      "capacitance_f": 1.0000000000000001e-07,
       "initial_voltage_v": null
     },
     {
@@ -56,7 +56,7 @@
     {
       "type": "tran",
       "stop_s": 0.005,
-      "max_step_s": 1e-6,
+      "max_step_s": 1e-06,
       "use_initial_conditions": false,
       "initial_condition_resistance_ohm": 0.001
     }
@@ -77,9 +77,14 @@
     {
       "id": "s3",
       "type": "current",
-      "component": "C1"
+      "component": "C1",
+      "terminal": null
     }
   ],
   "measurements": [],
-  "temperature_c": 27.0
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
 }

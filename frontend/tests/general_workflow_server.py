@@ -21,6 +21,7 @@ from vai_backend.manager import RunManager, atomic_json, utc_now
 from vai_backend.models import RunResult
 from vai_backend.circuit_models import CircuitTask
 from vai_backend.pipeline import PipelineError
+from vai_backend.circuit_examples import EXAMPLES
 
 
 def fixture(task, root, emit):
@@ -29,17 +30,18 @@ def fixture(task, root, emit):
 
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--live',action='store_true',help='Run real remote EDA; consumes licenses and keeps evidence.')
+parser.add_argument('--history-example',choices=list(EXAMPLES),default='rc_highpass')
 args=parser.parse_args()
 live_data=ROOT/'backend/runs'/('general_browser_'+uuid.uuid4().hex[:10])
 if args.live:live_data.mkdir()
 context=nullcontext(str(live_data)) if args.live else TemporaryDirectory(prefix='circuit-general-browser-')
 with context as temp:
     data = Path(temp)
-    candidates = [] if args.live else sorted((ROOT/'backend/runs').glob('vai_general_rc_highpass_*/regression_result.json'),key=lambda p:p.stat().st_mtime,reverse=True)
+    candidates = [] if args.live else sorted((ROOT/'backend/runs').glob('vai_general_'+args.history_example+'_*/regression_result.json'),key=lambda p:p.stat().st_mtime,reverse=True)
     historical_id = None
     for candidate in candidates:
         result=json.loads(candidate.read_text(encoding='utf-8'))
-        if result['status'] != 'PASS':continue
+        if result['status'] != 'PASS' or result['case'] != args.history_example:continue
         historical_id=result['run_id']
         destination=data/historical_id
         shutil.copytree(candidate.parent/'evidence',destination/'evidence')

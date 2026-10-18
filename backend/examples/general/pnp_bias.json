@@ -1,0 +1,90 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "PNP 工作点",
+  "question": "VCC supply 0 DC 5\nVB base 0 DC 4.3\nRC out 0 1k\nQ1 out base supply generic_pnp\n.op\n.save V(out) I(Q1,c) P(Q1,gm) P(Q1,region)",
+  "components": [
+    {
+      "id": "VCC",
+      "pins": {
+        "p": "supply",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 5.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "VB",
+      "pins": {
+        "p": "base",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 4.3,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "RC",
+      "pins": {
+        "p": "out",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "Q1",
+      "type": "bjt",
+      "pins": {
+        "c": "out",
+        "b": "base",
+        "e": "supply"
+      },
+      "model": "generic_pnp",
+      "area": 1
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "op"
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "out",
+      "n": "0"
+    },
+    {
+      "id": "s2",
+      "type": "current",
+      "component": "Q1",
+      "terminal": "c"
+    },
+    {
+      "id": "s3",
+      "type": "device_parameter",
+      "component": "Q1",
+      "parameter": "gm"
+    },
+    {
+      "id": "s4",
+      "type": "device_parameter",
+      "component": "Q1",
+      "parameter": "region"
+    }
+  ],
+  "measurements": [],
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
+}

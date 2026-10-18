@@ -1,0 +1,83 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "参数扫描与跨组曲线比较",
+  "question": "V1 input 0 DC 10\nR1 input out 1k\nR2 out 0 1k\n.dc V1 0 10 0.1\n.step R1 resistance_ohm 1k 2k\n.save V(out)\n.compare repeat dc s1 s1 base s000 0.0001 1n",
+  "components": [
+    {
+      "id": "V1",
+      "pins": {
+        "p": "input",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 10.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
+      "waveform": null
+    },
+    {
+      "id": "R1",
+      "pins": {
+        "p": "input",
+        "n": "out"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "R2",
+      "pins": {
+        "p": "out",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "dc",
+      "source": "V1",
+      "start": 0.0,
+      "stop": 10.0,
+      "step": 0.1
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "out",
+      "n": "0"
+    }
+  ],
+  "measurements": [],
+  "parameter_sweeps": [
+    {
+      "component": "R1",
+      "parameter": "resistance_ohm",
+      "values": [
+        1000.0,
+        2000.0
+      ]
+    }
+  ],
+  "two_port": null,
+  "comparisons": [
+    {
+      "id": "repeat",
+      "analysis": "dc",
+      "signal": "s1",
+      "case": "base",
+      "reference_signal": "s1",
+      "reference_case": "s000",
+      "scale": 1,
+      "relative_tolerance": 0.0001,
+      "absolute_tolerance": 1e-09
+    }
+  ],
+  "bjt_transfer": null,
+  "temperature_c": 27
+}

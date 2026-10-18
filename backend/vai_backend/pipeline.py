@@ -67,7 +67,7 @@ def _archive(task,run_id,config):
 
 def _download(config,root,run_dir):
     command='tar -czf - -C '+shlex.quote(root)+' evidence'
-    r=subprocess.run(_ssh(config)+[command],capture_output=True,timeout=60)
+    r=subprocess.run(_ssh(config)+[command],stdin=subprocess.DEVNULL,capture_output=True,timeout=60)
     if r.returncode:raise PipelineError('ARTIFACT_TRANSFER_FAILED','download',r.stderr.decode(errors='replace')[-1000:])
     if len(r.stdout)>40*1024*1024:raise PipelineError('ARTIFACT_LIMIT','download','Artifact archive exceeds limit')
     with tarfile.open(fileobj=io.BytesIO(r.stdout),mode='r:gz') as tf:
@@ -86,7 +86,9 @@ def _download(config,root,run_dir):
 def _run_remote(config,root,run_dir,emit):
     shell='source '+shlex.quote(config['environment_script'])+' >/dev/null 2>&1; exec timeout '+str(int(config.get('run_timeout_s',600)))+' python -u '+shlex.quote(root+'/run.py')+' '+shlex.quote(root)
     args=_ssh(config)+['bash -lc '+shlex.quote(shell)]
-    proc=subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+    # No remote interaction is needed. Inheriting a desktop/server input pipe
+    # can leave Windows OpenSSH waiting for input after the remote job exits.
+    proc=subprocess.Popen(args,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
     lines=queue.Queue()
     def read():
         try:
@@ -150,12 +152,26 @@ def execute(task_dict:dict,run_dir:Path,emit)->dict:
     image_result=stage('image_validation',lambda:convert_and_validate(evidence, general=True) if task.get('template_id') == 'general_circuit' else convert_and_validate(evidence))
     (evidence/'image_validation.json').write_text(json.dumps(image_result,indent=2),encoding='utf-8')
     metrics=stage('validation',lambda:analyze(task,evidence))
+    if task.get('template_id') == 'general_circuit' and task.get('two_port') and task['two_port']['generate_equivalent'] and metrics['two_port']['equivalent_supported']:
+        from .study_analysis import finish_equivalence
+        def run_equivalent():
+            equivalent=json.loads((evidence/'equivalent_task.json').read_text(encoding='utf-8'))
+            child_id=run_id[:65]+'_yeq'
+            child_dir=evidence/'equivalent'/child_id
+            child_dir.mkdir(parents=True)
+            child_stages=[]
+            try:
+                child_result=execute(equivalent,child_dir,child_stages.append)
+                finish_equivalence(task,metrics,evidence,child_result,child_dir/'evidence')
+            finally:
+                (evidence/'equivalent_stages.json').write_text(json.dumps(child_stages,indent=2),encoding='utf-8')
+        stage('equivalent',run_equivalent)
     (evidence/'metrics.json').write_text(json.dumps(metrics,indent=2,allow_nan=False),encoding='utf-8')
     warnings=[]
     if task.get('template_id') == 'general_circuit':
         from .circuits import compile_task
         warnings.extend(compile_task(task)['warnings'])
-        spectre_log=(evidence/'spectre.out').read_text(errors='replace')
+        spectre_log='\n'.join(p.read_text(errors='replace') for p in evidence.glob('*spectre.out'))
         for line in spectre_log.splitlines():
             if re.search(r'\bWARNING\b',line,re.I) and '0 warnings' not in line.lower():
                 warnings.append(line.strip()[:500])

@@ -44,7 +44,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
         try:yield
         finally:manager.close()
     app=FastAPI(title='VAI Virtuoso Automation API',version=__version__,lifespan=lifespan,
-        description='RC planning (v1) and general R/C/L/diode/source/ideal-opamp circuits (v2), isolated real Cadence runs, verified screenshots and reports. Single worker only.')
+        description='RC planning (v1), general circuits and bounded transistor/parameter/two-port studies (v2), isolated real Cadence runs, verified screenshots and reports. Single worker only.')
     app.state.manager=manager;app.state.settings=settings
     app.add_middleware(CORSMiddleware,allow_origins=list(settings.cors_origins),allow_credentials=False,
                        allow_methods=['GET','POST','OPTIONS'],allow_headers=['Authorization','Content-Type'])
@@ -63,7 +63,9 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     deps=[Depends(authorize)]
     @app.get('/health')
     def health():
-        return {'status':'ok','version':__version__,'api_versions':['1.0','2.0'],'templates':['rc_lowpass','general_circuit'],'queue':manager.stats(),'server_check':'not_run','authentication_required':bool(settings.api_token)}
+        return {'status':'ok','version':__version__,'api_versions':['1.0','2.0'],
+                'templates':['rc_lowpass','general_circuit'],
+                'queue':manager.stats(),'server_check':'not_run','authentication_required':bool(settings.api_token)}
     @app.get('/api/v1/capabilities',dependencies=deps)
     def capabilities():
         return {'schema_version':'1.0','templates':[{'id':'rc_lowpass','label':'一阶 RC 低通','analyses':['ac','tran'],'devices':['analogLib/vpulse','analogLib/res','analogLib/cap','analogLib/gnd']}],
@@ -76,8 +78,10 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     def parse(body:ParseRequest):return parse_question(body.text)
     @app.get('/api/v2/capabilities',dependencies=deps)
     def circuit_capabilities():
-        return {'schema_version':'2.0','components':['resistor','capacitor','inductor','diode','voltage_source','current_source','ideal_opamp','wire'],
-                'analyses':['op','dc','ac','tran'],'limits':{'components':100,'signals':16,'transient_step_budget':200000},
+        return {'schema_version':'2.0','components':['resistor','capacitor','inductor','diode','voltage_source','current_source','ideal_opamp','wire','bjt','pmos','vccs','vcvs','cccs','ccvs'],
+                'analyses':['op','dc','ac','tran'],'studies':['parameter_sweeps','two_port_y','y_equivalence','curve_comparisons','bjt_transfer'],
+                'model_types':['diode','bjt_npn_pnp','pmos_mos1'],
+                'limits':{'components':100,'signals':16,'transient_step_budget':200000,'parameter_axes':2,'parameter_combinations':20},
                 'ideal_opamp':'Infinite gain linear constraint; no rail saturation or bandwidth limit.',
                 'examples':[{'id':key,'label':label,'text':text} for key,(label,text) in EXAMPLES.items()]}
     @app.post('/api/v2/parse',dependencies=deps)

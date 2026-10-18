@@ -62,7 +62,7 @@ def execute(runner, error_class):
         write(os.path.join(r.root, name), text)
         write(os.path.join(r.evidence, name), text)
     write(os.path.join(r.root, 'cds.lib'), 'INCLUDE ' + r.config['cadence_cds_lib'] + '\n')
-    for name in ['compiled.json', 'signals.json', 'ideal_opamp.va']:
+    for name in ['compiled.json', 'signals.json', 'jobs.json', 'ideal_opamp.va']:
         shutil.copy2(os.path.join(r.root, name), os.path.join(r.evidence, name))
     r.end()
     r.ocean('build', 'build.il', 'BUILD_PASSED')
@@ -82,21 +82,31 @@ def execute(runner, error_class):
     except ValueError as exc:
         raise error_class('NETLIST_MISMATCH', str(exc))
     save(os.path.join(r.evidence, 'netlist_checks.json'), checks)
-    batch = os.path.join(r.root, 'batch'); os.mkdir(batch)
-    # Devices/parameters are verified above. Use canonical nodes and explicit
-    # analysis/model settings instead of ADE's incidental default control lines.
-    executed = open(os.path.join(r.root, 'expected.scs')).read().replace('"ideal_opamp.va"', '"' + r.root + '/ideal_opamp.va"')
-    write(os.path.join(batch, 'input.scs'), executed)
-    write(os.path.join(r.evidence, 'input.scs'), executed)
-    save(os.path.join(r.evidence, 'provenance.json'), {'run_id': r.run_id, 'source_sha256': sha(original), 'executed_sha256': sha(os.path.join(batch, 'input.scs')), 'source': 'Confirmed circuit IR; all device connections and specified parameters checked against Cadence netlist; explicit requested models and analyses.'})
+    jobs = json.load(open(os.path.join(r.root,'jobs.json')))
+    provenance = []
+    for job in jobs:
+        cid = job['id']; prefix = '' if cid == 'base' else cid+'_'
+        batch = os.path.join(r.root, 'batch' if cid == 'base' else 'batch_'+cid)
+        os.mkdir(batch)
+        executed = job['netlist'].replace('"ideal_opamp.va"', '"' + r.root + '/ideal_opamp.va"')
+        validate_netlist(executed,job['compiled'])
+        write(os.path.join(batch,'input.scs'),executed)
+        write(os.path.join(r.evidence,prefix+'input.scs'),executed)
+        provenance.append({'case':cid,'parameters':job['parameters'],'executed_sha256':sha(os.path.join(batch,'input.scs'))})
+    save(os.path.join(r.evidence, 'provenance.json'), {'run_id': r.run_id, 'source_sha256': sha(original), 'executed_sha256':provenance[0]['executed_sha256'], 'cases':provenance, 'source': 'Cadence baseline topology/parameters verified; subsequent bounded parameter variants and explicit two-port test benches generated from validated IR.'})
     r.end()
-    r.process('spectre', [r.config['spectre_bin'], 'input.scs', '+escchars', '-format', 'psfascii', '-raw', 'psf', '+log', 'spectre.out'], cwd=batch)
-    log = open(os.path.join(batch, 'spectre.out')).read()
-    shutil.copy2(os.path.join(batch, 'spectre.out'), os.path.join(r.evidence, 'spectre.out'))
-    if 'spectre completes with 0 errors' not in log:
-        raise error_class('SPECTRE_ERRORS', 'Spectre did not complete without errors')
-    if any(a['type']=='op' for a in r.task['analyses']):
-        export_operating_point(r, compiled, error_class)
+    r.begin('spectre')
+    for job in jobs:
+        cid = job['id']; prefix = '' if cid == 'base' else cid+'_'
+        batch = os.path.join(r.root, 'batch' if cid == 'base' else 'batch_'+cid)
+        r.process('spectre' if cid == 'base' else 'spectre_'+cid, [r.config['spectre_bin'], 'input.scs', '+escchars', '-format', 'psfascii', '-raw', 'psf', '+log', 'spectre.out'], cwd=batch,grouped=True)
+        log = open(os.path.join(batch, 'spectre.out')).read()
+        shutil.copy2(os.path.join(batch,'spectre.out'),os.path.join(r.evidence,prefix+'spectre.out'))
+        if 'spectre completes with 0 errors' not in log:
+            raise error_class('SPECTRE_ERRORS',cid+': Spectre did not complete without errors')
+        if any(a['type']=='op' for a in job['task']['analyses']):
+            export_operating_point(r,job['compiled'],error_class,job['task'],batch,prefix)
+    r.end()
     r.ocean('export', 'export.il', 'EXPORT_DONE')
     r.begin('capture')
     from capture import capture
@@ -106,24 +116,33 @@ def execute(runner, error_class):
     r.end()
 
 
-def export_operating_point(r, compiled, error_class):
+def current_terminal(kind, requested):
+    if kind in ('bjt','pmos'):
+        return ('b' if requested == 'bulk' else requested or ('c' if kind == 'bjt' else 'd')), 1
+    return ('a' if kind == 'diode' else 'p' if kind in ('voltage_source','vcvs','ccvs') else 'sink' if kind in ('current_source','vccs','cccs') else '1'), (-1 if requested == 'n' else 1)
+
+
+def export_operating_point(r, compiled, error_class, task=None, batch=None, prefix=''):
     """Read named scalar PSF directly, independent of OCEAN's DC aliases."""
     from run import write
-    path = os.path.join(r.root,'batch','psf','dcOp.dc')
+    task = task or r.task
+    path = os.path.join(batch or os.path.join(r.root,'batch'),'psf','dcOp.dc')
     source = open(path).read()
-    shutil.copy2(path,os.path.join(r.evidence,'operating_point.psfascii'))
-    values = dict((name,float(value)) for name,value in re.findall(r'^"([^"\n]+)" "[VI]" ([+\-\d.eE]+)', source, re.M))
+    shutil.copy2(path,os.path.join(r.evidence,prefix+'operating_point.psfascii'))
+    values = dict((name,float(value)) for name,value in re.findall(r'^"([^"\n]+)" "[^"\n]+" ([+\-\d.eE]+)', source, re.M))
     def voltage(node):
         name = compiled['node_map'][compiled['aliases'][node]]
         return 0.0 if name == '0' else values[name]
-    for i,s in enumerate(r.task['signals']):
+    for i,s in enumerate(task['signals']):
         try:
             if s['type']=='voltage':
                 value = voltage(s['p'])-voltage(s['n'])
+            elif s['type']=='device_parameter':
+                value = values[compiled['instance_map'][s['component']]+':'+s['parameter']]
             else:
                 part = next(d for d in compiled['devices'] if d['id']==s['component'])
-                terminal = 'a' if part['type']=='diode' else 'p' if part['type']=='voltage_source' else 'sink' if part['type']=='current_source' else '1'
-                value = values[part['instance']+':'+terminal]
+                terminal, sign = current_terminal(part['type'],s.get('terminal'))
+                value = sign * values[part['instance']+':'+terminal]
         except KeyError:
             raise error_class('MISSING_SIGNAL','Operating point signal missing: '+s['id'])
-        write(os.path.join(r.evidence,'op_s%d.txt'%i),'0 %.15e\n'%value)
+        write(os.path.join(r.evidence,prefix+'op_s%d.txt'%i),'0 %.15e\n'%value)

@@ -40,6 +40,7 @@ try {
   })
   await page.goto(info.url)
   await page.getByText(/后端在线/).waitFor()
+  await page.getByRole('button', { name: 'RC 低通题目', exact: true }).click()
   await page.getByRole('button', { name: '设置', exact: true }).filter({ visible: true }).click()
   await page.getByRole('dialog', { name: 'AI 识别设置' }).waitFor()
   await page.keyboard.press('Escape')

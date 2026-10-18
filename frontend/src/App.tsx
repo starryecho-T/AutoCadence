@@ -45,6 +45,7 @@ export default function App() {
     void getHealth(controller.signal).then(async (info) => {
       if (controller.signal.aborted) return
       setHealth(info)
+      setDraft(current => current.mode || current.text || current.image ? current : { ...current, mode: info.demo ? 'rc' : 'general' })
       if (!info.demo) {
         const runs = await listRuns(controller.signal)
         if (!controller.signal.aborted) setHistory((current) => mergeRuns(runs, current))
@@ -115,7 +116,7 @@ export default function App() {
     setPollError('')
     setRun(null)
     setParse(null)
-    setDraft({ text: '' })
+    setDraft({ text: '', mode: isDemoMode() ? 'rc' : 'general' })
     setNotice('')
     setPhase('input')
   }
@@ -190,7 +191,7 @@ export default function App() {
           {health === null ? <span className="status-chip">连接中…</span> : demo ? <span className="status-chip demo">演示模式 · 后端未连接</span> : <span className="status-chip ok" title={health.version ? `服务版本 ${health.version}` : undefined}>后端在线{Number(health.queue) > 0 ? ` · 排队 ${health.queue}` : ''}</span>}
         </div>
       </header>
-      <main className="workspace"><header className="page-heading"><div><h1>{headings[phase][0]}</h1><p>{headings[phase][1]}</p></div><span className="type-badge">{general ? 'R · C · L · D · 电源 · 理想运放' : '一阶 RC 低通'}</span></header>
+      <main className="workspace"><header className="page-heading"><div><h1>{headings[phase][0]}</h1><p>{headings[phase][1]}</p></div><span className="type-badge">{general ? '通用电路 · 晶体管 · 二端口' : '一阶 RC 低通'}</span></header>
         <nav className="steps" aria-label="仿真步骤">{['输入题目', '确认参数', '仿真与结果'].map((label, index) => <div key={label} className={`step ${index === currentStep ? 'active' : index < currentStep ? 'done' : ''}`} aria-current={index === currentStep ? 'step' : undefined}>
           <span className="step-number">{index < currentStep ? <Icon name="check" /> : index + 1}</span><span>{label}</span>{index < 2 && <span className="step-line" />}
         </div>)}</nav>

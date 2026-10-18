@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "mode": "real_browser_to_v2_to_remote_eda",
+  "remote_simulation": true,
+  "run_id": "vai_20261018_085735_af6423c0dd3e",
+  "measurement": {
+    "id": "output_5v",
+    "analysis": "op",
+    "signal": "s1",
+    "operation": "final",
+    "representation": "real",
+    "at": null,
+    "minimum": 4.9999,
+    "maximum": 5.0001,
+    "value": 5,
+    "status": "PASS"
+  },
+  "stages": 13,
+  "browser_errors": [],
+  "checked_at": "2026-10-18T08:58:58.327211+00:00",
+  "evidence_directory": "runs/general_browser_11682694e4/vai_20261018_085735_af6423c0dd3e",
+  "protected_unchanged": true,
+  "evidence_sha256": {
+    "task.json": "39f7f42884d21cfb5c3ccd990de9321bbd43266ba8c32d1bb74a87bd4bf4dc48",
+    "input.scs": "54fb62a283a375d78d309171080ed88ee7a1b029e85c0780e80814f0a4251db9",
+    "metrics.json": "0b8c292f675304f65b8b5e4897ba0afc7855ae4cb61901d29bc6165dd23b73b8",
+    "schematic_window.png": "473a07c81393e25f488f99c012cb6837d990a2d776f9d858ca0110b66b5e1338",
+    "waveform_window.png": "4e05cfd9524a99aee414ea3e48faf057347853f5258093f713607c215606d147",
+    "report.html": "b3ce19062c73ab8f8c27f91639cf632c39cfb2036f57e6f3813e3455e69d6ddb"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "template_id": "general_circuit",
-  "title": "PWL 与电容初始条件",
+  "title": "分段线性电源与电容初始电压",
   "question": null,
   "components": [
     {
@@ -11,9 +11,9 @@
         "n": "0"
       },
       "type": "voltage_source",
-      "dc": 0.0,
-      "ac_magnitude": 0.0,
-      "ac_phase_deg": 0.0,
+      "dc": 0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
       "waveform": {
         "type": "pwl",
         "points": [
@@ -52,7 +52,7 @@
         "n": "0"
       },
       "type": "capacitor",
-      "capacitance_f": 1e-6,
+      "capacitance_f": 1e-06,
       "initial_voltage_v": 1.0
     }
   ],
@@ -61,7 +61,7 @@
     {
       "type": "tran",
       "stop_s": 0.004,
-      "max_step_s": 1e-6,
+      "max_step_s": 1e-06,
       "use_initial_conditions": true,
       "initial_condition_resistance_ohm": 0.001
     }
@@ -76,9 +76,14 @@
     {
       "id": "current",
       "type": "current",
-      "component": "C1"
+      "component": "C1",
+      "terminal": null
     }
   ],
   "measurements": [],
-  "temperature_c": 27.0
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
 }

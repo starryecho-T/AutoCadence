@@ -2624,7 +2624,18 @@ input,select,textarea,summary {
 
 .wave-mode {
   font-size: 11px;
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.wave-mode select {
+  margin-left: 0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .wave-section {
@@ -2824,3 +2835,5 @@ input,select,textarea,summary {
     width: 100%;
   }
 }
+
+.proposal-list{margin-top:22px}.proposal-list>h3{font-size:14px}.proposal-card{border:1px solid var(--line);border-radius:10px;padding:18px;margin:12px 0;background:#fafcfe}.proposal-card.yes{border-color:#a8d3bd;background:#f5fbf8}.proposal-card.no{border-color:#e4c49b;background:#fffbf4}.proposal-card>p{font-size:13px;line-height:1.9;white-space:pre-wrap;margin:12px 0}.proposal-card .proposal-reason{font-size:11px;color:var(--ink-soft)}.proposal-actions{display:flex;gap:10px;flex-wrap:wrap}.proposal-actions button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:white}.candidate-code{margin-top:20px;padding-top:14px;border-top:1px solid var(--line);font-size:12px}.proposal-card .issue-title>span{border-radius:50%;background:#e6eefb;color:var(--accent);padding:2px 8px}.proposal-card .issue-title strong{font-size:13px;font-weight:600}.extraction-card>.sub{white-space:pre-wrap}

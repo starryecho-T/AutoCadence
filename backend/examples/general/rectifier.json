@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "template_id": "general_circuit",
-  "title": "通用电路仿真",
+  "title": "二极管半波整流",
   "question": "V1 vin 0 SINE 0 5 50\nD1 vin out\nR1 out 0 1k\nC1 out 0 100u\n.tran 200m 20u\n.save V(vin) V(out) I(D1)",
   "components": [
     {
@@ -12,15 +12,15 @@
       },
       "type": "voltage_source",
       "dc": 0.0,
-      "ac_magnitude": 0.0,
-      "ac_phase_deg": 0.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
       "waveform": {
         "type": "sine",
         "offset": 0.0,
         "amplitude": 5.0,
         "frequency_hz": 50.0,
-        "phase_deg": 0.0,
-        "delay_s": 0.0
+        "phase_deg": 0,
+        "delay_s": 0
       }
     },
     {
@@ -48,7 +48,7 @@
         "n": "0"
       },
       "type": "capacitor",
-      "capacitance_f": 0.00009999999999999999,
+      "capacitance_f": 9.999999999999999e-05,
       "initial_voltage_v": null
     }
   ],
@@ -57,7 +57,7 @@
     {
       "type": "tran",
       "stop_s": 0.2,
-      "max_step_s": 0.000019999999999999998,
+      "max_step_s": 1.9999999999999998e-05,
       "use_initial_conditions": false,
       "initial_condition_resistance_ohm": 0.001
     }
@@ -78,9 +78,14 @@
     {
       "id": "s3",
       "type": "current",
-      "component": "D1"
+      "component": "D1",
+      "terminal": null
     }
   ],
   "measurements": [],
-  "temperature_c": 27.0
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
 }

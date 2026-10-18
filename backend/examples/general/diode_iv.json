@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "template_id": "general_circuit",
-  "title": "通用电路仿真",
+  "title": "二极管直流扫描",
   "question": "V1 vin 0 DC 0\nR1 vin a 100\nD1 a 0\n.dc V1 -1 1 0.01\n.save V(a) I(D1)",
   "components": [
     {
@@ -12,8 +12,8 @@
       },
       "type": "voltage_source",
       "dc": 0.0,
-      "ac_magnitude": 0.0,
-      "ac_phase_deg": 0.0,
+      "ac_magnitude": 0,
+      "ac_phase_deg": 0,
       "waveform": null
     },
     {
@@ -55,9 +55,14 @@
     {
       "id": "s2",
       "type": "current",
-      "component": "D1"
+      "component": "D1",
+      "terminal": null
     }
   ],
   "measurements": [],
-  "temperature_c": 27.0
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
 }

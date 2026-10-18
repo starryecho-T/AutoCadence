@@ -100,9 +100,18 @@ def downsample(rows, limit=1000):
 def analyze(task, evidence_dir):
     spec = CircuitTask.model_validate(task).model_dump()
     root = Path(evidence_dir)
+    from .circuit_studies import study_jobs
+    from .study_analysis import compare_curves, extract_two_port, bjt_transfer_analysis, update_requirements
+    jobs = study_jobs(spec)
+    by_case = {j['id']:j for j in jobs}
+    from .circuit_compiler import export_program
+    expected_entries = {}
+    for job in jobs:
+        _, entries = export_program(job['task'],compile_task(job['task']),job['id'])
+        expected_entries.update({(job['id'],e['analysis'],e['signal']):e for e in entries})
     manifest = json.loads((root/'signals.json').read_text(encoding='utf-8'))
-    expected = {(a['type'], s['id']) for a in spec['analyses'] for s in spec['signals']}
-    if {(x['analysis'], x['signal']) for x in manifest} != expected or len(manifest) != len(expected):
+    expected = {(j['id'],a['type'], s['id']) for j in jobs for a in j['task']['analyses'] for s in j['task']['signals']}
+    if {(x.get('case','base'),x['analysis'], x['signal']) for x in manifest} != expected or len(manifest) != len(expected):
         fail('Signal manifest does not match requested circuit')
     waves, summaries, plot, checks = {}, {}, [], []
     axes = {}
@@ -110,9 +119,12 @@ def analyze(task, evidence_dir):
         filename = entry['filename']
         if Path(filename).name != filename or not filename.endswith('.txt'):
             fail('Invalid waveform artifact path')
-        kind, sid = entry['analysis'], entry['signal']
+        kind, sid, cid = entry['analysis'], entry['signal'], entry.get('case','base')
+        expected_entry = expected_entries[(cid,kind,sid)]
+        if entry.get('unit') != expected_entry['unit'] or filename != expected_entry['filename']:
+            fail('Signal manifest filename or unit differs from the study plan')
         rows = read_wave(root/filename, kind == 'ac')
-        a = next(a for a in spec['analyses'] if a['type'] == kind)
+        a = next(a for a in by_case[cid]['task']['analyses'] if a['type'] == kind)
         if kind == 'op':
             if len(rows) != 1:
                 fail('Operating point must have one value')
@@ -122,27 +134,40 @@ def analyze(task, evidence_dir):
             if len(rows) < 2 or not math.isclose(rows[0][0], start, rel_tol=1e-6, abs_tol=1e-15) or not math.isclose(rows[-1][0], stop, rel_tol=1e-6, abs_tol=1e-15):
                 fail(f'{kind}/{sid}: exported range is incomplete')
         axis = [r[0] for r in rows]
-        if kind in axes and axes[kind] != axis:
+        if (cid,kind) in axes and axes[(cid,kind)] != axis:
             fail(f'{kind}: signal sample axes differ')
-        axes[kind] = axis
-        waves[(kind, sid)] = rows
-        summaries[f'{kind}.{sid}'] = {'samples': len(rows), 'unit': entry['unit'], 'final_real': rows[-1][1], 'artifact': filename}
-        plot.append({**entry, 'rows': downsample(rows), 'original_samples': len(rows)})
-        checks.append({'name': f'{kind}.{sid}', 'status': 'PASS', 'actual': len(rows), 'expected': 'finite, aligned data covering requested range'})
+        axes[(cid,kind)] = axis
+        waves[(cid,kind, sid)] = rows
+        key = ('' if cid == 'base' else cid+'.')+f'{kind}.{sid}'
+        summaries[key] = {'samples': len(rows), 'unit': entry['unit'], 'final_real': rows[-1][1], 'artifact': filename}
+        plot.append({**entry, 'case':cid, 'parameters':by_case[cid]['parameters'], 'role':by_case[cid]['role'], 'rows': downsample(rows), 'original_samples': len(rows)})
+        checks.append({'name': key, 'status': 'PASS', 'actual': len(rows), 'expected': 'finite, aligned data covering requested range'})
     measurements = []
-    for m in spec['measurements']:
-        result = evaluate(waves[(m['analysis'], m['signal'])], m)
-        bounded = m['minimum'] is not None or m['maximum'] is not None
-        passed = (m['minimum'] is None or result >= m['minimum']) and (m['maximum'] is None or result <= m['maximum'])
-        measurements.append({**m, 'value': result, 'status': ('PASS' if passed else 'FAIL') if bounded else 'MEASURED'})
-    requested = [m for m in measurements if m['status'] != 'MEASURED']
-    status = 'NOT_SPECIFIED' if not requested else 'PASS' if all(m['status'] == 'PASS' for m in requested) else 'FAIL'
+    for j in jobs:
+        if j['role'] not in ('baseline','parameter_sweep'):
+            continue
+        for m in spec['measurements']:
+            result = evaluate(waves[(j['id'],m['analysis'], m['signal'])], m)
+            bounded = m['minimum'] is not None or m['maximum'] is not None
+            passed = (m['minimum'] is None or result >= m['minimum']) and (m['maximum'] is None or result <= m['maximum'])
+            measurements.append({**m, 'case':j['id'], 'value': result, 'status': ('PASS' if passed else 'FAIL') if bounded else 'MEASURED'})
+    comparisons = [{**c, **compare_curves(waves[(c['case'],c['analysis'],c['signal'])],waves[(c['reference_case'],c['analysis'],c['reference_signal'])],c['relative_tolerance'],c['absolute_tolerance'],c['scale'])} for c in spec['comparisons']]
+    extra = {}
+    if spec['two_port']:
+        extra['two_port'] = extract_two_port(spec,waves,root)
+    if spec['bjt_transfer']:
+        extra['bjt_transfer'] = bjt_transfer_analysis(spec,jobs,waves,plot)
+    if comparisons:
+        (root/'comparison.json').write_text(json.dumps(comparisons,ensure_ascii=False,indent=2),encoding='utf-8')
     (root/'waveforms.json').write_text(json.dumps({'source': 'Spectre numeric exports from this run', 'series': plot}, allow_nan=False), encoding='utf-8')
-    return {'execution_status': 'succeeded', 'validation_status': 'PASS', 'requirements_status': status,
+    result = {'execution_status': 'succeeded', 'validation_status': 'PASS',
             'component_count': len(compile_task(task)['devices']), 'checks': checks,
-            'signals': summaries, 'measurements': measurements,
+            'signals': summaries, 'measurements': measurements, 'comparisons':comparisons,
+            'cases':[{k:j[k] for k in ('id','role','parameters')} for j in jobs], **extra,
             'waveform_source': 'Spectre exports; plot data is downsampled, measurements use all samples.',
             'limitations': compile_task(task)['warnings'] + ['通用校验确认执行与数据完整性；未指定的题目指标不会自动判定达标。']}
+    update_requirements(result)
+    return result
 
 
 def generate_report(task, metrics, evidence_dir, run_id, warnings):
@@ -156,6 +181,34 @@ def generate_report(task, metrics, evidence_dir, run_id, warnings):
         content.append(f'<tr><td>{esc(m["id"])}</td><td>{esc(m["value"])}</td><td>{m["status"]}</td></tr>')
         md.append(f'- {m["id"]}: {m["value"]} ({m["status"]})')
     content.append('</table>')
+    tp = metrics.get('two_port')
+    if tp:
+        content.append(f'<h2>二端口 Y 参数</h2><p>参考频率 {esc(tp["reference_hz"])} Hz；单位 S；电流正方向为流入被测网络。保持原 DC 偏置的 AC 小信号结果。</p><table><tr><th></th><th>V1</th><th>V2</th></tr>')
+        md += ['', '## 二端口 Y 参数', '', f'参考频率 {tp["reference_hz"]} Hz；单位 S；I = YV，电流流入网络。', '', '| | V1 | V2 |', '|---|---|---|']
+        for i,row in enumerate(tp['reference_matrix']):
+            values = [f'{z["real"]:.9g} {z["imag"]:+.9g}j' for z in row]
+            content.append(f'<tr><th>I{i+1}</th>'+''.join(f'<td>{esc(v)}</td>' for v in values)+'</tr>')
+            md.append(f'| I{i+1} | '+ ' | '.join(values)+' |')
+        content.append('</table>')
+        eq = tp.get('equivalence')
+        if eq:
+            content.append(f'<p>独立等效电路验证：{esc(eq["status"])}。{esc(eq.get("reason",eq.get("scope","")))}</p>')
+            md += ['', f'独立等效电路验证：{eq["status"]}。{eq.get("reason",eq.get("scope",""))}']
+    for item in metrics.get('bjt_transfer',[]):
+        text = f'{item["case"]}：分段理论与仿真最大误差 {item["max_absolute_error_v"]:.7g} V，RMSE {item["rmse_v"]:.7g} V；理论饱和边界 {item["theory_saturation_boundary_v"]:.7g} V。'
+        content.append('<h2>NPN 共射转移分析</h2><p>'+esc(text)+'</p><p>'+esc(item['scope'])+'</p>')
+        md += ['', '## NPN 共射转移分析', '', text, item['scope']]
+        for interval in item['regions']:
+            label = f'{interval["region"]}: Vin {interval["start_v"]:.7g} ～ {interval["stop_v"]:.7g} V'
+            content.append('<p>'+esc(label)+'</p>');md.append('- '+label)
+    comparisons = metrics.get('comparisons',[]) + (tp.get('equivalence',{}).get('checks',[]) if tp else [])
+    if comparisons:
+        content.append('<h2>曲线比较</h2><table><tr><th>比较项</th><th>最大绝对误差</th><th>RMSE</th><th>容差比</th><th>判定</th></tr>')
+        for c in comparisons:
+            values = [c.get('id',c.get('signal','')),c['max_absolute_error'],c['rmse'],c['max_tolerance_ratio'],c['status']]
+            content.append('<tr>'+''.join('<td>'+esc(v)+'</td>' for v in values)+'</tr>')
+            md.append('- '+': '.join(str(v) for v in values))
+        content.append('</table>')
     for name in ('schematic_window.png', 'waveform_window.png'):
         data = (root/name).read_bytes()
         if not data.startswith(b'\x89PNG\r\n\x1a\n'):

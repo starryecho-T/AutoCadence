@@ -17,7 +17,8 @@ def parse_circuit(text):
     text = text.strip()
     if text.startswith('{'):
         return CircuitTask.model_validate(json.loads(text))
-    components, analyses, signals = [], [], []
+    components, analyses, signals, sweeps, comparisons = [], [], [], [], []
+    studies = {}
     for index, line in enumerate(text.splitlines(), 1):
         line = line.split(';', 1)[0].strip()
         if not line or line.startswith('*'):
@@ -37,13 +38,29 @@ def parse_circuit(text):
                     analyses.append({'type': 'tran', 'stop_s': value(args[0]), 'max_step_s': value(args[1]), 'use_initial_conditions': len(args) == 3})
                 elif command == '.dc' and len(args) == 4:
                     analyses.append({'type': 'dc', 'source': args[0], 'start': value(args[1]), 'stop': value(args[2]), 'step': value(args[3])})
+                elif command == '.step' and len(args) >= 3:
+                    sweeps.append({'component':args[0], 'parameter':args[1], 'values':[value(x) for x in args[2:]]})
+                elif command == '.twoport' and len(args) in (3,4):
+                    if 'two_port' in studies or len(args) == 4 and args[3].lower() != 'extract_only':
+                        raise ValueError('二端口指令只允许一次；可选末尾 extract_only 仅提取')
+                    studies['two_port'] = {'port1_source':args[0], 'port2_source':args[1], 'reference_hz':value(args[2]), 'generate_equivalent':len(args)==3}
+                elif command == '.transfer' and len(args) == 5:
+                    if 'bjt_transfer' in studies:
+                        raise ValueError('只允许一个 BJT 转移分析')
+                    studies['bjt_transfer'] = dict(zip(('transistor','input_source','supply_source','base_resistor','collector_resistor'),args))
+                elif command == '.compare' and len(args) == 8:
+                    comparisons.append(dict(zip(('id','analysis','signal','reference_signal','case','reference_case'),args[:6]),relative_tolerance=value(args[6]),absolute_tolerance=value(args[7])))
                 elif command == '.save' and args:
                     for token in args:
-                        m = re.fullmatch(r'([VIvi])\((\w+)(?:,(\w+))?\)', token)
+                        m = re.fullmatch(r'([VIPvip])\((\w+)(?:,(\w+))?\)', token)
                         if not m:
-                            raise ValueError('测量写法为 V(node)、V(p,n) 或 I(component)')
+                            raise ValueError('测量写法为 V(node)、V(p,n)、I(component[,terminal]) 或 P(component,parameter)')
                         sid = f's{len(signals)+1}'
-                        signals.append({'id': sid, 'type': 'voltage', 'p': m[2], 'n': m[3] or '0'} if m[1].lower() == 'v' else {'id': sid, 'type': 'current', 'component': m[2]})
+                        if m[1].lower() == 'p' and not m[3]:
+                            raise ValueError('P 要求指定 region/gm 等参数')
+                        signals.append({'id': sid, 'type': 'voltage', 'p': m[2], 'n': m[3] or '0'} if m[1].lower() == 'v' else
+                            {'id':sid, 'type':'device_parameter','component':m[2],'parameter':m[3]} if m[1].lower() == 'p' else
+                            {'id': sid, 'type': 'current', 'component': m[2], 'terminal':m[3]})
                 else:
                     raise ValueError('未知指令或参数数量错误')
                 continue
@@ -57,6 +74,23 @@ def parse_circuit(text):
                     c['initial_voltage_v' if kind == 'C' else 'initial_current_a'] = value(args[3][3:])
             elif kind == 'D' and len(args) in (2, 3):
                 c = {'id': name, 'type': 'diode', 'pins': {'a': args[0], 'k': args[1]}, 'model': args[2] if len(args) == 3 else 'generic_diode'}
+            elif kind == 'Q' and len(args) in (3,4):
+                c = {'id':name,'type':'bjt','pins':dict(zip(('c','b','e'),args[:3])), 'model':args[3] if len(args)==4 else 'generic_npn'}
+            elif kind == 'M' and len(args) >= 4:
+                c = {'id':name,'type':'pmos','pins':dict(zip(('d','g','s','b'),args[:4]))}
+                tail = args[4:]
+                if tail and '=' not in tail[0]:
+                    c['model'] = tail[0]; tail = tail[1:]
+                for arg in tail:
+                    k, v = arg.split('=',1)
+                    k = {'w':'width_m','l':'length_m','m':'multiplicity'}.get(k.lower())
+                    if k is None or k in c:
+                        raise ValueError('PMOS 仅支持唯一的 w/l/m 参数')
+                    c[k] = value(v)
+            elif kind in 'GE' and len(args) == 5:
+                c = {'id':name,'type':'vccs' if kind=='G' else 'vcvs','pins':dict(zip(('p','n','cp','cn'),args[:4])),'gain':value(args[4])}
+            elif kind in 'FH' and len(args) == 4:
+                c = {'id':name,'type':'cccs' if kind=='F' else 'ccvs','pins':dict(zip(('p','n'),args[:2])),'control_source':args[2],'gain':value(args[3])}
             elif kind in 'OU' and len(args) == 3:
                 c = {'id': name, 'type': 'ideal_opamp', 'pins': dict(zip(('plus', 'minus', 'out'), args))}
             elif kind == 'W' and len(args) == 2:
@@ -89,4 +123,5 @@ def parse_circuit(text):
             raise ValueError(f'第 {index} 行：{exc}') from exc
     if not analyses or not signals:
         raise ValueError('请显式提供分析指令和 .save 测量节点/支路；不会自动猜测')
-    return CircuitTask.model_validate({'components': components, 'analyses': analyses, 'signals': signals, 'question': text})
+    return CircuitTask.model_validate({'components': components, 'analyses': analyses, 'signals': signals, 'question': text,
+                                      'parameter_sweeps':sweeps,'comparisons':comparisons, **studies})

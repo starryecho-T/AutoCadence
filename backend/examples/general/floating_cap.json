@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "template_id": "general_circuit",
-  "title": "通用电路仿真",
+  "title": "浮置电容初始电压",
   "question": "R1 a 0 1k\nR2 b 0 1k\nC1 a b 1u ic=1\n.tran 20m 10u ic\n.save V(a,b) V(a) V(b)",
   "components": [
     {
@@ -29,7 +29,7 @@
         "n": "b"
       },
       "type": "capacitor",
-      "capacitance_f": 1e-6,
+      "capacitance_f": 1e-06,
       "initial_voltage_v": 1.0
     }
   ],
@@ -38,7 +38,7 @@
     {
       "type": "tran",
       "stop_s": 0.02,
-      "max_step_s": 9.999999999999999e-6,
+      "max_step_s": 9.999999999999999e-06,
       "use_initial_conditions": true,
       "initial_condition_resistance_ohm": 0.001
     }
@@ -64,5 +64,9 @@
     }
   ],
   "measurements": [],
-  "temperature_c": 27.0
+  "parameter_sweeps": [],
+  "two_port": null,
+  "comparisons": [],
+  "bjt_transfer": null,
+  "temperature_c": 27
 }
