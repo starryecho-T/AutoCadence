@@ -19,7 +19,7 @@ try {
   const connection='V1 vin 0 DC 5\nR1 vin out 1k\nR2 out 0 2k\n.op\n.save V(out) I(R1)'
   let reply={title:'直流分压与支路电流',text:connection,summary:'直流分压电路，观察输出电压与电阻电流。',issues:[],proposals:[{id:'supply',title:'采用 5 V 输入，可以吗？',detail:'直流电源 V1=5 V。',reason:'题目未给电源，作为教学候选。'},{id:'resistors',title:'采用这组电阻，可以吗？',detail:'R1=1 kΩ，R2=2 kΩ，串联分压，R2 下端接地。',reason:'题目缺少阻值和连接，建议先观察分压。'}]}, delayed=false, release
   await page.route('https://fixture-model.test/**',async route=>{modelRequests.push(route.request().postDataJSON());if(delayed)await new Promise(r=>{release=r});await route.fulfill({json:{choices:[{message:{content:JSON.stringify(reply)}}]}}).catch(()=>{})})
-  await page.getByRole('button',{name:'通用电路',exact:true}).click()
+
   await page.getByRole('button',{name:'试试文字示例'}).click()
   await page.getByLabel('题目描述',{exact:true}).fill('帮我设计一个简单的直流分压器，电源、阻值和连接请先建议，再看输出电压和电流。')
   const originalQuestion=await page.getByLabel('题目描述',{exact:true}).inputValue()
@@ -81,7 +81,7 @@ try {
   await page.setViewportSize({width:1280,height:900})
   await page.getByRole('button',{name:'确认并开始仿真'}).click();await page.getByRole('heading',{name:'仿真失败',exact:true}).waitFor()
   assert.equal(submissions.length,1);assert.equal(submissions[0].title,'5 V 分压电路工作点');assert.equal(submissions[0].components.find(c=>c.id==='R1').resistance_ohm,4700);assert.ok(submissions[0].question.includes(originalQuestion));assert.match(submissions[0].question,/R2 为 3 kΩ/)
-  await page.getByRole('button',{name:'新建仿真',exact:true}).first().click();await page.getByRole('button',{name:'通用电路',exact:true}).click()
+  await page.getByRole('button',{name:'新建仿真',exact:true}).first().click();
   await page.getByRole('button',{name:'电路截图',exact:true}).click()
   await page.getByLabel('通用电路截图',{exact:true}).setInputFiles({name:'circuit.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8WQAAAAASUVORK5CYII=','base64')})
   await page.getByLabel('补充题目与分析要求',{exact:true}).fill('求分压工作点，观察 out 电压和 R1 电流。')

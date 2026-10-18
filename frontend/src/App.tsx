@@ -28,7 +28,7 @@ export default function App() {
   const [inputBusy, setInputBusy] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [parse, setParse] = useState<ParseResult | null>(null)
-  const [draft, setDraft] = useState<TaskDraft>({ text: '' })
+  const [draft, setDraft] = useState<TaskDraft>({ text: '', mode: 'general' })
   const [run, setRun] = useState<RunRecord | null>(null)
   const [history, setHistory] = useState<RunRecord[]>([])
   const [notice, setNotice] = useState('')
@@ -45,7 +45,6 @@ export default function App() {
     void getHealth(controller.signal).then(async (info) => {
       if (controller.signal.aborted) return
       setHealth(info)
-      setDraft(current => current.mode || current.text || current.image ? current : { ...current, mode: info.demo ? 'rc' : 'general' })
       if (!info.demo) {
         const runs = await listRuns(controller.signal)
         if (!controller.signal.aborted) setHistory((current) => mergeRuns(runs, current))
@@ -116,7 +115,7 @@ export default function App() {
     setPollError('')
     setRun(null)
     setParse(null)
-    setDraft({ text: '', mode: isDemoMode() ? 'rc' : 'general' })
+    setDraft({ text: '', mode: 'general' })
     setNotice('')
     setPhase('input')
   }
@@ -150,12 +149,12 @@ export default function App() {
       return
     }
     setParse({ ok: true, task: run.task })
-    setDraft({ text: run.task.source_text ?? '' })
+    setDraft({ text: run.task.source_text ?? '', mode: 'general' })
     setNotice('')
     setPhase('confirm')
   }
   const demo = health?.demo === true
-  const general = phase === 'input' ? draft.mode === 'general' : phase === 'confirm' ? !!parse?.circuitPreview : !!run?.task?.circuit
+  const general = phase === 'input' || (phase === 'confirm' ? !!parse?.circuitPreview : !!run?.task?.circuit)
   const locked = submitting || inputBusy
   const currentStep = phase === 'input' ? 0 : phase === 'confirm' ? 1 : 2
   const headings = {
@@ -181,14 +180,14 @@ export default function App() {
       <div className="history-list">{historyItems()}</div>
       <div className="sidebar-footer"><button className="sidebar-action" onClick={() => setShowOcrSettings(true)}><Icon name="settings" />设置</button>
         <button className="sidebar-action" disabled={!health || phase === 'running' || locked} onClick={() => setConnectionAttempt(value => value + 1)}><Icon name="refresh" />重新连接</button>
-        <span className="sidebar-caption">通用模拟电路 · {demo ? '本地演示' : 'AutoCadence 0.6.0'}</span>
+        <span className="sidebar-caption">通用模拟电路 · AutoCadence 0.6.1</span>
       </div>
     </aside>
     <div className="app-main">
       <header className="topbar"><div className="breadcrumb"><span>工作台</span><span className="separator">/</span><strong>{general ? '通用电路' : 'RC 低通滤波器'}</strong></div>
         <div className="topbar-actions"><button className="icon-button mobile-only" aria-label="最近任务" onClick={() => setShowHistory(true)}><Icon name="history" /></button>
           <button className="icon-button mobile-only" aria-label="设置" onClick={() => setShowOcrSettings(true)}><Icon name="settings" /></button>
-          {health === null ? <span className="status-chip">连接中…</span> : demo ? <span className="status-chip demo">演示模式 · 后端未连接</span> : <span className="status-chip ok" title={health.version ? `服务版本 ${health.version}` : undefined}>后端在线{Number(health.queue) > 0 ? ` · 排队 ${health.queue}` : ''}</span>}
+          {health === null ? <span className="status-chip">连接中…</span> : demo ? <span className="status-chip demo">后端未连接</span> : <span className="status-chip ok" title={health.version ? `服务版本 ${health.version}` : undefined}>后端在线{Number(health.queue) > 0 ? ` · 排队 ${health.queue}` : ''}</span>}
         </div>
       </header>
       <main className="workspace"><header className="page-heading"><div><h1>{headings[phase][0]}</h1><p>{headings[phase][1]}</p></div><span className="type-badge">{general ? '通用电路 · 晶体管 · 二端口' : '一阶 RC 低通'}</span></header>

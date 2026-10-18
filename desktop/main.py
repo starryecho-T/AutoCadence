@@ -70,19 +70,17 @@ def smoke_test(window, output):
         time.sleep(0.1)
 
     try:
-        wait_for("document.body.innerText.includes('演示模式')")
-        click('填入示例题目')
-        click('解析题目')
-        wait_for("!!document.querySelector('[data-testid=theory-cutoff]')")
-        assert window.evaluate_js("document.querySelector('#param-r_ohm').value === '1' && document.querySelector('#param-c_farad').value === '1'")
-        click('确认并开始仿真')
-        wait_for("document.body.innerText.includes('仿真完成')")
-        wait_for("[...document.querySelectorAll('.shot img')].length === 2 && [...document.querySelectorAll('.shot img')].every(i => i.complete && i.naturalWidth > 0)")
-        click('报告与文件')
-        assert window.evaluate_js("!!document.querySelector('#panel-files:not([hidden]) .report-links a[download]')")
+        wait_for("!!document.querySelector('.general-input')")
+        assert window.evaluate_js("![...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'RC 低通题目')")
+        click('电路截图')
+        wait_for("!!document.querySelector('[aria-label=通用电路截图]')")
+        click('连接描述')
+        wait_for("!!document.querySelector('#connection-description')")
+        click('文字描述')
+        wait_for("!!document.querySelector('#general-question')")
         previous = window.evaluate_js("localStorage.getItem('desktop-smoke-marker')")
         window.evaluate_js("localStorage.setItem('desktop-smoke-marker', 'saved')")
-        result = {'ok': True, 'title': TITLE, 'report_download': True, 'previous_storage': previous}
+        result = {'ok': True, 'title': TITLE, 'unified_input': True, 'previous_storage': previous}
     except Exception as error:
         logging.exception('Desktop smoke test failed')
         result = {'ok': False, 'error': str(error)}

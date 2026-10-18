@@ -39,9 +39,9 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
   const locked = !!busy
   useEffect(() => {
     let active = true
-    if (!isDemoMode()) void circuitCapabilities().then(x => { if (active) { setCapabilities(x); setExamples(x.examples) } }).catch(() => { if (active) setCapabilityError('暂时无法读取通用后端能力，可先准备题目；预检需要新版后端。') })
+    if (!disabled && !isDemoMode()) void circuitCapabilities().then(x => { if (active) { setCapabilities(x); setExamples(x.examples); setCapabilityError('') } }).catch(() => { if (active) setCapabilityError('暂时无法读取通用后端能力，可先准备题目；预检需要新版后端。') })
     return () => { active = false; controller.current?.abort(); reader.current?.abort() }
-  }, [])
+  }, [disabled])
   useEffect(() => {
     setElapsed(0)
     if (!busy) return
@@ -86,8 +86,7 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
     r.readAsDataURL(file)
   }
   return <section className="fade-in general-input">
-    <div className="mode-switch" aria-label="电路模式"><button disabled={locked} onClick={() => onDraftChange({ ...draft, mode: 'rc' })}>RC 低通题目</button><button aria-pressed="true" disabled={locked}>通用电路</button></div>
-    {offline && <div className="note warn">通用电路预检和仿真需要连接后端。你可以先准备题目，或切换到 RC 低通体验演示。</div>}
+    {offline && <div className="note warn">后端暂未连接。你可以先准备题目，连接后端后再检查电路并运行仿真。</div>}
     <div className="card input-card">
       <div className="section-heading"><div><h2>把电路问题交给工作台</h2><p className="sub">用自己的话说想做什么。AI 补出候选方案，你来判断是否采用。</p></div><span className="subtle-tag">AI 建议 · 你来决定</span></div>
       <div className="input-methods" aria-label="输入方式">{([['text', '文字描述', 'file'], ['image', '电路截图', 'image'], ['connections', '连接描述', 'circuit']] as const).map(([id, label, icon]) => <button key={id} aria-pressed={general.input === id} disabled={locked} onClick={() => change({ input: id, stale: id !== general.input && id !== 'connections' && hasCandidate ? true : general.stale })}><Icon name={icon} />{label}</button>)}</div>

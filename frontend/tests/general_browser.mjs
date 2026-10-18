@@ -22,7 +22,7 @@ try {
   page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/api/v2/runs'))submissions.push(r.postDataJSON())})
   await page.goto(info.url)
   await page.getByText('后端在线',{exact:true}).waitFor()
-  await page.getByRole('button',{name:'通用电路',exact:true}).click()
+
   await page.getByRole('button',{name:'连接描述',exact:true}).click()
   await page.getByLabel('通用电路示例').selectOption('rc_highpass')
   await page.getByRole('button',{name:'解析并检查电路'}).click()
