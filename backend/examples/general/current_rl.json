@@ -1,0 +1,78 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "通用电路仿真",
+  "question": "I1 0 vin PULSE 0 0.01 1u 1u 1u 1m 2m\nR1 vin 0 100\nL1 vin 0 10m\n.tran 5m 1u\n.save V(vin) I(L1) I(I1)",
+  "components": [
+    {
+      "id": "I1",
+      "pins": {
+        "p": "0",
+        "n": "vin"
+      },
+      "type": "current_source",
+      "dc": 0.0,
+      "ac_magnitude": 0.0,
+      "ac_phase_deg": 0.0,
+      "waveform": {
+        "type": "pulse",
+        "low": 0.0,
+        "high": 0.01,
+        "period_s": 0.002,
+        "width_s": 0.001,
+        "rise_s": 1e-6,
+        "fall_s": 1e-6,
+        "delay_s": 1e-6
+      }
+    },
+    {
+      "id": "R1",
+      "pins": {
+        "p": "vin",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 100.0
+    },
+    {
+      "id": "L1",
+      "pins": {
+        "p": "vin",
+        "n": "0"
+      },
+      "type": "inductor",
+      "inductance_h": 0.01,
+      "initial_current_a": null
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "tran",
+      "stop_s": 0.005,
+      "max_step_s": 1e-6,
+      "use_initial_conditions": false,
+      "initial_condition_resistance_ohm": 0.001
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "vin",
+      "n": "0"
+    },
+    {
+      "id": "s2",
+      "type": "current",
+      "component": "L1"
+    },
+    {
+      "id": "s3",
+      "type": "current",
+      "component": "I1"
+    }
+  ],
+  "measurements": [],
+  "temperature_c": 27.0
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "通用电路仿真",
+  "question": "R1 out 0 100\nL1 out 0 10m ic=0.01\n.tran 1m 1u ic\n.save V(out) I(L1)",
+  "components": [
+    {
+      "id": "R1",
+      "pins": {
+        "p": "out",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 100.0
+    },
+    {
+      "id": "L1",
+      "pins": {
+        "p": "out",
+        "n": "0"
+      },
+      "type": "inductor",
+      "inductance_h": 0.01,
+      "initial_current_a": 0.01
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "tran",
+      "stop_s": 0.001,
+      "max_step_s": 1e-6,
+      "use_initial_conditions": true,
+      "initial_condition_resistance_ohm": 0.001
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "out",
+      "n": "0"
+    },
+    {
+      "id": "s2",
+      "type": "current",
+      "component": "L1"
+    }
+  ],
+  "measurements": [],
+  "temperature_c": 27.0
+}

@@ -1,0 +1,1018 @@
+{
+  "$defs": {
+    "AC": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ac",
+          "title": "Type",
+          "type": "string"
+        },
+        "start_hz": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000.0,
+          "title": "Start Hz",
+          "type": "number"
+        },
+        "stop_hz": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000.0,
+          "title": "Stop Hz",
+          "type": "number"
+        },
+        "points_per_decade": {
+          "default": 50,
+          "maximum": 200,
+          "minimum": 2,
+          "title": "Points Per Decade",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "start_hz",
+        "stop_hz"
+      ],
+      "title": "AC",
+      "type": "object"
+    },
+    "Capacitor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/Pins"
+        },
+        "type": {
+          "const": "capacitor",
+          "title": "Type",
+          "type": "string"
+        },
+        "capacitance_f": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000.0,
+          "title": "Capacitance F",
+          "type": "number"
+        },
+        "initial_voltage_v": {
+          "anyOf": [
+            {
+              "maximum": 1000000.0,
+              "minimum": -1000000.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Initial Voltage V"
+        }
+      },
+      "required": [
+        "id",
+        "pins",
+        "type",
+        "capacitance_f"
+      ],
+      "title": "Capacitor",
+      "type": "object"
+    },
+    "Current": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "current",
+          "title": "Type",
+          "type": "string"
+        },
+        "component": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Component",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "component"
+      ],
+      "title": "Current",
+      "type": "object"
+    },
+    "DC": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "dc",
+          "title": "Type",
+          "type": "string"
+        },
+        "source": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Source",
+          "type": "string"
+        },
+        "start": {
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Start",
+          "type": "number"
+        },
+        "stop": {
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Stop",
+          "type": "number"
+        },
+        "step": {
+          "title": "Step",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "source",
+        "start",
+        "stop",
+        "step"
+      ],
+      "title": "DC",
+      "type": "object"
+    },
+    "Diode": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "diode",
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/DiodePins"
+        },
+        "model": {
+          "default": "generic_diode",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "pins"
+      ],
+      "title": "Diode",
+      "type": "object"
+    },
+    "DiodeModel": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "saturation_current_a": {
+          "default": 1e-14,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Saturation Current A",
+          "type": "number"
+        },
+        "emission_coefficient": {
+          "default": 1,
+          "maximum": 10,
+          "minimum": 0.1,
+          "title": "Emission Coefficient",
+          "type": "number"
+        },
+        "series_resistance_ohm": {
+          "default": 0,
+          "maximum": 1000000000.0,
+          "minimum": 0,
+          "title": "Series Resistance Ohm",
+          "type": "number"
+        },
+        "junction_capacitance_f": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Junction Capacitance F",
+          "type": "number"
+        },
+        "transit_time_s": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Transit Time S",
+          "type": "number"
+        },
+        "breakdown_voltage_v": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000000.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Breakdown Voltage V"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "DiodeModel",
+      "type": "object"
+    },
+    "DiodePins": {
+      "additionalProperties": false,
+      "properties": {
+        "a": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "A",
+          "type": "string"
+        },
+        "k": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "K",
+          "type": "string"
+        }
+      },
+      "required": [
+        "a",
+        "k"
+      ],
+      "title": "DiodePins",
+      "type": "object"
+    },
+    "Inductor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/Pins"
+        },
+        "type": {
+          "const": "inductor",
+          "title": "Type",
+          "type": "string"
+        },
+        "inductance_h": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000.0,
+          "title": "Inductance H",
+          "type": "number"
+        },
+        "initial_current_a": {
+          "anyOf": [
+            {
+              "maximum": 1000000.0,
+              "minimum": -1000000.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Initial Current A"
+        }
+      },
+      "required": [
+        "id",
+        "pins",
+        "type",
+        "inductance_h"
+      ],
+      "title": "Inductor",
+      "type": "object"
+    },
+    "Measurement": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "analysis": {
+          "enum": [
+            "op",
+            "dc",
+            "ac",
+            "tran"
+          ],
+          "title": "Analysis",
+          "type": "string"
+        },
+        "signal": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Signal",
+          "type": "string"
+        },
+        "operation": {
+          "enum": [
+            "final",
+            "min",
+            "max",
+            "mean",
+            "rms",
+            "peak_to_peak",
+            "at"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "representation": {
+          "default": "real",
+          "enum": [
+            "real",
+            "imag",
+            "magnitude",
+            "phase_deg"
+          ],
+          "title": "Representation",
+          "type": "string"
+        },
+        "at": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "At"
+        },
+        "minimum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum"
+        },
+        "maximum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum"
+        }
+      },
+      "required": [
+        "id",
+        "analysis",
+        "signal",
+        "operation"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    },
+    "OP": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "op",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "OP",
+      "type": "object"
+    },
+    "Opamp": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "ideal_opamp",
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/OpampPins"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "pins"
+      ],
+      "title": "Opamp",
+      "type": "object"
+    },
+    "OpampPins": {
+      "additionalProperties": false,
+      "properties": {
+        "plus": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Plus",
+          "type": "string"
+        },
+        "minus": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Minus",
+          "type": "string"
+        },
+        "out": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Out",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plus",
+        "minus",
+        "out"
+      ],
+      "title": "OpampPins",
+      "type": "object"
+    },
+    "Pins": {
+      "additionalProperties": false,
+      "properties": {
+        "p": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "P",
+          "type": "string"
+        },
+        "n": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "N",
+          "type": "string"
+        }
+      },
+      "required": [
+        "p",
+        "n"
+      ],
+      "title": "Pins",
+      "type": "object"
+    },
+    "Pulse": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "pulse",
+          "title": "Type",
+          "type": "string"
+        },
+        "low": {
+          "default": 0,
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Low",
+          "type": "number"
+        },
+        "high": {
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "High",
+          "type": "number"
+        },
+        "period_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Period S",
+          "type": "number"
+        },
+        "width_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Width S",
+          "type": "number"
+        },
+        "rise_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Rise S",
+          "type": "number"
+        },
+        "fall_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Fall S",
+          "type": "number"
+        },
+        "delay_s": {
+          "default": 0,
+          "maximum": 1000000.0,
+          "minimum": 0,
+          "title": "Delay S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "high",
+        "period_s",
+        "width_s",
+        "rise_s",
+        "fall_s"
+      ],
+      "title": "Pulse",
+      "type": "object"
+    },
+    "Pwl": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "pwl",
+          "title": "Type",
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "maxItems": 50,
+          "minItems": 2,
+          "title": "Points",
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "points"
+      ],
+      "title": "Pwl",
+      "type": "object"
+    },
+    "Resistor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/Pins"
+        },
+        "type": {
+          "const": "resistor",
+          "title": "Type",
+          "type": "string"
+        },
+        "resistance_ohm": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000000.0,
+          "title": "Resistance Ohm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "pins",
+        "type",
+        "resistance_ohm"
+      ],
+      "title": "Resistor",
+      "type": "object"
+    },
+    "Sine": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "sine",
+          "title": "Type",
+          "type": "string"
+        },
+        "offset": {
+          "default": 0,
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Offset",
+          "type": "number"
+        },
+        "amplitude": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Amplitude",
+          "type": "number"
+        },
+        "frequency_hz": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000.0,
+          "title": "Frequency Hz",
+          "type": "number"
+        },
+        "phase_deg": {
+          "default": 0,
+          "maximum": 360,
+          "minimum": -360,
+          "title": "Phase Deg",
+          "type": "number"
+        },
+        "delay_s": {
+          "default": 0,
+          "maximum": 1000000.0,
+          "minimum": 0,
+          "title": "Delay S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "amplitude",
+        "frequency_hz"
+      ],
+      "title": "Sine",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/Pins"
+        },
+        "type": {
+          "enum": [
+            "voltage_source",
+            "current_source"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "dc": {
+          "default": 0,
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Dc",
+          "type": "number"
+        },
+        "ac_magnitude": {
+          "default": 0,
+          "maximum": 1000000.0,
+          "minimum": 0,
+          "title": "Ac Magnitude",
+          "type": "number"
+        },
+        "ac_phase_deg": {
+          "default": 0,
+          "maximum": 360,
+          "minimum": -360,
+          "title": "Ac Phase Deg",
+          "type": "number"
+        },
+        "waveform": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "pulse": "#/$defs/Pulse",
+                  "pwl": "#/$defs/Pwl",
+                  "sine": "#/$defs/Sine"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Sine"
+                },
+                {
+                  "$ref": "#/$defs/Pulse"
+                },
+                {
+                  "$ref": "#/$defs/Pwl"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Waveform"
+        }
+      },
+      "required": [
+        "id",
+        "pins",
+        "type"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "TRAN": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "tran",
+          "title": "Type",
+          "type": "string"
+        },
+        "stop_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Stop S",
+          "type": "number"
+        },
+        "max_step_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Max Step S",
+          "type": "number"
+        },
+        "use_initial_conditions": {
+          "default": false,
+          "title": "Use Initial Conditions",
+          "type": "boolean"
+        },
+        "initial_condition_resistance_ohm": {
+          "default": 0.001,
+          "description": "Spectre rforce during the initial-condition solve only; not a physical circuit resistor.",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Initial Condition Resistance Ohm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "stop_s",
+        "max_step_s"
+      ],
+      "title": "TRAN",
+      "type": "object"
+    },
+    "Voltage": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "voltage",
+          "title": "Type",
+          "type": "string"
+        },
+        "p": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "P",
+          "type": "string"
+        },
+        "n": {
+          "default": "0",
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "N",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "p"
+      ],
+      "title": "Voltage",
+      "type": "object"
+    },
+    "Wire": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/Pins"
+        },
+        "type": {
+          "const": "wire",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "pins",
+        "type"
+      ],
+      "title": "Wire",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0",
+      "default": "2.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "template_id": {
+      "const": "general_circuit",
+      "default": "general_circuit",
+      "title": "Template Id",
+      "type": "string"
+    },
+    "title": {
+      "default": "通用电路仿真",
+      "maxLength": 120,
+      "title": "Title",
+      "type": "string"
+    },
+    "question": {
+      "anyOf": [
+        {
+          "maxLength": 50000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Question"
+    },
+    "components": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "capacitor": "#/$defs/Capacitor",
+            "current_source": "#/$defs/Source",
+            "diode": "#/$defs/Diode",
+            "ideal_opamp": "#/$defs/Opamp",
+            "inductor": "#/$defs/Inductor",
+            "resistor": "#/$defs/Resistor",
+            "voltage_source": "#/$defs/Source",
+            "wire": "#/$defs/Wire"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/Resistor"
+          },
+          {
+            "$ref": "#/$defs/Capacitor"
+          },
+          {
+            "$ref": "#/$defs/Inductor"
+          },
+          {
+            "$ref": "#/$defs/Diode"
+          },
+          {
+            "$ref": "#/$defs/Opamp"
+          },
+          {
+            "$ref": "#/$defs/Wire"
+          },
+          {
+            "$ref": "#/$defs/Source"
+          }
+        ]
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Components",
+      "type": "array"
+    },
+    "models": {
+      "items": {
+        "$ref": "#/$defs/DiodeModel"
+      },
+      "maxItems": 30,
+      "title": "Models",
+      "type": "array"
+    },
+    "analyses": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "ac": "#/$defs/AC",
+            "dc": "#/$defs/DC",
+            "op": "#/$defs/OP",
+            "tran": "#/$defs/TRAN"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/OP"
+          },
+          {
+            "$ref": "#/$defs/DC"
+          },
+          {
+            "$ref": "#/$defs/AC"
+          },
+          {
+            "$ref": "#/$defs/TRAN"
+          }
+        ]
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "title": "Analyses",
+      "type": "array"
+    },
+    "signals": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "current": "#/$defs/Current",
+            "voltage": "#/$defs/Voltage"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/Voltage"
+          },
+          {
+            "$ref": "#/$defs/Current"
+          }
+        ]
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Signals",
+      "type": "array"
+    },
+    "measurements": {
+      "items": {
+        "$ref": "#/$defs/Measurement"
+      },
+      "maxItems": 100,
+      "title": "Measurements",
+      "type": "array"
+    },
+    "temperature_c": {
+      "default": 27,
+      "maximum": 200,
+      "minimum": -100,
+      "title": "Temperature C",
+      "type": "number"
+    }
+  },
+  "required": [
+    "components",
+    "analyses",
+    "signals"
+  ],
+  "title": "CircuitTask",
+  "type": "object"
+}

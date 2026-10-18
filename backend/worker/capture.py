@@ -127,7 +127,7 @@ def _windows(tree, stage, run_id, initial):
         if wid in initial:
             continue
         valid = ((stage == 'schematic' and run_id in title and
-                  'rc_lpf' in title and 'schematic' in title.lower()) or
+                  ('rc_lpf' in title or 'general' in title) and 'schematic' in title.lower()) or
                  (stage == 'waveform' and
                   ('ViVA' in title or 'Visualization' in title)))
         if valid:
@@ -192,6 +192,28 @@ hiRegTimer("vaiSchematicFit()" 30)
 '''
     for key, value in values.items():
         source = source.replace('@' + key + '@', value)
+    config_path = os.path.join(root, 'capture_config.json')
+    if os.path.isfile(config_path):
+        config = json.load(open(config_path))
+        kind = config['analysis']
+        source = source.replace('"rc_lpf"', _skill_string(config['cell']))
+        select = 'selectResults("dcOp-dc")' if kind == 'op' else 'selectResults("dc-dc")' if kind == 'dc' else "selectResults('%s)" % kind
+        source = source.replace("selectResults('tran)", select)
+        expressions = config['expressions']
+        if kind == 'op':
+            helper = '''procedure(gConstant(value)
+  let((xx yy)
+    xx=drCreateVec('double 2) yy=drCreateVec('double 2)
+    drSetElem(xx 0 0.0) drSetElem(xx 1 1.0)
+    drSetElem(yy 0 value) drSetElem(yy 1 value)
+    drCreateWaveform(xx yy)
+  )
+)
+'''
+            source = helper + source
+            expressions = ['gConstant(%s)' % e for e in expressions]
+        plot = 'awvPlotWaveform(wv list(%s) ?expr list(%s))' % (' '.join(expressions), ' '.join(_skill_string(x) for x in config['labels']))
+        source = source.replace('awvPlotWaveform(wv list(v("vin") v("out")) ?expr list("vin [V]" "out [V]"))', plot)
     return source
 
 

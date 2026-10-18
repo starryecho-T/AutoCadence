@@ -1,0 +1,129 @@
+"""Generic execution branch. Keep compatible with the server's Python 2.6."""
+from __future__ import print_function
+import json
+import os
+import re
+import shutil
+
+
+def numeric(raw):
+    m = re.match(r'^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)([A-Za-z]*)$', raw)
+    scales = {'': 1, 'T': 1e12, 'G': 1e9, 'M': 1e6, 'meg': 1e6, 'k': 1e3, 'm': 1e-3, 'u': 1e-6, 'n': 1e-9, 'p': 1e-12, 'f': 1e-15, 'a': 1e-18}
+    if not m or m.group(2) not in scales:
+        raise ValueError('Invalid numeric value: ' + raw)
+    return float(m.group(1)) * scales[m.group(2)]
+
+
+def validate_netlist(text, compiled):
+    flat = text.replace('\\\n', ' ')
+    actual = {}
+    for name, pins, master, tail in re.findall(r'^\s*([A-Za-z]\w*)\s*\(([^)]+)\)\s+(\w+)([^\n]*)', flat, re.M):
+        if name in actual:
+            raise ValueError('Duplicate generated instance: ' + name)
+        params = dict(re.findall(r'(\w+)\s*=\s*(\[[^\]]*\]|[^\s]+)', tail))
+        actual[name] = (pins.split(), master, params)
+    if set(actual) != set(d['instance'] for d in compiled['devices']):
+        raise ValueError('Generated instance set differs from confirmed circuit')
+    for d in compiled['devices']:
+        pins, master, params = actual[d['instance']]
+        if pins != d['nodes'] or master != d['master']:
+            raise ValueError(d['id'] + ': generated topology or device model mismatch')
+        for key, expected in d['parameters'].items():
+            raw = params.get(key)
+            if raw is None and expected == 0:
+                continue  # Spectre defaults for mag/phase/DC and delay are zero.
+            if raw is None:
+                raise ValueError(d['id'] + ': missing generated parameter ' + key)
+            if isinstance(expected, list):
+                found = [numeric(v) for v in raw.strip('[]').split()]
+                equal = len(found) == len(expected) and all(abs(a-b) <= max(1e-18, abs(b)*1e-10) for a, b in zip(found, expected))
+            elif isinstance(expected, (int, float)):
+                equal = abs(numeric(raw)-expected) <= max(1e-18, abs(expected)*1e-10)
+            else:
+                equal = raw.strip('"') == expected
+            if not equal:
+                raise ValueError(d['id'] + ': generated parameter mismatch ' + key)
+    return {'status': 'PASS', 'devices_checked': len(actual), 'topology_and_parameters_match': True}
+
+
+def execute(runner, error_class):
+    from run import write, save, sha
+    r = runner
+    r.begin('preflight'); r.protect()
+    for k in ['virtuoso_bin', 'spectre_bin', 'cadence_cds_lib']:
+        if not os.path.isfile(r.config[k]):
+            raise error_class('ENVIRONMENT_MISSING', k + ' not found')
+    compiled = json.load(open(os.path.join(r.root, 'compiled.json')))
+    values = {'LIB': r.run_id, 'ROOT': r.root, 'DBPATH': os.path.join(r.root, 'db', r.run_id)}
+    for name in ['build.il', 'probe.il', 'netlist.il', 'models.scs', 'export.il']:
+        text = open(os.path.join(r.root, name)).read()
+        for key, value in values.items():
+            text = text.replace('@' + key + '@', value)
+        write(os.path.join(r.root, name), text)
+        write(os.path.join(r.evidence, name), text)
+    write(os.path.join(r.root, 'cds.lib'), 'INCLUDE ' + r.config['cadence_cds_lib'] + '\n')
+    for name in ['compiled.json', 'signals.json', 'ideal_opamp.va']:
+        shutil.copy2(os.path.join(r.root, name), os.path.join(r.evidence, name))
+    r.end()
+    r.ocean('build', 'build.il', 'BUILD_PASSED')
+    r.ocean('probe', 'probe.il', 'PROBE_RESULT=PASS')
+    r.ocean('netlist', 'netlist.il', 'NETLIST_ONLY_DONE')
+    r.begin('netlist_validation')
+    matches = []
+    for directory, ds, fs in os.walk(os.path.join(r.root, 'batch_netlisting')):
+        if 'input.scs' in fs:
+            matches.append(os.path.join(directory, 'input.scs'))
+    if len(matches) != 1:
+        raise error_class('NETLIST_COUNT', 'Expected exactly one Cadence netlist')
+    original = matches[0]; source = open(original).read()
+    write(os.path.join(r.evidence, 'netlist_original.scs'), source)
+    try:
+        checks = validate_netlist(source, compiled)
+    except ValueError as exc:
+        raise error_class('NETLIST_MISMATCH', str(exc))
+    save(os.path.join(r.evidence, 'netlist_checks.json'), checks)
+    batch = os.path.join(r.root, 'batch'); os.mkdir(batch)
+    # Devices/parameters are verified above. Use canonical nodes and explicit
+    # analysis/model settings instead of ADE's incidental default control lines.
+    executed = open(os.path.join(r.root, 'expected.scs')).read().replace('"ideal_opamp.va"', '"' + r.root + '/ideal_opamp.va"')
+    write(os.path.join(batch, 'input.scs'), executed)
+    write(os.path.join(r.evidence, 'input.scs'), executed)
+    save(os.path.join(r.evidence, 'provenance.json'), {'run_id': r.run_id, 'source_sha256': sha(original), 'executed_sha256': sha(os.path.join(batch, 'input.scs')), 'source': 'Confirmed circuit IR; all device connections and specified parameters checked against Cadence netlist; explicit requested models and analyses.'})
+    r.end()
+    r.process('spectre', [r.config['spectre_bin'], 'input.scs', '+escchars', '-format', 'psfascii', '-raw', 'psf', '+log', 'spectre.out'], cwd=batch)
+    log = open(os.path.join(batch, 'spectre.out')).read()
+    shutil.copy2(os.path.join(batch, 'spectre.out'), os.path.join(r.evidence, 'spectre.out'))
+    if 'spectre completes with 0 errors' not in log:
+        raise error_class('SPECTRE_ERRORS', 'Spectre did not complete without errors')
+    if any(a['type']=='op' for a in r.task['analyses']):
+        export_operating_point(r, compiled, error_class)
+    r.ocean('export', 'export.il', 'EXPORT_DONE')
+    r.begin('capture')
+    from capture import capture
+    result = capture(r.root, r.run_id, r.env, r.config['virtuoso_bin'], timeout=100)
+    if not result.get('ok'):
+        raise error_class('CAPTURE_FAILED', result.get('error', 'Screenshot capture failed'))
+    r.end()
+
+
+def export_operating_point(r, compiled, error_class):
+    """Read named scalar PSF directly, independent of OCEAN's DC aliases."""
+    from run import write
+    path = os.path.join(r.root,'batch','psf','dcOp.dc')
+    source = open(path).read()
+    shutil.copy2(path,os.path.join(r.evidence,'operating_point.psfascii'))
+    values = dict((name,float(value)) for name,value in re.findall(r'^"([^"\n]+)" "[VI]" ([+\-\d.eE]+)', source, re.M))
+    def voltage(node):
+        name = compiled['node_map'][compiled['aliases'][node]]
+        return 0.0 if name == '0' else values[name]
+    for i,s in enumerate(r.task['signals']):
+        try:
+            if s['type']=='voltage':
+                value = voltage(s['p'])-voltage(s['n'])
+            else:
+                part = next(d for d in compiled['devices'] if d['id']==s['component'])
+                terminal = 'a' if part['type']=='diode' else 'p' if part['type']=='voltage_source' else 'sink' if part['type']=='current_source' else '1'
+                value = values[part['instance']+':'+terminal]
+        except KeyError:
+            raise error_class('MISSING_SIGNAL','Operating point signal missing: '+s['id'])
+        write(os.path.join(r.evidence,'op_s%d.txt'%i),'0 %.15e\n'%value)

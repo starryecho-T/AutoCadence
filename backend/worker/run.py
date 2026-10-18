@@ -61,6 +61,10 @@ class Runner(object):
             raise WorkerError('STAGE_TIMEOUT' if timed else 'PROCESS_FAILED',name+' failed; see '+self.entry['log_path'])
         self.end(rc);return text
     def ocean(self,name,filename,marker):
+        if self.task.get('template_id') == 'general_circuit':
+            guarded='guarded_'+filename
+            write(os.path.join(self.root,guarded),'unless(errset(load('+json.dumps(os.path.join(self.root,filename))+') t) exit(1))\nexit(1)\n')
+            filename=guarded
         return self.process(name,[self.config['virtuoso_bin'],'-64','-ocean','-nograph','-nocdsinit','-restore',os.path.join(self.root,filename),'-log',os.path.join(self.logs,name+'.cds.log')],marker)
     def protect(self):
         files=self.config.get('protected_files',[])
@@ -103,6 +107,9 @@ class Runner(object):
         save(os.path.join(self.evidence,'netlist_checks.json'),checks)
         if not all(x['pass'] for x in checks.values()):raise WorkerError('NETLIST_MISMATCH','Generated netlist does not match requested parameters')
     def execute(self):
+        if self.task.get('template_id') == 'general_circuit':
+            from general import execute
+            return execute(self, WorkerError)
         self.begin('preflight');self.protect()
         for k in ['virtuoso_bin','spectre_bin','cadence_cds_lib']:
             if not os.path.isfile(self.config[k]):raise WorkerError('ENVIRONMENT_MISSING',k+' not found')

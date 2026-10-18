@@ -13,6 +13,7 @@ import type {
 import { escapeHtml, formatNumber, rcValues, validateTask } from './circuit'
 import { fromBackendTask, toBackendTask, validateBackendTask, type BackendTask } from './contract'
 import { planQuestion } from './planning'
+import type { GeneralCircuit, CircuitPreview } from './types'
 
 export const API_BASE = '' // 同源；若前端独立部署，可改为 'http://127.0.0.1:8765'
 
@@ -90,6 +91,7 @@ function asTask(v: unknown): TaskSpec | undefined {
   const r = asRecord(v)
   if (!Object.keys(r).length) return undefined
   if (r.template_id === 'rc_lowpass' && 'r_ohm' in r && 'c_f' in r) return fromBackendTask(r as unknown as BackendTask)
+  if (r.template_id === 'general_circuit') return { kind: 'general_circuit', title: asString(r.title), circuit: r as unknown as GeneralCircuit }
   const params = asRecord(r.params ?? r.parameters ?? r.defaults)
   return {
     kind: asString(r.kind ?? r.type),
@@ -427,6 +429,11 @@ export async function postParse(text: string, imageDataUrl?: string): Promise<Pa
 }
 
 export async function postRun(task: TaskSpec): Promise<string> {
+  if (task.circuit) {
+    if (demoMode) throw new ApiError('通用电路需要连接真实仿真后端')
+    const run = await req<{ run_id: string }>('/api/v2/runs', 'POST', task.circuit)
+    return run.run_id
+  }
   const error = validateTask(task)
   if (error) throw new ApiError(error)
   if (demoMode) return demoRunStart(task)
@@ -442,6 +449,20 @@ export async function getRun(runId: string, signal?: AbortSignal): Promise<RunRe
   const run = normalizeRun(await req<unknown>(`/api/v1/runs/${encodeURIComponent(runId)}`, 'GET', undefined, signal))
   if (run.run_id !== runId) throw new ApiError('后端返回的任务 ID 与当前任务不一致')
   return run
+}
+
+export async function parseCircuit(text: string, signal?: AbortSignal): Promise<CircuitPreview> {
+  if (demoMode) throw new ApiError('通用电路需要连接后端；离线演示仅支持 RC 低通')
+  return req('/api/v2/parse', 'POST', { text }, signal)
+}
+
+export async function previewCircuit(task: unknown, signal?: AbortSignal): Promise<CircuitPreview> {
+  return req('/api/v2/preview', 'POST', task, signal)
+}
+
+export async function circuitExamples(): Promise<{ id: string; label: string; text: string }[]> {
+  const r = await req<{ examples: { id: string; label: string; text: string }[] }>('/api/v2/capabilities', 'GET')
+  return r.examples
 }
 
 export async function listRuns(signal?: AbortSignal): Promise<RunRecord[]> {

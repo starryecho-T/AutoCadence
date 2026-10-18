@@ -84,13 +84,16 @@ class RunError(StrictModel):
     stage: str
     message: str
 
+from .circuit_models import CircuitTask
+
+
 class RunResult(StrictModel):
     schema_version: Literal['1.0'] = '1.0'
     run_id: str
     status: Literal['queued','running','succeeded','failed']
     created_at: str
     updated_at: str
-    task: TaskSpec
+    task: TaskSpec | CircuitTask
     stages: list[Stage] = Field(default_factory=list)
     metrics: dict = Field(default_factory=dict)
     artifacts: list[Artifact] = Field(default_factory=list)

@@ -1,11 +1,13 @@
 import argparse,json,sys,time,uuid
 from pathlib import Path
 from vai_backend.models import TaskSpec
+from vai_backend.circuit_models import CircuitTask
 from vai_backend.pipeline import execute
 
 p=argparse.ArgumentParser(description='Run one real Virtuoso task from JSON')
 p.add_argument('task');p.add_argument('--run-id');p.add_argument('--output',default=str(Path(__file__).parent/'runs'))
-a=p.parse_args();task=TaskSpec.model_validate_json(Path(a.task).read_text(encoding='utf-8')).model_dump()
+a=p.parse_args();payload=json.loads(Path(a.task).read_text(encoding='utf-8'))
+task=(CircuitTask if payload.get('template_id')=='general_circuit' else TaskSpec).model_validate(payload).model_dump()
 run_id=a.run_id or 'vai_'+time.strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8]
 root=Path(a.output)/run_id;root.mkdir(parents=True,exist_ok=False)
 try:

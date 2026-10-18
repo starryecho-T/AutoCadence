@@ -1,0 +1,503 @@
+{
+  "status": "PASS",
+  "checked_at": "2026-10-18T08:53:26.957561+00:00",
+  "engine": "Cadence IC617 / Spectre MMSIM151",
+  "mode": "Real EDA regressions; UI fixtures are excluded",
+  "cases_passed": 11,
+  "cases": [
+    {
+      "case": "divider",
+      "label": "电阻分压与导线",
+      "run_id": "vai_general_divider_dc_6d3d1309de",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 3,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "voltage",
+          "analysis": "op",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 4.9999,
+          "maximum": 5.0001,
+          "value": 5.0,
+          "status": "PASS"
+        },
+        {
+          "id": "sweep_end",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -1e-09,
+          "maximum": 1e-09,
+          "value": 0.0,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "a0bf62eea70b1ee1f8f04a8a0a134b58e1bcd347c2ee9612da00fc92a8970c75",
+        "input.scs": "611a5c66ab3b89235675c3bf6680ab886912eb7053af51f28e49def90e97fbe5",
+        "metrics.json": "d27794daf4bb8b7388193cb92c41b7a0767c1a4c6a134b33df1dd9a85a3a87f2",
+        "waveforms.json": "3244be7558e1ddc680f3db0c7e345427d58d844ca4e9e0859279ce2a54d70b41",
+        "schematic_window.png": "473a07c81393e25f488f99c012cb6837d990a2d776f9d858ca0110b66b5e1338",
+        "waveform_window.png": "c47d2d24384733bfe2f8b7a512576f5be8908b0a2fd846a85e8a949264cdab19",
+        "spectre.out": "52744445ee7b73324cb210cdae6f36ea93e811036110b08441a839be9585c644",
+        "provenance.json": "6a32b963b0ce649f09003d6bcaea52ecd6b25b209d0d28d75486805864231500"
+      }
+    },
+    {
+      "case": "divider_dc",
+      "label": "工作点与反向直流扫描",
+      "run_id": "vai_general_divider_dc_6d3d1309de",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 3,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "voltage",
+          "analysis": "op",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 4.9999,
+          "maximum": 5.0001,
+          "value": 5.0,
+          "status": "PASS"
+        },
+        {
+          "id": "sweep_end",
+          "analysis": "dc",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": -1e-09,
+          "maximum": 1e-09,
+          "value": 0.0,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "a0bf62eea70b1ee1f8f04a8a0a134b58e1bcd347c2ee9612da00fc92a8970c75",
+        "input.scs": "611a5c66ab3b89235675c3bf6680ab886912eb7053af51f28e49def90e97fbe5",
+        "metrics.json": "d27794daf4bb8b7388193cb92c41b7a0767c1a4c6a134b33df1dd9a85a3a87f2",
+        "waveforms.json": "3244be7558e1ddc680f3db0c7e345427d58d844ca4e9e0859279ce2a54d70b41",
+        "schematic_window.png": "473a07c81393e25f488f99c012cb6837d990a2d776f9d858ca0110b66b5e1338",
+        "waveform_window.png": "c47d2d24384733bfe2f8b7a512576f5be8908b0a2fd846a85e8a949264cdab19",
+        "spectre.out": "52744445ee7b73324cb210cdae6f36ea93e811036110b08441a839be9585c644",
+        "provenance.json": "6a32b963b0ce649f09003d6bcaea52ecd6b25b209d0d28d75486805864231500"
+      }
+    },
+    {
+      "case": "rc_highpass",
+      "label": "RC 高通",
+      "run_id": "vai_general_rc_highpass_80c4bca75a",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 3,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "low_frequency",
+          "analysis": "ac",
+          "signal": "s2",
+          "operation": "at",
+          "representation": "magnitude",
+          "at": 10.0,
+          "minimum": 0.0,
+          "maximum": 0.01,
+          "value": 0.006283064019189492,
+          "status": "PASS"
+        },
+        {
+          "id": "high_frequency",
+          "analysis": "ac",
+          "signal": "s2",
+          "operation": "final",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.999,
+          "maximum": 1.001,
+          "value": 0.9999982665186988,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "bb0b937c7508d773d8fccbc6fa5139372bacd9c9c7a56b83f907e6b950627df7",
+        "input.scs": "0f65453ba86ea12bf13407649f3af9feef3840c0527f448a18aac9d7316c2a85",
+        "metrics.json": "3185f602680c491a329e11d91bf276e9c802424691d2f92b588f29754e1b8a7b",
+        "waveforms.json": "ea0b5949def89949a4560c15f3f878bed12527121e43480053add06990888c97",
+        "schematic_window.png": "238acb1d273b14ce1cea8b7c4c1c2822c4e12761081761b4f5ffb9217045dedb",
+        "waveform_window.png": "cc197825c5dc5175c744b17fc226400fcc83b3c2f1665df29a290f8416dea1b3",
+        "spectre.out": "1e305d2a2d9a0259738b9f5c48bab73f9e120167ebaa44fb22ec5c0ff5df6695",
+        "provenance.json": "acbcb961d573ea4f22e7953cbc6fa821fdac0aa38d676914bff25fab5e07d82f"
+      }
+    },
+    {
+      "case": "rlc",
+      "label": "串联 RLC",
+      "run_id": "vai_general_rlc_752d67803f",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 4,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "dc_limit",
+          "analysis": "ac",
+          "signal": "s1",
+          "operation": "at",
+          "representation": "magnitude",
+          "at": 10.0,
+          "minimum": 0.99,
+          "maximum": 1.01,
+          "value": 1.0000197405514377,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "4ac514a74bbdb2cf952e9fdcb2b3e30405180b3defc41191d4a8255f5a79abae",
+        "input.scs": "f26915561b805bd62e0558b359b65684a79782aa43bf00b146216dcbbec3749f",
+        "metrics.json": "415c156a31bb98ec02cf31f6c8bd5a7acf80a600a23d67859ee28a74fc321697",
+        "waveforms.json": "6472e44f5576e3603308e1788ed1d4b7f6985ba974a8a4c0ba47f2e425206296",
+        "schematic_window.png": "a90d8d10b4e89e100ab16f8cd376bbdc58d5eb86f93fbc6bab7501b0132ea88d",
+        "waveform_window.png": "cb18c10ab67810159f1ce352402c16d781d925607b27969ccdf4c1384c521438",
+        "spectre.out": "c9382e60ad1e47342714da11801d54232f39160f8dc0455eea92dc43c3151af8",
+        "provenance.json": "abe2b74ff05b0aa5c2587ac27790deee674870c81a71f7540dc1988796a8534f"
+      }
+    },
+    {
+      "case": "rectifier",
+      "label": "二极管半波整流",
+      "run_id": "vai_general_rectifier_b2bf32c34b",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 4,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "charge",
+          "analysis": "tran",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "real",
+          "at": null,
+          "minimum": 4.0,
+          "maximum": 5.0,
+          "value": 4.29012569668291,
+          "status": "PASS"
+        },
+        {
+          "id": "blocking",
+          "analysis": "tran",
+          "signal": "s2",
+          "operation": "min",
+          "representation": "real",
+          "at": null,
+          "minimum": -0.001,
+          "maximum": 0.001,
+          "value": 0.0,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "1795ff4a7bd8c33d6c0af492c0d6997b5077ce367d514c144be1e8822e2c488a",
+        "input.scs": "7da5db228e0a1c9eb5d6bf8f80228190a3cffec39a1b1ebfc311a9e827310b19",
+        "metrics.json": "1dc2f2f7f62358c858231493c39ef74d751a1c396df7d07f5c7036d7c803f42b",
+        "waveforms.json": "2d59968ded88858f19e78466055521c8d2d08acbe606191de163de3129b9b40f",
+        "schematic_window.png": "4dba86032f572c586532696217aa51078fe20f06660bb5dc5a20214e575e3010",
+        "waveform_window.png": "23c34a6aee631ffe50ec199f99d1c6538dc9779f1961eee9e018486f815f930e",
+        "spectre.out": "4af2db907000bc294e694376f6249ae4ba54c35ed4cdce17e9e317f428d131ec",
+        "provenance.json": "cf08820493d6f42db71bb5b0f50b239cd71430b8ff1b6ba4923b6291245d8d4e"
+      }
+    },
+    {
+      "case": "inverting",
+      "label": "理想运放反相放大",
+      "run_id": "vai_general_inverting_d926a800cd",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 4,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "gain",
+          "analysis": "ac",
+          "signal": "s2",
+          "operation": "at",
+          "representation": "magnitude",
+          "at": 1000.0,
+          "minimum": 1.9999,
+          "maximum": 2.0001,
+          "value": 2.0,
+          "status": "PASS"
+        },
+        {
+          "id": "feedback",
+          "analysis": "tran",
+          "signal": "s3",
+          "operation": "max",
+          "representation": "magnitude",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-06,
+          "value": 0.0,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "133a9b6c33b35c8602b9ed7d530493edfce387b3dcdb45d1e8daf0fcb568ab77",
+        "input.scs": "5ff894949a3d3265ce4c330467622b3eed601d24c04e80df3f19f96a64b1c3ac",
+        "metrics.json": "e1b43a0111fd8087416ab61485626511a873fac6e6b2412050f1859ac5096283",
+        "waveforms.json": "065ff756a7ec8467510c0de01549bcf43cb24d46c6625e0bcb3c39dd40ee432f",
+        "schematic_window.png": "9592f464b8ec7903c12b2e3cfe9d675a1f1806f848cb722cf5490cb45c3f1755",
+        "waveform_window.png": "6bdcb7cc1013f5ff83047d45d91368229637a58b5959ba3895f9bb1460e5db43",
+        "spectre.out": "6dd9fc164214a7dd2a55fe15793deac20499080271c2d04744cd1338f6b1017f",
+        "provenance.json": "475907f5117c3e0cdb3a8b747981b1322e2ed9c9339af131e953e6ebc0715845"
+      }
+    },
+    {
+      "case": "diode_iv",
+      "label": "二极管直流扫描",
+      "run_id": "vai_general_diode_iv_f6ed3bb11d",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 3,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "forward",
+          "analysis": "dc",
+          "signal": "s2",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.003,
+          "maximum": 0.006,
+          "value": 0.003152070136468234,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "ad260cb5d0fbd8666ca0235693e88c11bab217206b6f3912789c740895d72176",
+        "input.scs": "4811596bb7bdc444c3d1be199354736aa054a21efbbed1aae314e9b7bafd50b4",
+        "metrics.json": "7c5ef0d863a1eb5438f117f6e1aa1ae9ee95990287e61cac01cefa1fe587f044",
+        "waveforms.json": "c138dc7c9cd45b525e8568a5e9565da736010783ebe8c15a753d3320dd6b9193",
+        "schematic_window.png": "5f32c2c5fa0fe06b6fefa2c62eed58a910c0963595e877ab10f703798057c8eb",
+        "waveform_window.png": "2e22fe7f19ec94b052f1ed608909b41bc6426b076f7fa31a1cbafc811eaee2c4",
+        "spectre.out": "8445c6d46d136700cec9301da3044517613a8c07290c90703d623ff30daf6440",
+        "provenance.json": "f11517dc07880d9c6ba2cccefa4577f769513463736339a63484c85523bdec8a"
+      }
+    },
+    {
+      "case": "current_rl",
+      "label": "电流源与 RL",
+      "run_id": "vai_general_current_rl_8e2cf3fba6",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 3,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "inductor_current",
+          "analysis": "tran",
+          "signal": "s2",
+          "operation": "max",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.009,
+          "maximum": 0.011,
+          "value": 0.009999548462318306,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "8e40174301d24e545f575655d2a9b978ce0c9ed075e07bceed74e353967a81d3",
+        "input.scs": "7fd8e6ebe199819522a2e63c968c94005e817ef22a2401f561fd223a58247a2c",
+        "metrics.json": "7cc29ad990abfd2e8d51f914175ae1842dab1658d0a15579af94442abb4da752",
+        "waveforms.json": "901efcff0a121eb9db70f7f5c87e889a3a61969400c36075cbd1ecbd1901928d",
+        "schematic_window.png": "3c2860b19958dac315942a5c90cb7a1b5e73b815b6ac831c032554077153ab2e",
+        "waveform_window.png": "43aeb1e8fb2f759f1d3401e8c6ebd38315a014bb15babcce745dd197d34f8ead",
+        "spectre.out": "9654edfd97a361e8a7a21ef089444ee3609f57cb9f37c016154e91b3f6824e4a",
+        "provenance.json": "bc933f33270dfa900f7e6b3e8db88e172cdf0cb2694823be87426a871d012e8f"
+      }
+    },
+    {
+      "case": "rl_initial",
+      "label": "电感初始电流",
+      "run_id": "vai_general_rl_initial_f4c8589a05",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 2,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "initial_current",
+          "analysis": "tran",
+          "signal": "s2",
+          "operation": "at",
+          "representation": "real",
+          "at": 0.0,
+          "minimum": 0.00999,
+          "maximum": 0.01001,
+          "value": 0.009999999999,
+          "status": "PASS"
+        },
+        {
+          "id": "decay",
+          "analysis": "tran",
+          "signal": "s2",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 1e-06,
+          "value": 4.538496186181977e-07,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "3aa4adca2920d670a4dc5f814fc88bb8c548f7d07d18ca02f06a0cac9d86aa83",
+        "input.scs": "0444e201f59888729d5f7f1702cc06369bfca34c5f08255402c582590003dd0f",
+        "metrics.json": "b587871f55bffb6ad38f1da901d4a9b39617e5ef1695e23e96a80defdbc4b9dc",
+        "waveforms.json": "fe3a6f9abee12a1c9dfa09550fbee558063bbb7938e9ff91b7bcf583b4e1cf3a",
+        "schematic_window.png": "8ae26dffcee689619e8d26e668c409c107a2c1e6d0506d991a5799ac6e74219c",
+        "waveform_window.png": "b17eb3c2cf6902afc940c21c5017a9580c4b4b19539804198050d1be382e39f4",
+        "spectre.out": "f9544135ccbfed637e8619d83c556efa21a45614f9c2771cabb075a013da4b36",
+        "provenance.json": "07ead65104901de5a38ed9c5c03bf0fd02271662277f8a60bfe82011a472e230"
+      }
+    },
+    {
+      "case": "floating_cap",
+      "label": "浮置电容初始电压",
+      "run_id": "vai_general_floating_cap_a847dd21ba",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 3,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "initial_voltage",
+          "analysis": "tran",
+          "signal": "s1",
+          "operation": "at",
+          "representation": "real",
+          "at": 0.0,
+          "minimum": 0.9999,
+          "maximum": 1.0001,
+          "value": 0.99999950000025,
+          "status": "PASS"
+        },
+        {
+          "id": "positive_node",
+          "analysis": "tran",
+          "signal": "s2",
+          "operation": "at",
+          "representation": "real",
+          "at": 0.0,
+          "minimum": 0.4999,
+          "maximum": 0.5001,
+          "value": 0.499999750000125,
+          "status": "PASS"
+        },
+        {
+          "id": "negative_node",
+          "analysis": "tran",
+          "signal": "s3",
+          "operation": "at",
+          "representation": "real",
+          "at": 0.0,
+          "minimum": -0.5001,
+          "maximum": -0.4999,
+          "value": -0.499999750000125,
+          "status": "PASS"
+        },
+        {
+          "id": "decay",
+          "analysis": "tran",
+          "signal": "s1",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 0.001,
+          "value": 4.539611943624014e-05,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "89fbb48a218d17c571e174e010a4ffba7585a4d639663e8781b1493b897f3f09",
+        "input.scs": "132354cf68aabb6497d5b490c182938a374298127162f1b2cf63589c50892d9f",
+        "metrics.json": "d9c8e3297ec6377f042997df81b4c0b0c944335d061fa626f832b79433376d6d",
+        "waveforms.json": "f665253b415945a6deaa67aeab68859412a1459e39ce0375714935061aca308a",
+        "schematic_window.png": "a634202fcf0580034a044aec403a7645f4b8fc711223160ea63fb3ca775a0266",
+        "waveform_window.png": "144160d1ed9bd26b92b7e0f5f112380cf976fcb84edaffaf137684fd8aa3394f",
+        "spectre.out": "d6a59da9550db6b07770f6a2c0bd6a8d3893c617cfef3e3613b7d975c5f2deca",
+        "provenance.json": "cfe5d986f24cd4319cd2bbd61cf5acf71088db860316ead7b6693463e02b55ad"
+      }
+    },
+    {
+      "case": "pwl_cap",
+      "label": "分段线性电源与电容初始电压",
+      "run_id": "vai_general_pwl_cap_44e63dec3d",
+      "status": "PASS",
+      "remote_eda_executed": true,
+      "devices_checked": 3,
+      "protected_unchanged": true,
+      "images_verified": 4,
+      "measurements": [
+        {
+          "id": "initial_voltage",
+          "analysis": "tran",
+          "signal": "output",
+          "operation": "at",
+          "representation": "real",
+          "at": 0.0,
+          "minimum": 0.9999,
+          "maximum": 1.0001,
+          "value": 0.999999000001,
+          "status": "PASS"
+        },
+        {
+          "id": "discharge",
+          "analysis": "tran",
+          "signal": "output",
+          "operation": "final",
+          "representation": "real",
+          "at": null,
+          "minimum": 0.0,
+          "maximum": 0.2,
+          "value": 0.07239236781202033,
+          "status": "PASS"
+        }
+      ],
+      "evidence_sha256": {
+        "task.json": "7622ba802570772f78563578cd8843cf58edefdd29052a8fc44c48507bd5203e",
+        "input.scs": "f830d0fac46c886a47401fbba0b7eb499c6e32553f6a034dc9f543c8b80dc36f",
+        "metrics.json": "03716dbbb71e4fdd0940c59f5f5250822f1e5f9f59d1b40d370c7117dcb979a3",
+        "waveforms.json": "23538b8b8845da0af0f204ec2ee655f1605d0492d7466a8754396a9470e9d7c9",
+        "schematic_window.png": "072497e19e3ba521983ac5aefdd188a1607463f4d61f345ca337e5e89b4b20db",
+        "waveform_window.png": "0454bed634b0c0f6e031c869f98b5c507b6f3e81d177d22def340c5e3a180481",
+        "spectre.out": "a8118e7081abe0f408730b41ca61bfd1cabd94f599e53dfa8e8b4d7a912bee45",
+        "provenance.json": "32015935e4e15f623bef3ba99d9e199c8547a959f1089cfc3618965ea28bdd53"
+      }
+    }
+  ]
+}

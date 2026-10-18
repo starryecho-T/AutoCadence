@@ -1,0 +1,95 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "通用电路仿真",
+  "question": "V1 vin 0 SINE 0 1 1000 AC 1\nR1 vin feedback 10k\nR2 feedback out 20k\nU1 0 feedback out\n.op\n.ac 10 100k 30\n.tran 4m 1u\n.save V(vin) V(out) V(feedback)",
+  "components": [
+    {
+      "id": "V1",
+      "pins": {
+        "p": "vin",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 0.0,
+      "ac_magnitude": 1.0,
+      "ac_phase_deg": 0.0,
+      "waveform": {
+        "type": "sine",
+        "offset": 0.0,
+        "amplitude": 1.0,
+        "frequency_hz": 1000.0,
+        "phase_deg": 0.0,
+        "delay_s": 0.0
+      }
+    },
+    {
+      "id": "R1",
+      "pins": {
+        "p": "vin",
+        "n": "feedback"
+      },
+      "type": "resistor",
+      "resistance_ohm": 10000.0
+    },
+    {
+      "id": "R2",
+      "pins": {
+        "p": "feedback",
+        "n": "out"
+      },
+      "type": "resistor",
+      "resistance_ohm": 20000.0
+    },
+    {
+      "id": "U1",
+      "type": "ideal_opamp",
+      "pins": {
+        "plus": "0",
+        "minus": "feedback",
+        "out": "out"
+      }
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "op"
+    },
+    {
+      "type": "ac",
+      "start_hz": 10.0,
+      "stop_hz": 100000.0,
+      "points_per_decade": 30
+    },
+    {
+      "type": "tran",
+      "stop_s": 0.004,
+      "max_step_s": 1e-6,
+      "use_initial_conditions": false,
+      "initial_condition_resistance_ohm": 0.001
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "vin",
+      "n": "0"
+    },
+    {
+      "id": "s2",
+      "type": "voltage",
+      "p": "out",
+      "n": "0"
+    },
+    {
+      "id": "s3",
+      "type": "voltage",
+      "p": "feedback",
+      "n": "0"
+    }
+  ],
+  "measurements": [],
+  "temperature_c": 27.0
+}

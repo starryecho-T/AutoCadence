@@ -52,7 +52,7 @@ export default function OcrSettings({ onClose }: Props) {
 
   return (
     <Modal title="AI 识别设置" onClose={onClose}>
-        <div className="sub">用于把题目截图自动转录为文字。密钥保存在本机，识别时图片会发送给你配置的服务商。</div>
+        <div className="sub">用于整理题目文字和识别电路图片。点击识别时，题目、补充说明及所选图片会发送给你配置的服务商；密钥保存在本机。</div>
 
         <div className="preset-buttons" aria-label="识别服务商">
           {OCR_PRESETS.map((p, i) => (
@@ -73,7 +73,7 @@ export default function OcrSettings({ onClose }: Props) {
             onChange={(e) => { setApiKey(e.target.value.trim()); setResult(null) }} />
         </div>
         <div className="param-item" style={{ marginBottom: 6 }}>
-          <label htmlFor="ocr-model">模型名称（需支持图片）</label>
+          <label htmlFor="ocr-model">模型名称（图片识别需支持视觉）</label>
           <input id="ocr-model" type="text" disabled={testing} value={model} placeholder="glm-4v-plus-0111"
             onChange={(e) => { setModel(e.target.value.trim()); setResult(null) }} />
         </div>

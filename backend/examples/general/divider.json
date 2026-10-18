@@ -1,0 +1,67 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "通用电路仿真",
+  "question": "V1 vin 0 DC 10\nR1 vin mid 1k\nW1 mid out\nR2 out 0 1k\n.op\n.save V(out) I(R1)",
+  "components": [
+    {
+      "id": "V1",
+      "pins": {
+        "p": "vin",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 10.0,
+      "ac_magnitude": 0.0,
+      "ac_phase_deg": 0.0,
+      "waveform": null
+    },
+    {
+      "id": "R1",
+      "pins": {
+        "p": "vin",
+        "n": "mid"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "W1",
+      "pins": {
+        "p": "mid",
+        "n": "out"
+      },
+      "type": "wire"
+    },
+    {
+      "id": "R2",
+      "pins": {
+        "p": "out",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "op"
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "out",
+      "n": "0"
+    },
+    {
+      "id": "s2",
+      "type": "current",
+      "component": "R1"
+    }
+  ],
+  "measurements": [],
+  "temperature_c": 27.0
+}

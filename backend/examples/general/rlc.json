@@ -1,0 +1,87 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "通用电路仿真",
+  "question": "V1 vin 0 SINE 0 1 1000 AC 1\nR1 vin a 100\nL1 a out 10m\nC1 out 0 1u\n.ac 10 100k 60\n.tran 10m 2u\n.save V(out) I(L1)",
+  "components": [
+    {
+      "id": "V1",
+      "pins": {
+        "p": "vin",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 0.0,
+      "ac_magnitude": 1.0,
+      "ac_phase_deg": 0.0,
+      "waveform": {
+        "type": "sine",
+        "offset": 0.0,
+        "amplitude": 1.0,
+        "frequency_hz": 1000.0,
+        "phase_deg": 0.0,
+        "delay_s": 0.0
+      }
+    },
+    {
+      "id": "R1",
+      "pins": {
+        "p": "vin",
+        "n": "a"
+      },
+      "type": "resistor",
+      "resistance_ohm": 100.0
+    },
+    {
+      "id": "L1",
+      "pins": {
+        "p": "a",
+        "n": "out"
+      },
+      "type": "inductor",
+      "inductance_h": 0.01,
+      "initial_current_a": null
+    },
+    {
+      "id": "C1",
+      "pins": {
+        "p": "out",
+        "n": "0"
+      },
+      "type": "capacitor",
+      "capacitance_f": 1e-6,
+      "initial_voltage_v": null
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "ac",
+      "start_hz": 10.0,
+      "stop_hz": 100000.0,
+      "points_per_decade": 60
+    },
+    {
+      "type": "tran",
+      "stop_s": 0.01,
+      "max_step_s": 2e-6,
+      "use_initial_conditions": false,
+      "initial_condition_resistance_ohm": 0.001
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "out",
+      "n": "0"
+    },
+    {
+      "id": "s2",
+      "type": "current",
+      "component": "L1"
+    }
+  ],
+  "measurements": [],
+  "temperature_c": 27.0
+}

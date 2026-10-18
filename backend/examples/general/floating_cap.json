@@ -1,0 +1,68 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "通用电路仿真",
+  "question": "R1 a 0 1k\nR2 b 0 1k\nC1 a b 1u ic=1\n.tran 20m 10u ic\n.save V(a,b) V(a) V(b)",
+  "components": [
+    {
+      "id": "R1",
+      "pins": {
+        "p": "a",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "R2",
+      "pins": {
+        "p": "b",
+        "n": "0"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "C1",
+      "pins": {
+        "p": "a",
+        "n": "b"
+      },
+      "type": "capacitor",
+      "capacitance_f": 1e-6,
+      "initial_voltage_v": 1.0
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "tran",
+      "stop_s": 0.02,
+      "max_step_s": 9.999999999999999e-6,
+      "use_initial_conditions": true,
+      "initial_condition_resistance_ohm": 0.001
+    }
+  ],
+  "signals": [
+    {
+      "id": "s1",
+      "type": "voltage",
+      "p": "a",
+      "n": "b"
+    },
+    {
+      "id": "s2",
+      "type": "voltage",
+      "p": "a",
+      "n": "0"
+    },
+    {
+      "id": "s3",
+      "type": "voltage",
+      "p": "b",
+      "n": "0"
+    }
+  ],
+  "measurements": [],
+  "temperature_c": 27.0
+}

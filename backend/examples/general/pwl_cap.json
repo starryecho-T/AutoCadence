@@ -1,0 +1,84 @@
+{
+  "schema_version": "2.0",
+  "template_id": "general_circuit",
+  "title": "PWL 与电容初始条件",
+  "question": null,
+  "components": [
+    {
+      "id": "V1",
+      "pins": {
+        "p": "vin",
+        "n": "0"
+      },
+      "type": "voltage_source",
+      "dc": 0.0,
+      "ac_magnitude": 0.0,
+      "ac_phase_deg": 0.0,
+      "waveform": {
+        "type": "pwl",
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.001,
+            1.0
+          ],
+          [
+            0.002,
+            0.0
+          ],
+          [
+            0.004,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "id": "R1",
+      "pins": {
+        "p": "vin",
+        "n": "out"
+      },
+      "type": "resistor",
+      "resistance_ohm": 1000.0
+    },
+    {
+      "id": "C1",
+      "pins": {
+        "p": "out",
+        "n": "0"
+      },
+      "type": "capacitor",
+      "capacitance_f": 1e-6,
+      "initial_voltage_v": 1.0
+    }
+  ],
+  "models": [],
+  "analyses": [
+    {
+      "type": "tran",
+      "stop_s": 0.004,
+      "max_step_s": 1e-6,
+      "use_initial_conditions": true,
+      "initial_condition_resistance_ohm": 0.001
+    }
+  ],
+  "signals": [
+    {
+      "id": "output",
+      "type": "voltage",
+      "p": "out",
+      "n": "0"
+    },
+    {
+      "id": "current",
+      "type": "current",
+      "component": "C1"
+    }
+  ],
+  "measurements": [],
+  "temperature_c": 27.0
+}

@@ -86,12 +86,12 @@ def _canvas_stats(image: Image.Image, kind: str, native: bool = False) -> dict:
     return {'canvas_box': list(box), 'color_pixels': counts, 'color_spans': spans}
 
 
-def _native_image(path: Path) -> Image.Image:
+def _native_image(path: Path, min_height: int = 200) -> Image.Image:
     try:
         with Image.open(path) as source:
             if source.format != 'PNG':
                 raise ImageError(f'{path.name}: native image must be PNG')
-            if not (320 <= source.width <= 4096 and 200 <= source.height <= 4096):
+            if not (320 <= source.width <= 4096 and min_height <= source.height <= 4096):
                 raise ImageError(f'{path.name}: invalid native image dimensions')
             source.load()
             return source.convert('RGB')
@@ -101,7 +101,7 @@ def _native_image(path: Path) -> Image.Image:
         raise ImageError(f'{path.name}: native image cannot be decoded') from exc
 
 
-def convert_and_validate(evidence_dir: Path) -> dict:
+def convert_and_validate(evidence_dir: Path, general: bool = False) -> dict:
     """Decode real XWDs losslessly and reject blank/corrupt evidence.
 
     This render check is for the fixed IC617 RC template and dark theme;
@@ -115,13 +115,32 @@ def convert_and_validate(evidence_dir: Path) -> dict:
         png = evidence_dir / f'{kind}_window.png'
         # No redraw, annotation, crop, resize, or synthesized pixels are saved.
         image.save(png, format='PNG')
-        stats = _canvas_stats(image, kind)
+        stats = _general_canvas_stats(image, kind) if general else _canvas_stats(image, kind)
         result['images'][png.name] = {'width': image.width, 'height': image.height,
                                      'bytes': png.stat().st_size, 'source': xwd.name, **stats}
         native = evidence_dir / f'{kind}_native.png'
-        native_image = _native_image(native)
-        native_stats = _canvas_stats(native_image, kind, native=True)
+        native_image = _native_image(native, min_height=80 if general else 200)
+        native_stats = _general_canvas_stats(native_image, kind, native=True) if general else _canvas_stats(native_image, kind, native=True)
         result['images'][native.name] = {'width': native_image.width, 'height': native_image.height,
                                         'bytes': native.stat().st_size, 'source': 'Cadence native export',
                                         **native_stats}
     return result
+
+
+def _general_canvas_stats(image, kind, native=False):
+    """Check the drawing area without assuming a trace count, color or shape."""
+    fractions = ((.03,.05,.97,.95) if kind == 'schematic' else (.26,.20,.96,.88)) if native else ((.15,.18,.98,.93) if kind == 'schematic' else (.49,.23,.93,.87))
+    w,h = image.size
+    box = tuple(int(size*frac) for size,frac in zip((w,h,w,h),fractions))
+    crop = image.convert('RGB').crop(box)
+    coords = []
+    for i,(r,g,b) in enumerate(crop.getdata()):
+        # Includes pure green/blue and arbitrary ViVA trace colors, excludes axes/text.
+        if max(r,g,b) > 120 and max(r,g,b)-min(r,g,b) > 90:
+            coords.append((i%crop.width,i//crop.width))
+    span_x = max((x for x,y in coords),default=0)-min((x for x,y in coords),default=0)
+    span_y = max((y for x,y in coords),default=0)-min((y for x,y in coords),default=0)
+    if len(coords)<150 or span_x < crop.width*.25 or (kind=='schematic' and span_y<crop.height*.1):
+        raise ImageError(f'{kind}: drawing canvas is empty or incomplete')
+    return {'canvas_box':list(box),'colored_pixels':len(coords),'span_x':span_x,'span_y':span_y,
+            'validation':'Generic visible drawing check; numerical correctness is verified separately.'}

@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime,timezone
 from .config import load_worker_config
 from .models import TaskSpec
+from .circuit_models import CircuitTask
 
 PACKAGE=Path(__file__).resolve().parents[1]
 def now():return datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
@@ -53,6 +54,13 @@ def _archive(task,run_id,config):
             tf.add(path,arcname=path.relative_to(PACKAGE/'worker').as_posix(),recursive=False)
         remote_config={key:value for key,value in config.items() if not key.startswith('ssh_')}
         payload=json.dumps({'task':task,'run_id':run_id,'config':remote_config},ensure_ascii=True).encode()
+        if task.get('template_id') == 'general_circuit':
+            from .circuit_compiler import scripts
+            tf.add(PACKAGE/'worker/general.py', arcname='general.py', recursive=False)
+            for name, value in scripts(CircuitTask.model_validate(task)).items():
+                data=value.encode('utf-8')
+                item=tarfile.TarInfo(name);item.size=len(data);item.mode=0o600
+                tf.addfile(item,io.BytesIO(data))
         info=tarfile.TarInfo('input.json');info.size=len(payload);info.mode=0o600
         tf.addfile(info,io.BytesIO(payload))
     return memory.getvalue()
@@ -103,7 +111,8 @@ def _run_remote(config,root,run_dir,emit):
     return rc,final
 
 def execute(task_dict:dict,run_dir:Path,emit)->dict:
-    task=TaskSpec.model_validate(task_dict).model_dump();run_dir=Path(run_dir).resolve()
+    model=CircuitTask if task_dict.get('template_id')=='general_circuit' else TaskSpec
+    task=model.model_validate(task_dict).model_dump();run_dir=Path(run_dir).resolve()
     evidence=run_dir/'evidence';evidence.mkdir(parents=True,exist_ok=True)
     config=load_worker_config();run_id=run_dir.name;_validate_config(config,run_id)
     root=config['remote_base'].rstrip('/')+'/'+run_id
@@ -133,13 +142,23 @@ def execute(task_dict:dict,run_dir:Path,emit)->dict:
         error=(result or {}).get('error') or {}
         raise PipelineError(error.get('code','REMOTE_FAILED'),error.get('stage','execution'),error.get('message','Remote process failed with exit '+str(rc)+'; see remote.log'))
     from .images import convert_and_validate
-    from .analysis import analyze
-    from .reporting import generate_report
-    image_result=stage('image_validation',lambda:convert_and_validate(evidence))
+    if task.get('template_id') == 'general_circuit':
+        from .circuit_analysis import analyze, generate_report
+    else:
+        from .analysis import analyze
+        from .reporting import generate_report
+    image_result=stage('image_validation',lambda:convert_and_validate(evidence, general=True) if task.get('template_id') == 'general_circuit' else convert_and_validate(evidence))
     (evidence/'image_validation.json').write_text(json.dumps(image_result,indent=2),encoding='utf-8')
     metrics=stage('validation',lambda:analyze(task,evidence))
     (evidence/'metrics.json').write_text(json.dumps(metrics,indent=2,allow_nan=False),encoding='utf-8')
     warnings=[]
+    if task.get('template_id') == 'general_circuit':
+        from .circuits import compile_task
+        warnings.extend(compile_task(task)['warnings'])
+        spectre_log=(evidence/'spectre.out').read_text(errors='replace')
+        for line in spectre_log.splitlines():
+            if re.search(r'\bWARNING\b',line,re.I) and '0 warnings' not in line.lower():
+                warnings.append(line.strip()[:500])
     for log in (evidence/'logs').glob('*.log'):
         content=log.read_text(errors='replace')
         if '*WARNING*' in content or 'Qt Warning' in content:warnings.append('Frontend tool warning recorded in logs/'+log.name)

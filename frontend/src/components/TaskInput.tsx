@@ -3,6 +3,7 @@ import type { ParseResult, TaskDraft } from '../types'
 import { postParse } from '../api'
 import { loadOcrConfig, ocrImage } from '../ocr'
 import Icon from './Icon'
+import GeneralInput from './GeneralInput'
 
 interface Props {
   draft: TaskDraft
@@ -85,7 +86,10 @@ export default function TaskInput({ draft, onDraftChange, disabled, onParsed, on
     }
   }
 
+  if (draft.mode === 'general') return <GeneralInput draft={draft} onDraftChange={onDraftChange} disabled={disabled} onParsed={onParsed} onOpenOcrSettings={onOpenOcrSettings} onBusyChange={onBusyChange} />
+
   return <section className="fade-in">
+    <div className="btnrow" style={{ marginBottom: 12 }}><button className="btn" disabled>RC 低通题目</button><button className="btn ghost" disabled={locked} onClick={() => onDraftChange({ ...draft, mode: 'general' })}>通用电路</button></div>
     <div className="card input-card" onPaste={event => {
       const file = [...event.clipboardData.items].find(item => item.type.startsWith('image/'))?.getAsFile()
       if (file && !locked) { event.preventDefault(); pickFile(file) }

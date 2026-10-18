@@ -27,6 +27,7 @@ export const METRIC_LABELS: Record<string, [string, string]> = {
 }
 
 export function validateTask(task: TaskSpec): string | null {
+  if (task.kind === 'general_circuit') return task.circuit ? null : '缺少通用电路描述'
   const p = task.params ?? {}
   if (!Object.keys(p).length) return '没有可提交的参数'
   for (const [key, value] of Object.entries(p)) {

@@ -12,6 +12,10 @@ from .config import Settings
 from .manager import RunManager
 from .models import TaskSpec, RunResult, ParseRequest
 from .parsing import parse_question
+from .circuit_models import CircuitTask
+from .circuits import preview
+from .circuit_parsing import parse_circuit
+from .circuit_examples import EXAMPLES
 
 class ApiFailure(Exception):
     def __init__(self,status,code,message,details=None):
@@ -28,6 +32,9 @@ class ParseResponse(BaseModel):
 class RunList(BaseModel):
     runs: list[RunResult]
 
+class CircuitInput(BaseModel):
+    text: str = Field(min_length=1, max_length=50000)
+
 def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     settings=settings or Settings.from_env()
     manager=manager or RunManager(settings.data_dir)
@@ -37,7 +44,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
         try:yield
         finally:manager.close()
     app=FastAPI(title='VAI Virtuoso Automation API',version='1.0.0',lifespan=lifespan,
-        description='RC task planning, isolated real Cadence runs, verified screenshots and reports. Single worker only.')
+        description='RC planning (v1) and general R/C/L/diode/source/ideal-opamp circuits (v2), isolated real Cadence runs, verified screenshots and reports. Single worker only.')
     app.state.manager=manager;app.state.settings=settings
     app.add_middleware(CORSMiddleware,allow_origins=list(settings.cors_origins),allow_credentials=False,
                        allow_methods=['GET','POST','OPTIONS'],allow_headers=['Authorization','Content-Type'])
@@ -67,13 +74,32 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
                 'stages':['upload','preflight','build','probe','netlist','netlist_validation','spectre','export','capture','download','image_validation','validation','report']}
     @app.post('/api/v1/parse',response_model=ParseResponse,dependencies=deps)
     def parse(body:ParseRequest):return parse_question(body.text)
+    @app.get('/api/v2/capabilities',dependencies=deps)
+    def circuit_capabilities():
+        return {'schema_version':'2.0','components':['resistor','capacitor','inductor','diode','voltage_source','current_source','ideal_opamp','wire'],
+                'analyses':['op','dc','ac','tran'],'limits':{'components':100,'signals':16,'transient_step_budget':200000},
+                'ideal_opamp':'Infinite gain linear constraint; no rail saturation or bandwidth limit.',
+                'examples':[{'id':key,'label':label,'text':text} for key,(label,text) in EXAMPLES.items()]}
+    @app.post('/api/v2/parse',dependencies=deps)
+    def circuit_parse(body:CircuitInput):
+        try:return preview(parse_circuit(body.text))
+        except (ValueError,TypeError) as exc:raise ApiFailure(422,'CIRCUIT_INVALID',str(exc)) from exc
+    @app.post('/api/v2/preview',dependencies=deps)
+    def circuit_preview(body:CircuitTask):return preview(body)
+    @app.post('/api/v2/runs',response_model=RunResult,status_code=202,dependencies=deps)
+    def circuit_submit(body:CircuitTask):
+        if manager.stats()['queued']>=20:raise ApiFailure(429,'QUEUE_FULL','Queue is full')
+        try:return manager.submit(body)
+        except RuntimeError as exc:raise ApiFailure(503,'SHUTTING_DOWN',str(exc)) from exc
     @app.post('/api/v1/runs',response_model=RunResult,status_code=202,dependencies=deps)
     def submit(body:TaskSpec):
         if manager.stats()['queued']>=20:raise ApiFailure(429,'QUEUE_FULL','Queue is full; retry after a current run completes')
         try:return manager.submit(body)
         except RuntimeError as exc:raise ApiFailure(503,'SHUTTING_DOWN',str(exc)) from exc
+    @app.get('/api/v2/runs',response_model=RunList,dependencies=deps)
     @app.get('/api/v1/runs',response_model=RunList,dependencies=deps)
     def runs(limit:int=Query(default=50,ge=1,le=200)):return {'runs':manager.list(limit)}
+    @app.get('/api/v2/runs/{run_id}',response_model=RunResult,dependencies=deps)
     @app.get('/api/v1/runs/{run_id}',response_model=RunResult,dependencies=deps)
     def run(run_id:str):
         result=manager.get(run_id)

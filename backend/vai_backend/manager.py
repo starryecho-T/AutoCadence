@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Callable
 
 from .models import Artifact, RunError, RunResult, Stage, TaskSpec
+from .circuit_models import CircuitTask
 
 LOG = logging.getLogger(__name__)
 
@@ -120,7 +121,7 @@ class RunManager:
                 'recovery_warnings': list(self.recovery_warnings),
             }
 
-    def submit(self, task: TaskSpec) -> RunResult:
+    def submit(self, task: TaskSpec | CircuitTask) -> RunResult:
         run_id = 'vai_' + datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S') + '_' + uuid.uuid4().hex[:12]
         now = utc_now()
         record = RunResult(run_id=run_id, status='queued', created_at=now, updated_at=now, task=task)

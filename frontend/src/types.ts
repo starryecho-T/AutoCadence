@@ -5,7 +5,15 @@ export type RunStatus = 'queued' | 'running' | 'succeeded' | 'failed'
 
 export interface TaskDraft {
   text: string
+  mode?: 'rc' | 'general'
   image?: { name: string; dataUrl: string }
+  general?: {
+    input: 'text' | 'image' | 'connections'
+    connections?: string
+    summary?: string
+    issues?: { question: string; answer: string; confirmed: boolean }[]
+    stale?: boolean
+  }
 }
 
 /** 阶段进度（stage 名称以后端实际返回为准，这里做宽松匹配） */
@@ -56,6 +64,7 @@ export interface RunRecord {
 
 /** 提交仿真的任务描述（parse 确认后） */
 export interface TaskSpec {
+  circuit?: GeneralCircuit
   contract?: '1.0'
   title?: string
   kind?: string
@@ -66,6 +75,7 @@ export interface TaskSpec {
 
 /** /api/v1/parse 的响应 */
 export interface ParseResult {
+  circuitPreview?: CircuitPreview
   ok: boolean
   /** 候选任务（待用户确认，不自动提交） */
   task?: TaskSpec
@@ -86,4 +96,22 @@ export interface HealthInfo {
   version?: string
   queue?: number | string
   detail?: string
+}
+
+export interface GeneralCircuit {
+  schema_version: '2.0'
+  template_id: 'general_circuit'
+  title: string
+  components: { id: string; type: string; pins: Record<string, string>; [key: string]: unknown }[]
+  analyses: { type: string; [key: string]: unknown }[]
+  signals: { id: string; type: string; [key: string]: unknown }[]
+  [key: string]: unknown
+}
+
+export interface CircuitPreview {
+  task: GeneralCircuit
+  normalized: { components: GeneralCircuit['components']; aliases: Record<string, string>; node_map: Record<string, string> }
+  warnings: string[]
+  netlist: string
+  requires_confirmation: true
 }

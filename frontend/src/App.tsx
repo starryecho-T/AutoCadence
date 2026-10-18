@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HealthInfo, ParseResult, RunRecord, TaskDraft, TaskSpec } from './types'
-import { getHealth, getRun, listRuns, postRun, demoRunGet, isDemoMode, retainDemoRuns } from './api'
+import { getHealth, getRun, listRuns, postRun, demoRunGet, isDemoMode, retainDemoRuns, previewCircuit } from './api'
 import { engineering } from './units'
 import Icon from './components/Icon'
 import Modal from './components/Modal'
@@ -34,6 +34,8 @@ export default function App() {
   const [notice, setNotice] = useState('')
   const [pollError, setPollError] = useState('')
   const [showOcrSettings, setShowOcrSettings] = useState(false)
+  const editController = useRef<AbortController | null>(null)
+  useEffect(() => () => editController.current?.abort(), [])
   const stopPollingRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
@@ -108,6 +110,7 @@ export default function App() {
   }
 
   function restart() {
+    editController.current?.abort()
     stopPolling()
     setPollError('')
     setRun(null)
@@ -118,6 +121,7 @@ export default function App() {
   }
 
   function selectRun(selected: RunRecord) {
+    editController.current?.abort()
     stopPolling()
     setPollError('')
     setNotice('')
@@ -129,15 +133,28 @@ export default function App() {
     } else setPhase('result')
   }
 
-  function editRun() {
+  async function editRun() {
     if (!run?.task) return
     stopPolling()
+    if (run.task.circuit) {
+      editController.current?.abort()
+      const abort = new AbortController(); editController.current = abort
+      try {
+        const circuitPreview = await previewCircuit(run.task.circuit, abort.signal)
+        if (abort.signal.aborted) return
+        setParse({ ok: true, task: run.task, circuitPreview })
+        setDraft({ text: typeof run.task.circuit.question === 'string' ? run.task.circuit.question : '', mode: 'general', general: { input: 'connections', connections: JSON.stringify(run.task.circuit, null, 2) } })
+        setNotice(''); setPhase('confirm')
+      } catch (e) { if (!abort.signal.aborted) setNotice('加载电路失败：' + message(e)) }
+      return
+    }
     setParse({ ok: true, task: run.task })
     setDraft({ text: run.task.source_text ?? '' })
     setNotice('')
     setPhase('confirm')
   }
   const demo = health?.demo === true
+  const general = phase === 'input' ? draft.mode === 'general' : phase === 'confirm' ? !!parse?.circuitPreview : !!run?.task?.circuit
   const locked = submitting || inputBusy
   const currentStep = phase === 'input' ? 0 : phase === 'confirm' ? 1 : 2
   const headings = {
@@ -163,23 +180,25 @@ export default function App() {
       <div className="history-list">{historyItems()}</div>
       <div className="sidebar-footer"><button className="sidebar-action" onClick={() => setShowOcrSettings(true)}><Icon name="settings" />设置</button>
         <button className="sidebar-action" disabled={!health || phase === 'running' || locked} onClick={() => setConnectionAttempt(value => value + 1)}><Icon name="refresh" />重新连接</button>
-        <span className="sidebar-caption">一阶 RC 低通 · {demo ? '本地演示' : '仿真工作台'}</span>
+        <span className="sidebar-caption">通用模拟电路 · {demo ? '本地演示' : '仿真工作台'}</span>
       </div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><div className="breadcrumb"><span>工作台</span><span className="separator">/</span><strong>RC 低通滤波器</strong></div>
+      <header className="topbar"><div className="breadcrumb"><span>工作台</span><span className="separator">/</span><strong>{general ? '通用电路' : 'RC 低通滤波器'}</strong></div>
         <div className="topbar-actions"><button className="icon-button mobile-only" aria-label="最近任务" onClick={() => setShowHistory(true)}><Icon name="history" /></button>
           <button className="icon-button mobile-only" aria-label="设置" onClick={() => setShowOcrSettings(true)}><Icon name="settings" /></button>
           {health === null ? <span className="status-chip">连接中…</span> : demo ? <span className="status-chip demo">演示模式 · 后端未连接</span> : <span className="status-chip ok" title={health.version ? `服务版本 ${health.version}` : undefined}>后端在线{Number(health.queue) > 0 ? ` · 排队 ${health.queue}` : ''}</span>}
         </div>
       </header>
-      <main className="workspace"><header className="page-heading"><div><h1>{headings[phase][0]}</h1><p>{headings[phase][1]}</p></div><span className="type-badge">一阶 RC 低通</span></header>
+      <main className="workspace"><header className="page-heading"><div><h1>{headings[phase][0]}</h1><p>{headings[phase][1]}</p></div><span className="type-badge">{general ? 'R · C · L · D · 电源 · 理想运放' : '一阶 RC 低通'}</span></header>
         <nav className="steps" aria-label="仿真步骤">{['输入题目', '确认参数', '仿真与结果'].map((label, index) => <div key={label} className={`step ${index === currentStep ? 'active' : index < currentStep ? 'done' : ''}`} aria-current={index === currentStep ? 'step' : undefined}>
           <span className="step-number">{index < currentStep ? <Icon name="check" /> : index + 1}</span><span>{label}</span>{index < 2 && <span className="step-line" />}
         </div>)}</nav>
         {notice && <div className="note err" role="alert">{notice}</div>}
         {phase === 'input' && <TaskInput draft={draft} onDraftChange={setDraft} disabled={!health} onParsed={handleParsed} onOpenOcrSettings={() => setShowOcrSettings(true)} onBusyChange={setInputBusy} />}
-        {phase === 'confirm' && parse && <ConfirmPanel parse={parse} sourceText={draft.text} busy={submitting} onConfirm={handleSubmit}
+        {phase === 'confirm' && parse && <ConfirmPanel parse={parse} draft={draft} sourceText={draft.text}
+          onCircuitEdit={raw => setDraft(current => ({ ...current, general: { ...current.general, input: 'connections', connections: raw, stale: false } }))}
+          onPreviewChange={preview => setParse(current => current ? { ...current, circuitPreview: preview } : current)} busy={submitting} onConfirm={handleSubmit}
           onTaskChange={task => setParse(current => current ? { ...current, task } : current)} onBack={() => { setNotice(''); setPhase('input') }} />}
         {phase === 'running' && run && <>
           <RunProgress run={run} />

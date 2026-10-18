@@ -17,7 +17,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Desktop dependency installation failed.' }
 Push-Location $frontendRoot
 try {
     if (-not (Test-Path -LiteralPath 'node_modules\vite')) { throw 'Run npm ci in frontend first.' }
-    & node --test tests\regression.test.mjs tests\units.test.mjs
+    & node --test tests/*.test.mjs
     if ($LASTEXITCODE -ne 0) { throw 'Frontend tests failed.' }
     & node node_modules\typescript\bin\tsc --noEmit
     if ($LASTEXITCODE -ne 0) { throw 'TypeScript validation failed.' }

@@ -1,19 +1,25 @@
 import { useState } from 'react'
-import type { ParseResult, TaskSpec } from '../types'
+import type { CircuitPreview, ParseResult, TaskDraft, TaskSpec } from '../types'
 import { isDemoMode } from '../api'
 import { formatNumber, PARAM_LABELS, validateTask } from '../circuit'
 import { engineering, PARAMETERS } from '../units'
 import Icon from './Icon'
 import ParameterField from './ParameterField'
+import GeneralConfirm from './GeneralConfirm'
 
 interface Props {
-  parse: ParseResult; sourceText: string; busy: boolean
+  parse: ParseResult; sourceText: string; busy: boolean; draft?: TaskDraft
+  onCircuitEdit?: (raw: string) => void; onPreviewChange?: (preview: CircuitPreview) => void
   onConfirm: (task: TaskSpec) => void; onBack: () => void; onTaskChange: (task: TaskSpec) => void
 }
 const COMPONENTS = ['r_ohm', 'c_farad']
 const SIGNAL = ['low_v', 'high_v', 'period_s', 'width_s']
 
-export default function ConfirmPanel({ parse, sourceText, busy, onConfirm, onBack, onTaskChange }: Props) {
+export default function ConfirmPanel(props: Props) {
+  return props.parse.circuitPreview ? <GeneralConfirm draft={props.draft} onCircuitEdit={props.onCircuitEdit} onPreviewChange={props.onPreviewChange} preview={props.parse.circuitPreview} busy={props.busy} onConfirm={props.onConfirm} onBack={props.onBack} onTaskChange={props.onTaskChange} /> : <RcConfirm {...props} />
+}
+
+function RcConfirm({ parse, sourceText, busy, onConfirm, onBack, onTaskChange }: Props) {
   const [params, setParams] = useState(() => ({ ...parse.task?.params }))
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const task = { ...parse.task, kind: parse.task?.kind ?? 'rc_lowpass', source_text: sourceText, params }
