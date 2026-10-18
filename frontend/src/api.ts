@@ -132,12 +132,24 @@ function fmtComp(v: number, unit: string): string {
   return t(v * 1e12) + 'p' + unit
 }
 
-/** 演示 parse：题干抓 R/C，抓不到用默认值并在 missing 里提示 */
+/** 演示 parse：题干抓 R/C，抓不到用默认值并在 missing 里提示
+ *  兼容 "R=2kΩ / R=2k / R = 2 kΩ / 2.2k ohm" 与 "C=0.1µF / 100nF / 1uF"（µ 为 U+00B5 或 U+03BC） */
 export function demoParse(text: string, hasImage = false): ParseResult {
-  const rMatch = text.match(/(\d+(?:\.\d+)?)\s*k?\s*(?:Ω|ohm|欧)/i)
-  const cMatch = text.match(/(\d+(?:\.\d+)?)\s*[uμn]\s*[Ff]/)
-  const rVal = rMatch ? parseFloat(rMatch[1]) * (/k/i.test(rMatch[0]) ? 1000 : 1) : 1000
-  const cVal = cMatch ? parseFloat(cMatch[1]) * (/[μu]/i.test(cMatch[0]) ? 1e-6 : 1e-9) : 1e-6
+  const rMatch =
+    // 形如 "2kΩ / 4.7k ohm / 2kΩ 电阻" —— 数字 + k + 可选单位
+    text.match(/(\d+(?:\.\d+)?)\s*k\s*(?:Ω|ohm|欧姆?)?/i) ??
+    // 形如 "330Ω / 100 ohm"（无 k 前缀）
+    text.match(/(\d+(?:\.\d+)?)\s*(?:Ω|ohm|欧姆?)/i) ??
+    // 形如 "R=2.2K" 或 "电阻 10K"（大写 K 结尾、后跟非字母）——放最后，避免误抓电容 K
+    text.match(/(\d+(?:\.\d+)?)\s*K(?![A-Za-z])/);
+  const cMatch = text.match(/(\d+(?:\.\d+)?)\s*([uµμ]|n|p|m)?\s*[Ff](?![A-Za-z])/);
+  const rVal = rMatch
+    ? parseFloat(rMatch[1]) * (/k/i.test(rMatch[0]) ? 1000 : 1)
+    : 1000
+  const cUnit = cMatch?.[2]
+  const cVal = cMatch
+    ? parseFloat(cMatch[1]) * (cUnit === 'n' ? 1e-9 : cUnit === 'p' ? 1e-12 : cUnit === 'm' ? 1e-3 : 1e-6)
+    : 1e-6
   const hints = ['演示模式：后端未连接，以下为界面流程演示，数值由前端按一阶 RC 公式推算']
   if (hasImage) hints.push('已收到题目截图；真实后端上线后将以 image_b64 字段一并发送解析')
   const missing: string[] = []
