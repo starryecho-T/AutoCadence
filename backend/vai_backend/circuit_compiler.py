@@ -39,6 +39,28 @@ procedure(gConnect(cv inst master name node index)
     schCreateWireLabel(cv car(wire) endpoint node "lowerCenter" "R0" "stick" 0.0625 nil)
   )
 )
+procedure(gWire(cv points)
+  let((wire)
+    wire=schCreateWire(cv "draw" "orthogonal" points 0.0625 0.0625 0)
+    unless(wire error("WIRE_FAILED"))
+    wire
+  )
+)
+procedure(gBetween(cv master name t0 t1 a b)
+  let((p0 p1 delta target orientation center origin inst)
+    p0=gPos(master t0) p1=gPos(master t1)
+    target=list(xCoord(b)-xCoord(a) yCoord(b)-yCoord(a))
+    foreach(rotation list("R0" "R90" "R180" "R270")
+      delta=dbTransformPoint(list(xCoord(p1)-xCoord(p0) yCoord(p1)-yCoord(p0)) list(list(0 0) rotation 1))
+      when(abs(xCoord(delta)*yCoord(target)-yCoord(delta)*xCoord(target))<0.00001 && xCoord(delta)*xCoord(target)+yCoord(delta)*yCoord(target)>0 orientation=rotation)
+    )
+    unless(orientation error("NONAXIAL_TERMINALS"))
+    center=dbTransformPoint(list((xCoord(p0)+xCoord(p1))/2 (yCoord(p0)+yCoord(p1))/2) list(list(0 0) orientation 1))
+    origin=list((xCoord(a)+xCoord(b))/2-xCoord(center) (yCoord(a)+yCoord(b))/2-yCoord(center))
+    inst=schCreateInst(cv master name origin orientation)
+    inst
+  )
+)
 '''
 
 
@@ -47,8 +69,10 @@ def scripts(task):
     jobs = study_jobs(task)
     t = jobs[0]['task']
     c = compile_task(task)
-    # Parallel two-terminal circuits use explicit rails. More complex circuits
-    # retain the named-net layout; their connectivity is still probed/netlisted.
+    from .schematic_layout import loop_layout
+    loop = loop_layout(c['devices'])
+    # Draw explicit conductive paths for loops, parallel branches, and buses.
+    # Cadence terminal probing and emitted netlist validation remain mandatory.
     nodes = {n for d in c['devices'] for n in d['nodes']}
     rails = (len(nodes) == 2 and '0' in nodes and len(c['devices']) <= 12 and
              all(len(d['terminals']) == 2 and set(d['nodes']) == nodes for d in c['devices']))
@@ -79,6 +103,8 @@ dbSave(stopView) dbClose(stopView)
     expected = []
     if rails:
         lines.append('railPins=nil')
+    if not rails and not loop:
+        lines.append('busPins=nil')
     for i, d in enumerate(c['devices']):
         library = 'LIB' if d['type'] == 'ideal_opamp' else '"analogLib"'
         lines += [f'master=dbOpenCellViewByType({library} {q(d["symbol"])} "symbol" "schematicSymbol" "r")',
@@ -88,7 +114,12 @@ dbSave(stopView) dbClose(stopView)
             bottom = d['terminals'][d['nodes'].index('0')]
             lines += [f'orientation=if(yCoord(gPos(master {q(top)}))>yCoord(gPos(master {q(bottom)})) then "R0" else "R180")']
         orientation = 'orientation' if rails else '"R0"'
-        lines += [f'inst=schCreateInst(cv master {q(d["instance"])} list({i*2.0 if rails else i%4*4.0} {0 if rails else -(i//4)*2.5}) {orientation})',
+        if loop:
+            a, b = loop['devices'][i]
+            placement = f'gBetween(cv master {q(d["instance"])} {q(d["terminals"][0])} {q(d["terminals"][1])} list({a[0]} {a[1]}) list({b[0]} {b[1]}))'
+        else:
+            placement = f'schCreateInst(cv master {q(d["instance"])} list({i*2.0 if rails else i*4.0} 0) {orientation})'
+        lines += [f'inst={placement}',
                   'unless(inst error("INSTANCE_FAILED"))']
         for prop, value in d['properties'].items():
             ptype = 'int' if isinstance(value, int) else 'string'
@@ -98,8 +129,26 @@ dbSave(stopView) dbClose(stopView)
             node = 'gnd!' if node == '0' else node
             if rails:
                 lines.append(f'railPins=cons(list({q(node)} dbTransformPoint(gPos(master {q(term)}) inst~>transform)) railPins)')
+            elif loop:
+                p = loop['devices'][i][j]
+                lines += [f'point=list({p[0]} {p[1]})',
+                          f'wire=gWire(cv list(point dbTransformPoint(gPos(master {q(term)}) inst~>transform)))',
+                          f'schCreateWireLabel(cv car(wire) point {q(node)} "lowerCenter" "R0" "stick" 0.0625 nil)']
             else:
-                lines.append(f'gConnect(cv inst master {q(term)} {q(node)} {j})')
+                # Each terminal gets its own vertical lane. Rail crossings are
+                # interior-to-interior; only the target rail has an endpoint.
+                side = -1 if j % 2 == 0 else 1
+                if d['type'] == 'ideal_opamp':
+                    side = 1 if term == 'out' else -1
+                elif d['type'] == 'pmos':
+                    side = 1 if term == 'B' else -1
+                elif d['type'] == 'bjt' and term == 'B':
+                    side = -1
+                x = i*4.0 + side*(1.0 + j*.25)
+                lines += [f'point=dbTransformPoint(gPos(master {q(term)}) inst~>transform)',
+                          f'endpoint=list({x} yCoord(point))',
+                          'gWire(cv list(point endpoint))',
+                          f'busPins=cons(list({q(node)} endpoint) busPins)']
             expected.append((d['instance'], term, node))
     lines.append('gm=dbOpenCellViewByType("analogLib" "gnd" "symbol" "schematicSymbol" "r")')
     if rails:
@@ -123,8 +172,21 @@ foreach(entry railPins
                   'gp=gPos(gm car(gm~>terminals)~>name)',
                   'gi=schCreateInst(cv gm "GND0" list(left-xCoord(gp) lower-0.5-yCoord(gp)) "R0")',
                   'unless(schCreateWire(cv "draw" "orthogonal" list(list(left lower) list(left lower-0.5)) 0.0625 0.0625 0) error("GROUND_WIRE_FAILED"))']
+    elif loop:
+        lines += [f'gWire(cv list(list(0 0) list({loop["width"]} 0)))',
+                  'gp=gPos(gm car(gm~>terminals)~>name)',
+                  'gi=schCreateInst(cv gm "GND0" list(-xCoord(gp) -0.5-yCoord(gp)) "R0")',
+                  'gWire(cv list(list(0 0) list(0 -0.5)))']
     else:
-        lines.append('gi=schCreateInst(cv gm "GND0" list(-2 -1) "R0")')
+        for j, node in enumerate(sorted(nodes)):
+            name = 'gnd!' if node == '0' else node
+            y = 2 + j*.5
+            lines += [f'foreach(entry busPins when(equal(car(entry) {q(name)}) gWire(cv list(cadr(entry) list(xCoord(cadr(entry)) {y})))))',
+                      f'wire=gWire(cv list(list(-2 {y}) list({len(c["devices"])*4-2} {y})))',
+                      f'schCreateWireLabel(cv car(wire) list(-2 {y}) {q(name)} "lowerCenter" "R0" "stick" 0.0625 nil)']
+        lines += ['gp=gPos(gm car(gm~>terminals)~>name)',
+                  'gi=schCreateInst(cv gm "GND0" list(-2-xCoord(gp) 1.5-yCoord(gp)) "R0")',
+                  'gWire(cv list(list(-2 2) list(-2 1.5)))']
     lines += ['schCheck(cv)', 'dbSave(cv)', 'dbClose(cv)', 'println("BUILD_PASSED")', 'exit()']
     probe = ['cv=dbOpenCellViewByType("@LIB@" "general" "schematic" "schematic" "r")',
              f'unless(length(cv~>instances)=={len(c["devices"])+1} error("PROBE_INSTANCE_COUNT"))']

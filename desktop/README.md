@@ -1,13 +1,13 @@
 # Windows 桌面版
 
-目标：双击 `CircuitSim.exe` 后打开“电路仿真助手”独立窗口。EXE 包含 Python 运行时与已构建的 React 界面，使用系统 Microsoft Edge WebView2 显示界面，用户无需安装 Python、Node.js 或启动前端开发服务。
+目标：双击 `AutoCAD.exe` 后打开“AutoCAD”独立窗口。EXE 包含 Python 运行时与已构建的 React 界面，使用系统 Microsoft Edge WebView2 显示界面，用户无需安装 Python、Node.js 或启动前端开发服务。
 
 当前版本封装 RC 与通用电路前端，连接单独启动的现有仿真后端。后端不可达时显示明确的演示模式；不会把本地公式结果当成真实仿真。
 
 ## 使用
 
-1. 双击 `release/CircuitSim.exe`。
-2. 后端默认连接 `http://127.0.0.1:8765`；RC 使用 v1 接口，通用电路需要支持 v2 的后端。
+1. 双击 `release/AutoCAD.exe`。
+2. 后端默认连接 `http://127.0.0.1:8766`；RC 使用 v1 接口，通用电路需要支持 v2 的后端。
 3. 后端启动后，在输入页点击“重新连接”。
 4. 结果页点击“保存报告”，选择 HTML 或 Markdown 文件的保存位置。
 
@@ -17,7 +17,7 @@
 
 ## 配置与数据
 
-启动时在 `%LOCALAPPDATA%/CircuitSim/` 创建应用数据目录：
+启动时在 `%LOCALAPPDATA%/AutoCAD/` 创建应用数据目录：
 
 - `config.json`：后端地址及桌面服务端口。
 - `WebView2/`：窗口自己的浏览器配置，包括保存的 AI 识别设置。
@@ -27,14 +27,14 @@
 
 ```json
 {
-  "backend_url": "http://127.0.0.1:8765",
-  "desktop_port": 18765
+  "backend_url": "http://127.0.0.1:8766",
+  "desktop_port": 18766
 }
 ```
 
 修改配置后重新启动 EXE。桌面服务仅监听 `127.0.0.1`。固定端口让 localStorage 在重启后继续可用；更改 `desktop_port` 会使用新的网页存储来源，需要重新填写识别设置。
 
-开发和自动检查可使用 `CIRCUIT_SIM_DATA_DIR` 指定隔离数据目录，或用 `CIRCUIT_SIM_BACKEND_URL` 覆盖后端地址。
+开发和自动检查可使用 `AUTOCAD_DATA_DIR` 指定隔离数据目录，或用 `AUTOCAD_BACKEND_URL` 覆盖后端地址。
 
 ## 从源码生成 EXE
 
@@ -44,7 +44,7 @@
 powershell -ExecutionPolicy Bypass -File desktop/build.ps1
 ```
 
-脚本创建独立 Python 环境、安装固定版本桌面依赖、检查并构建前端、运行桌面服务测试，最后用 PyInstaller 生成 `desktop/release/CircuitSim.exe`。可以用 `-Python` 指定 Python 路径，用 `-OutputDirectory` 指定输出目录。
+脚本创建独立 Python 环境、安装固定版本桌面依赖、检查并构建前端、运行桌面服务测试，最后用 PyInstaller 生成 `desktop/release/AutoCAD.exe`。可以用 `-Python` 指定 Python 路径，用 `-OutputDirectory` 指定输出目录。
 
 源码调试：
 

@@ -168,20 +168,20 @@ export default function App() {
     return history.length ? history.map(item => <button className={`history-item ${item.run_id === run?.run_id && (phase === 'result' || phase === 'running') ? 'selected' : ''}`}
       key={item.run_id} data-run-id={item.run_id} title={item.run_id} disabled={locked || !health} onClick={() => selectRun(item)}>
       <Icon name="history" /><span className="history-copy"><strong>{item.demo ? '演示 · ' : ''}{item.task?.title || 'RC 低通滤波器'}</strong>
-        <span className="history-summary">{summarizeParams(item.task?.params)}</span>
+        <span className="history-summary">{item.task?.circuit ? `${item.task.circuit.components.length} 个元件 · ${item.task.circuit.analyses.map(a => ({ op: '工作点', dc: '直流扫描', ac: '频响', tran: '瞬态' }[a.type] || a.type)).join(' / ')}` : summarizeParams(item.task?.params)}</span>
         <span className="history-meta"><span className={`status-text ${item.status}`}>{STATUS_LABELS[item.status]}</span>{item.created_at && <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time>}</span>
       </span>
     </button>) : <p className="history-empty">完成第一次仿真后，<br />可以在这里再次查看。</p>
   }
   return <div className="app-shell">
     <aside className="sidebar" aria-label="工作台导航">
-      <div className="brand"><div className="brand-mark"><Icon name="circuit" /></div><div>CircuitSim<small>电路仿真工作台</small></div></div>
+      <div className="brand"><div className="brand-mark"><Icon name="circuit" /></div><div>AutoCAD<small>电路设计与仿真</small></div></div>
       <button className="new-task" disabled={locked} onClick={restart}><Icon name="plus" />新建仿真</button>
       <div className="sidebar-label">最近任务 <span>{history.length || ''}</span></div>
       <div className="history-list">{historyItems()}</div>
       <div className="sidebar-footer"><button className="sidebar-action" onClick={() => setShowOcrSettings(true)}><Icon name="settings" />设置</button>
         <button className="sidebar-action" disabled={!health || phase === 'running' || locked} onClick={() => setConnectionAttempt(value => value + 1)}><Icon name="refresh" />重新连接</button>
-        <span className="sidebar-caption">通用模拟电路 · {demo ? '本地演示' : '仿真工作台'}</span>
+        <span className="sidebar-caption">通用模拟电路 · {demo ? '本地演示' : 'AutoCAD 0.5.0'}</span>
       </div>
     </aside>
     <div className="app-main">

@@ -405,7 +405,7 @@ export async function getHealth(signal?: AbortSignal): Promise<HealthInfo> {
   } catch (error) {
     if (signal?.aborted) throw error
     demoMode = true // 后端不可达 → 自动进入演示模式
-    return { ok: false, demo: true, detail: '后端 127.0.0.1:8765 未响应，已切换演示模式' }
+    return { ok: false, demo: true, detail: 'AutoCAD 后端未响应，已切换演示模式' }
   }
 }
 
