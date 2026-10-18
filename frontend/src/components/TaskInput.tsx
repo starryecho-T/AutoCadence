@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
 import type { ParseResult } from '../types'
 import { postParse } from '../api'
+import { loadOcrConfig, ocrImage } from '../ocr'
 
 interface Props {
   onParsed: (text: string, result: ParseResult) => void
+  onOpenOcrSettings: () => void
 }
 
 const EXAMPLE =
@@ -11,11 +13,13 @@ const EXAMPLE =
   '要求：输入正弦信号，进行 AC 频率扫描分析（1 Hz ~ 100 kHz），' +
   '测量 -3 dB 截止频率，并记录幅频特性曲线。'
 
-/** 第 1 步：题目输入（文字粘贴 + 图片上传预览） */
-export default function TaskInput({ onParsed }: Props) {
+/** 第 1 步：题目输入（文字粘贴 + 图片上传预览 + AI 识别回填） */
+export default function TaskInput({ onParsed, onOpenOcrSettings }: Props) {
   const [text, setText] = useState('')
   const [img, setImg] = useState<{ name: string; dataUrl: string } | null>(null)
   const [busy, setBusy] = useState(false)
+  const [ocrBusy, setOcrBusy] = useState(false)
+  const [ocrTip, setOcrTip] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -26,7 +30,28 @@ export default function TaskInput({ onParsed }: Props) {
     const reader = new FileReader()
     reader.onload = () => setImg({ name: f.name, dataUrl: String(reader.result) })
     reader.readAsDataURL(f)
-    setErr(null)
+    setErr(null); setOcrTip(null)
+  }
+
+  /** AI 识别：把截图转成文字并回填 textarea（原文保留，追加不覆盖有内容的输入框） */
+  async function doOcr() {
+    if (!img) return
+    const cfg = loadOcrConfig()
+    if (!cfg) { setOcrTip('尚未配置 AI 识别服务'); return }
+    setOcrBusy(true); setOcrTip('识别中…（约需十几秒）')
+    try {
+      const { text: got } = await ocrImage(cfg, img.dataUrl)
+      if (got) {
+        setText((prev) => prev.trim() ? prev + '\n---- 以下为图片识别结果 ----\n' + got : got)
+        setOcrTip(`识别完成，已回填 ${got.length} 字，请检查后解析`)
+      } else {
+        setOcrTip('模型没有返回文字，请换一张更清晰的截图')
+      }
+    } catch (e) {
+      setOcrTip('识别失败：' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setOcrBusy(false)
+    }
   }
 
   async function doParse() {
@@ -46,7 +71,7 @@ export default function TaskInput({ onParsed }: Props) {
   return (
     <div className="card fade-in">
       <h2><span className="stepno">1</span> 输入题目</h2>
-      <div className="sub">粘贴电路仿真作业的文字描述；如有题目截图可一并上传（当前版本仅支持文字 RC 低通题目）</div>
+      <div className="sub">粘贴电路仿真作业的文字描述，或上传截图后用 AI 识别自动转文字（当前版本仅支持文字 RC 低通题目）</div>
 
       <textarea
         value={text}
@@ -79,6 +104,16 @@ export default function TaskInput({ onParsed }: Props) {
           )}
         </div>
       </div>
+
+      {img && (
+        <div className="btnrow" style={{ marginTop: 10 }}>
+          <button className="btn" disabled={ocrBusy} onClick={doOcr}>
+            {ocrBusy ? '识别中…' : '🤖 识别图片题目'}
+          </button>
+          <button className="btn ghost" onClick={onOpenOcrSettings}>AI 识别设置</button>
+        </div>
+      )}
+      {ocrTip && <div className="note info" style={{ marginTop: 10, wordBreak: 'break-all' }}>{ocrTip}</div>}
 
       {err && <div className="note err" style={{ marginTop: 12 }}>{err}</div>}
 

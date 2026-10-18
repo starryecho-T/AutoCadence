@@ -5,6 +5,7 @@ import TaskInput from './components/TaskInput'
 import ConfirmPanel from './components/ConfirmPanel'
 import RunProgress from './components/RunProgress'
 import ResultView from './components/ResultView'
+import OcrSettings from './components/OcrSettings'
 
 type Phase = 'input' | 'confirm' | 'running' | 'result'
 
@@ -23,6 +24,7 @@ export default function App() {
   const [sourceText, setSourceText] = useState('')
   const [run, setRun] = useState<RunRecord | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [showOcrSettings, setShowOcrSettings] = useState(false)
   const timerRef = useRef<number | null>(null)
   const demoStartRef = useRef<number>(0)
 
@@ -123,7 +125,7 @@ export default function App() {
             : <span className="status-chip ok">后端在线{health.version ? ` · ${health.version}` : ''}{health.queue !== undefined ? ` · 队列 ${health.queue}` : ''}</span>}
       </header>
 
-      {phase === 'input' && <TaskInput onParsed={handleParsed} />}
+      {phase === 'input' && <TaskInput onParsed={handleParsed} onOpenOcrSettings={() => setShowOcrSettings(true)} />}
 
       {phase === 'confirm' && parse && (
         <ConfirmPanel parse={parse} sourceText={sourceText} busy={submitting} onConfirm={handleSubmit} onBack={() => setPhase('input')} />
@@ -148,6 +150,7 @@ export default function App() {
           ))}
         </div>
       )}
+      {showOcrSettings && <OcrSettings onClose={() => setShowOcrSettings(false)} />}
     </div>
   )
 }
