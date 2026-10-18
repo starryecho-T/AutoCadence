@@ -1,6 +1,6 @@
 # vai_backend — Virtuoso (Cadence) 自动化后端
 
-AutoCadence 0.7.0 桌面 EXE 已内置本机后端，用户在“仿真服务器”填写自己的 SSH 账号密码或私钥，无需单独启动服务。开发部署仍可运行 `start_general_backend.ps1`。连接方式、密码保存与服务器要求见 [SSH 连接说明](SSH_SETUP.md)；以下历史里程碑与命令继续保留供开发参考。
+AutoCadence 0.7.1 桌面 EXE 已内置本机后端，用户在“仿真服务器”填写自己的 SSH 账号密码或私钥，无需单独启动服务。开发部署仍可运行 `start_general_backend.ps1`。连接方式、密码保存与服务器要求见 [SSH 连接说明](SSH_SETUP.md)；以下历史里程碑与命令继续保留供开发参考。
 
 通用电路 v2 支持 R/C/L、二极管、独立源、理想运放、导线、BJT（NPN/PNP）、PMOS 和四类线性受控源，以及 OP/DC/AC/TRAN。现已加入参数扫描、Y 参数提取、独立等效仿真、BJT 分段理论和曲线误差比较。接口为 `/api/v2/parse`、`/preview`、`/runs`，保留原 RC v1 接口与冻结契约文件。用法和真实回归见 [通用电路_v2.md](docs/通用电路_v2.md) 与 [晶体管与二端口研究](docs/晶体管与二端口研究.md)。下文 M1～M5 描述原 RC 工作流。
 

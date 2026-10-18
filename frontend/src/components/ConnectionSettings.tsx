@@ -7,7 +7,7 @@ interface Profile {
   has_password: boolean; remember_password: boolean; remote_base: string
   environment_script: string; virtuoso_bin: string; spectre_bin: string; cadence_cds_lib: string
 }
-const empty: Profile = { configured: false, imported: false, host: '', port: 22, username: '', auth_method: 'password', identity_file: '', legacy_rsa: false, has_password: false, remember_password: false, remote_base: '', environment_script: '/etc/profile', virtuoso_bin: '', spectre_bin: '', cadence_cds_lib: '' }
+const empty: Profile = { configured: false, imported: false, host: '101.6.64.74', port: 35167, username: '', auth_method: 'password', identity_file: '', legacy_rsa: false, has_password: false, remember_password: false, remote_base: '', environment_script: '/etc/profile', virtuoso_bin: '', spectre_bin: '', cadence_cds_lib: '' }
 const pathFields = [['remote_base', '远程运行目录'], ['environment_script', '环境初始化脚本'], ['virtuoso_bin', 'Virtuoso 程序路径'], ['spectre_bin', 'Spectre 程序路径'], ['cadence_cds_lib', 'Cadence cds.lib 路径']] as const
 
 export default function ConnectionSettings({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
@@ -24,7 +24,8 @@ export default function ConnectionSettings({ onClose, onSaved }: { onClose: () =
     const ctrl = new AbortController(); controller.current = ctrl
     fetch('/api/v2/connection', { signal: ctrl.signal }).then(async response => {
       if (!response.ok) throw new Error('无法读取服务器设置，请确认使用新版 AutoCadence 后端。')
-      setProfile(await response.json() as Profile)
+      const saved = await response.json() as Profile
+      setProfile({ ...saved, host: saved.host || empty.host, port: saved.host ? saved.port : empty.port })
     }).catch(e => { if (!ctrl.signal.aborted) setError(e.message) }).finally(() => { if (!ctrl.signal.aborted) setLoading(false) })
     return () => controller.current?.abort()
   }, [])

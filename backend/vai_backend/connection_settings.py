@@ -18,12 +18,14 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 from .ssh_transport import ConnectionFailure, command, connect, fingerprint
 
 REMOTE_FIELDS = ('remote_base', 'environment_script', 'virtuoso_bin', 'spectre_bin', 'cadence_cds_lib')
+DEFAULT_SSH_HOST = '101.6.64.74'
+DEFAULT_SSH_PORT = 35167
 
 
 class ConnectionInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
     host: str = Field(min_length=1, max_length=253)
-    port: int = Field(default=22, ge=1, le=65535, strict=True)
+    port: int = Field(default=DEFAULT_SSH_PORT, ge=1, le=65535, strict=True)
     username: str = Field(min_length=1, max_length=64)
     auth_method: Literal['password', 'key'] = 'password'
     password: SecretStr | None = Field(default=None, max_length=4096)
@@ -113,7 +115,7 @@ class ConnectionStore:
     def public(self):
         with self.lock:
             config = self.read()
-            host = config.get('ssh_host', '')
+            host = config.get('ssh_host', DEFAULT_SSH_HOST)
             username = config.get('ssh_username', '')
             if '@' in host: username, host = host.rsplit('@', 1)
             has_secret = bool(config.get('ssh_password_encrypted') or
@@ -121,7 +123,7 @@ class ConnectionStore:
             auth = config.get('ssh_auth_method', 'key' if config.get('ssh_identity_file') else 'password')
             legacy = bool(config) and config.get('ssh_transport') != 'paramiko'
             ready = bool(config) and (legacy or (all(config.get(k) for k in REMOTE_FIELDS) and (auth != 'password' or has_secret)))
-            return {'configured': ready, 'imported': legacy, 'host': host, 'port': config.get('ssh_port', 22),
+            return {'configured': ready, 'imported': legacy, 'host': host, 'port': config.get('ssh_port', 22) if config else DEFAULT_SSH_PORT,
                     'username': username, 'auth_method': auth, 'identity_file': config.get('ssh_identity_file', ''),
                     'legacy_rsa': config.get('ssh_legacy_rsa', False), 'has_password': has_secret,
                     'remember_password': bool(config.get('ssh_password_encrypted')),
