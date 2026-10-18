@@ -204,10 +204,10 @@ function demoSchematic(r: number, c: number): string {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg)
 }
 
-/** 演示幅频曲线 SVG（fc 位置随参数） */
-function demoWaveform(fc: number, r: number, c: number): string {
-  const fMin = Math.max(1, Math.floor(fc / 1000))
-  const fMax = Math.ceil(fc * 100)
+/** 演示幅频曲线 SVG（fc 位置随参数；扫描范围可由确认参数指定） */
+function demoWaveform(fc: number, r: number, c: number, fMinIn?: number, fMaxIn?: number): string {
+  const fMin = fMinIn && fMinIn > 0 ? fMinIn : Math.max(1, Math.floor(fc / 1000))
+  const fMax = fMaxIn && fMaxIn > fMin ? fMaxIn : Math.ceil(fc * 100)
   const decades = Math.log10(fMax / fMin)
   const pts: string[] = []
   for (let i = 0; i <= 140; i++) {
@@ -240,10 +240,12 @@ function demoWaveform(fc: number, r: number, c: number): string {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg)
 }
 
-/** 演示报告：可真实打开的 HTML Blob（含指标表与两张图） */
-function demoReport(r: number, c: number, fc: number): string {
+/** 演示报告：可真实打开的 HTML Blob（含指标表与两张图；额外参数如实列入） */
+function demoReport(r: number, c: number, fc: number, fMin?: number, fMax?: number, extra?: Metrics): string {
   const sch = encodeURIComponent(demoSchematic(r, c).split(',')[1] ?? '')
-  const wav = encodeURIComponent(demoWaveform(fc, r, c).split(',')[1] ?? '')
+  const wav = encodeURIComponent(demoWaveform(fc, r, c, fMin, fMax).split(',')[1] ?? '')
+  const extraRows = Object.entries(extra ?? {})
+    .map(([k, v]) => `<tr><th>${k}</th><td>${String(v)}</td></tr>`).join('')
   const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>RC 低通仿真报告（演示）</title>
 <style>body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:#3d4754;max-width:760px;margin:32px auto;padding:0 20px;line-height:1.7}
 h1{font-size:20px}h2{font-size:16px}table{border-collapse:collapse;font-size:14px;margin:8px 0 16px}
@@ -257,7 +259,7 @@ img{max-width:100%;border:1px solid #e5e2db;border-radius:8px;background:#fdfdfc
 <tr><th>截止频率 fc = 1/(2πRC)</th><td>${Math.round(fc * 100) / 100} Hz</td></tr>
 <tr><th>fc 处增益</th><td>${(1 / Math.sqrt(2)).toFixed(4)}（−3 dB）</td></tr>
 <tr><th>fc 处相移</th><td>−45°</td></tr>
-<tr><th>时间常数 τ = RC</th><td>${Math.round(r * c * 1e6) / 100} ms</td></tr></table>
+<tr><th>时间常数 τ = RC</th><td>${Math.round(r * c * 1e6) / 100} ms</td></tr>${extraRows}</table>
 <h2>原理图</h2><img src="data:image/svg+xml;utf8,${sch === '' ? '' : decodeURIComponent(sch)}" alt="schematic">
 <h2>幅频特性</h2><img src="data:image/svg+xml;utf8,${wav === '' ? '' : decodeURIComponent(wav)}" alt="waveform">
 </body></html>`
@@ -272,6 +274,20 @@ export function demoRunGet(runId: string, elapsedMs?: number): RunRecord {
   const r = typeof p.r_ohm === 'number' && p.r_ohm > 0 ? p.r_ohm : 1000
   const c = typeof p.c_farad === 'number' && p.c_farad > 0 ? p.c_farad : 1e-6
   const fc = 1 / (2 * Math.PI * r * c)
+  // 频率范围读确认参数（常见命名都兼容），否则围绕 fc 自动取
+  const fMin = typeof p.freq_min_hz === 'number' && p.freq_min_hz > 0 ? p.freq_min_hz
+    : typeof p.f_min_hz === 'number' && p.f_min_hz > 0 ? p.f_min_hz
+    : Math.max(1, Math.floor(fc / 1000))
+  const fMax = typeof p.freq_max_hz === 'number' && p.freq_max_hz > 0 ? p.freq_max_hz
+    : typeof p.f_max_hz === 'number' && p.f_max_hz > 0 ? p.f_max_hz
+    : Math.ceil(fc * 100)
+  // 其余确认参数全部透传进 metrics（不限于 R/C——演示引擎只算 R/C，其余如实展示）
+  const extraMetrics: Metrics = {}
+  for (const [k, v] of Object.entries(p)) {
+    if (!['r_ohm', 'c_farad', 'freq_min_hz', 'freq_max_hz', 'f_min_hz', 'f_max_hz', 'source_kind'].includes(k)) {
+      extraMetrics[k] = v
+    }
+  }
 
   const stages: StageInfo[] = [
     { name: '生成原理图', status: 'done' },
@@ -285,8 +301,8 @@ export function demoRunGet(runId: string, elapsedMs?: number): RunRecord {
   const artifacts: Artifact[] | undefined = status === 'succeeded'
     ? [
         { id: 'sch', kind: 'schematic', label: `原理图（演示 · R=${fmtComp(r, 'Ω')} C=${fmtComp(c, 'F')}）`, url: demoSchematic(r, c) },
-        { id: 'wav', kind: 'waveform', label: `仿真波形（演示 · fc≈${Math.round(fc * 10) / 10}Hz）`, url: demoWaveform(fc, r, c) },
-        { id: 'rep', kind: 'report_html', label: '实验报告（演示）', url: demoReport(r, c, fc) }
+        { id: 'wav', kind: 'waveform', label: `仿真波形（演示 · fc≈${Math.round(fc * 10) / 10}Hz）`, url: demoWaveform(fc, r, c, fMin, fMax) },
+        { id: 'rep', kind: 'report_html', label: '实验报告（演示）', url: demoReport(r, c, fc, fMin, fMax, extraMetrics) }
       ]
     : undefined
 
@@ -303,7 +319,8 @@ export function demoRunGet(runId: string, elapsedMs?: number): RunRecord {
           cutoff_hz: Math.round(fc * 1000) / 1000,
           gain_at_dc: 0.9998,
           phase_at_cutoff_deg: -45.0,
-          tau_ms: Math.round(r * c * 1e6) / 100
+          tau_ms: Math.round(r * c * 1e6) / 100,
+          ...extraMetrics
         }
       : undefined,
     artifacts,

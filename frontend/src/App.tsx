@@ -141,9 +141,8 @@ export default function App() {
             <div className="history-item" key={r.run_id} onClick={() => { setRun(r); setPhase(r.status === 'succeeded' || r.status === 'failed' ? 'result' : 'running'); if (r.status === 'queued' || r.status === 'running') startPolling(r.run_id, r.demo === true) }}>
               <span className={`badge ${r.status}`}>{r.status}</span>
               <span className="rid">{r.run_id}</span>
-              <span style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--ink-soft)' }}>
-                {r.task?.params?.r_ohm !== undefined ? `R=${fmt(r.task.params.r_ohm)}Ω ` : ''}
-                {r.task?.params?.c_farad !== undefined ? `C=${fmt(r.task.params.c_farad)}F` : ''}
+              <span style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 340 }}>
+                {summarizeParams(r.task?.params)}
               </span>
             </div>
           ))}
@@ -151,6 +150,15 @@ export default function App() {
       )}
     </div>
   )
+}
+
+/** 参数摘要：任意参数键值对 → "r_ohm=1k c_farad=100n"（最多 4 项，超出显示 +N） */
+function summarizeParams(p: Record<string, number | string> | undefined): string {
+  if (!p || Object.keys(p).length === 0) return ''
+  const entries = Object.entries(p).slice(0, 4)
+  const rest = Object.keys(p).length - entries.length
+  const s = entries.map(([k, v]) => `${k}=${fmt(v)}`).join(' ')
+  return rest > 0 ? s + ` +${rest}` : s
 }
 
 function fmt(v: number | string | undefined): string {
