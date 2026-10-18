@@ -175,8 +175,8 @@ def generate_report(task, metrics, evidence_dir, run_id, warnings):
     esc = lambda x: html.escape(str(x), quote=True)
     from .circuit_titles import circuit_title
     title = circuit_title(task)
-    content = ['<p>AutoCAD · 电路仿真报告</p>', f'<h1>{esc(title)}</h1>', f'<p>运行编号：{esc(run_id)}<br>执行：succeeded；数据校验：{metrics["validation_status"]}；目标指标：{metrics["requirements_status"]}</p>']
-    md = [f'# {title}', '', 'AutoCAD · 电路仿真报告', '', f'运行编号：{run_id}', f'执行：succeeded；数据校验：{metrics["validation_status"]}；目标指标：{metrics["requirements_status"]}', '']
+    content = ['<p>AutoCadence · 电路仿真报告</p>', f'<h1>{esc(title)}</h1>', f'<p>运行编号：{esc(run_id)}<br>执行：succeeded；数据校验：{metrics["validation_status"]}；目标指标：{metrics["requirements_status"]}</p>']
+    md = [f'# {title}', '', 'AutoCadence · 电路仿真报告', '', f'运行编号：{run_id}', f'执行：succeeded；数据校验：{metrics["validation_status"]}；目标指标：{metrics["requirements_status"]}', '']
     content.append('<table><tr><th>测量</th><th>结果</th><th>判定</th></tr>')
     for m in metrics['measurements']:
         content.append(f'<tr><td>{esc(m["id"])}</td><td>{esc(m["value"])}</td><td>{m["status"]}</td></tr>')

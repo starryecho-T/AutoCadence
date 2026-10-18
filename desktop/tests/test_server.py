@@ -37,7 +37,7 @@ class ServerTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.assets = Path(self.temp.name) / 'assets'
         self.assets.mkdir()
-        (self.assets / 'index.html').write_text('<h1>AutoCAD</h1>', encoding='utf-8')
+        (self.assets / 'index.html').write_text('<h1>AutoCadence</h1>', encoding='utf-8')
         (self.assets / 'app.js').write_text('console.log(1)', encoding='utf-8')
         (Path(self.temp.name) / 'private.txt').write_text('private', encoding='utf-8')
         self.backend = ThreadingHTTPServer(('127.0.0.1', 0), Backend)
@@ -60,7 +60,7 @@ class ServerTests(unittest.TestCase):
         return status, content_type, content
 
     def test_assets_and_mime(self):
-        self.assertEqual(self.request('/?desktop=1')[2], b'<h1>AutoCAD</h1>')
+        self.assertEqual(self.request('/?desktop=1')[2], b'<h1>AutoCadence</h1>')
         self.assertEqual(self.request('/app.js')[1], 'text/javascript')
         self.assertEqual(self.request('/app.js', 'HEAD')[2], b'')
         self.assertEqual(self.request('/missing.js')[0], 404)
@@ -91,7 +91,7 @@ class ServerTests(unittest.TestCase):
         self.assertIn('尚未连接', json.loads(content)['detail'])
 
     def test_desktop_info_and_config(self):
-        self.assertEqual(json.loads(self.request('/desktop-info')[2])['name'], 'autocad-desktop')
+        self.assertEqual(json.loads(self.request('/desktop-info')[2])['name'], 'autocadence-desktop')
         for address in ('file:///tmp', 'http://user:secret@localhost', 'http://localhost?q=1'):
             with self.assertRaises(ValueError):
                 DesktopServer(self.assets, address, 0)

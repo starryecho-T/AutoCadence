@@ -175,13 +175,13 @@ export default function App() {
   }
   return <div className="app-shell">
     <aside className="sidebar" aria-label="工作台导航">
-      <div className="brand"><div className="brand-mark"><Icon name="circuit" /></div><div>AutoCAD<small>电路设计与仿真</small></div></div>
+      <div className="brand"><div className="brand-mark"><Icon name="circuit" /></div><div>AutoCadence<small>电路设计与仿真</small></div></div>
       <button className="new-task" disabled={locked} onClick={restart}><Icon name="plus" />新建仿真</button>
       <div className="sidebar-label">最近任务 <span>{history.length || ''}</span></div>
       <div className="history-list">{historyItems()}</div>
       <div className="sidebar-footer"><button className="sidebar-action" onClick={() => setShowOcrSettings(true)}><Icon name="settings" />设置</button>
         <button className="sidebar-action" disabled={!health || phase === 'running' || locked} onClick={() => setConnectionAttempt(value => value + 1)}><Icon name="refresh" />重新连接</button>
-        <span className="sidebar-caption">通用模拟电路 · {demo ? '本地演示' : 'AutoCAD 0.5.0'}</span>
+        <span className="sidebar-caption">通用模拟电路 · {demo ? '本地演示' : 'AutoCadence 0.6.0'}</span>
       </div>
     </aside>
     <div className="app-main">

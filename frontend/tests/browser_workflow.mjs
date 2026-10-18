@@ -42,7 +42,7 @@ try {
   await page.getByText(/后端在线/).waitFor()
   await page.getByRole('button', { name: 'RC 低通题目', exact: true }).click()
   await page.getByRole('button', { name: '设置', exact: true }).filter({ visible: true }).click()
-  await page.getByRole('dialog', { name: 'AI 识别设置' }).waitFor()
+  await page.getByRole('dialog', { name: 'AI 服务设置' }).waitFor()
   await page.keyboard.press('Escape')
   assert.equal(await page.getByRole('dialog').count(), 0)
   await page.screenshot({ path: resolve(output, 'input.png'), fullPage: true, animations: 'disabled' })

@@ -29,7 +29,7 @@ try {
 if ($LASTEXITCODE -ne 0) { throw 'Desktop tests failed.' }
 
 & $venvPython -m PyInstaller --noconfirm --clean --onefile --windowed `
-    --name AutoCAD `
+    --name AutoCadence `
     --version-file (Join-Path $PSScriptRoot 'version_info.txt') `
     --icon (Join-Path $PSScriptRoot 'app.ico') `
     --distpath $OutputDirectory `
@@ -39,4 +39,4 @@ if ($LASTEXITCODE -ne 0) { throw 'Desktop tests failed.' }
     --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 --exclude-module PySide6 `
     (Join-Path $PSScriptRoot 'main.py')
 if ($LASTEXITCODE -ne 0) { throw 'EXE packaging failed.' }
-Write-Output "EXE ready: $(Join-Path $OutputDirectory 'AutoCAD.exe')"
+Write-Output "EXE ready: $(Join-Path $OutputDirectory 'AutoCadence.exe')"

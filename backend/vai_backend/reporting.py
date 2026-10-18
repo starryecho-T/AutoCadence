@@ -58,7 +58,7 @@ def generate_report(task: dict, metrics: dict, evidence_dir: Path, run_id: str, 
     limit_html = ''.join(f'<li>{esc(x)}</li>' for x in limitations)
     document = f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(task.get('title', 'RC report'))}</title>
 <style>body{{font:15px/1.6 system-ui,sans-serif;max-width:1120px;margin:32px auto;padding:0 24px;color:#172334}}h1,h2{{color:#173854}}table{{border-collapse:collapse;width:100%;margin:16px 0}}th,td{{text-align:left;vertical-align:top;border:1px solid #cbd5df;padding:8px;overflow-wrap:anywhere}}th{{background:#edf2f7}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f5f7;padding:16px}}img{{max-width:100%;height:auto}}figure{{margin:24px 0}}figcaption{{font-size:12px;color:#526173;overflow-wrap:anywhere}}.status{{font-weight:bold}}@media print{{body{{margin:0}}figure,table{{break-inside:avoid}}}}</style>
-<p>AutoCAD · 电路仿真报告</p><h1>{esc(task.get('title', 'RC 低通仿真'))}</h1><p>运行编号：{esc(run_id)}<br>数值验收状态：<span class="status">{esc(status)}</span></p>
+<p>AutoCadence · 电路仿真报告</p><h1>{esc(task.get('title', 'RC 低通仿真'))}</h1><p>运行编号：{esc(run_id)}<br>数值验收状态：<span class="status">{esc(status)}</span></p>
 <h2>题目与输入</h2><pre>{esc(task.get('question') or '未提供自然语言题目；使用结构化参数。')}</pre><pre>{esc(task_json)}</pre>
 <h2>实际结果与判据</h2><p>截止频率相对误差上限 1%；瞬态最大绝对误差除以脉冲幅值上限 0.3%；至少覆盖两个完整脉冲周期。每项实际容差见检查表。</p><table>{rows}</table>
 <table><thead><tr><th>检查</th><th>状态</th><th>实际值</th><th>期望值</th><th>容差</th></tr></thead><tbody>{check_rows}</tbody></table>

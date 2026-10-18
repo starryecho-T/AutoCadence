@@ -142,7 +142,15 @@ def execute(task_dict:dict,run_dir:Path,emit)->dict:
     if remote_error:raise remote_error
     if not result or rc or result.get('status')!='succeeded':
         error=(result or {}).get('error') or {}
-        raise PipelineError(error.get('code','REMOTE_FAILED'),error.get('stage','execution'),error.get('message','Remote process failed with exit '+str(rc)+'; see remote.log'))
+        message=error.get('message','Remote process failed with exit '+str(rc)+'; see remote.log')
+        if error.get('stage','').startswith('spectre'):
+            log=evidence/'logs'/(error['stage']+'.log')
+            if log.is_file():
+                details=[line.strip() for line in log.read_text(errors='replace').splitlines() if re.search(r'\bERROR\s*\(SPECTRE-',line)]
+                if details:message+='\n'+'\n'.join(details[:5])
+                if any('singular' in line.lower() for line in details):
+                    message+='\n电路直流约束不足或冲突。请核对运放反馈、浮空节点与理想源约束；电容在直流开路。'
+        raise PipelineError(error.get('code','REMOTE_FAILED'),error.get('stage','execution'),message)
     from .images import convert_and_validate
     if task.get('template_id') == 'general_circuit':
         from .circuit_analysis import analyze, generate_report

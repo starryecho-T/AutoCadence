@@ -88,6 +88,22 @@ def normalize(task):
         warnings.append('默认晶体管为可配置的教学模型（BJT / PMOS MOS1），不包含特定工艺 PDK。')
     if any(c['type'] == 'ideal_opamp' for c in parts):
         warnings.append('理想运放无供电限幅、带宽和压摆率；需要外围反馈或初始条件使方程有确定解。')
+        dc_graph = {n: set() for n in graph}
+        for c in parts:
+            if c['type'] in ('resistor', 'inductor'):
+                p, n = c['pins']['p'], c['pins']['n']
+                if p != '0' and n != '0':
+                    dc_graph[p].add(n); dc_graph[n].add(p)
+        for c in parts:
+            if c['type'] != 'ideal_opamp':
+                continue
+            seen, pending = set(), [c['pins']['out']]
+            while pending:
+                n = pending.pop()
+                if n not in seen:
+                    seen.add(n); pending.extend(dc_graph[n] - seen)
+            if c['pins']['minus'] not in seen:
+                warnings.append(f"{c['id']}：未发现输出到反相端的直接或电阻/电感直流反馈路径。电容在直流开路，AC/DC 求解可能出现奇异矩阵；请核对反馈或专用初始条件。复杂有源反馈需另行确认。")
     for a in data['analyses']:
         if a['type'] == 'tran' and a['use_initial_conditions']:
             warnings.append('瞬态先求解电容/电感初始条件，再积分；初始条件通过有限 rforce 施加，请核对 t=0 实际值。')

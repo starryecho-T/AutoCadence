@@ -43,7 +43,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
         manager.start()
         try:yield
         finally:manager.close()
-    app=FastAPI(title='AutoCAD API',version=__version__,lifespan=lifespan,
+    app=FastAPI(title='AutoCadence API',version=__version__,lifespan=lifespan,
         description='RC planning (v1), general circuits and bounded transistor/parameter/two-port studies (v2), isolated real Cadence runs, verified screenshots and reports. Single worker only.')
     app.state.manager=manager;app.state.settings=settings
     app.add_middleware(CORSMiddleware,allow_origins=list(settings.cors_origins),allow_credentials=False,
@@ -63,7 +63,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     deps=[Depends(authorize)]
     @app.get('/health')
     def health():
-        return {'status':'ok','name':'AutoCAD','build':'0.5.0','version':__version__,'api_versions':['1.0','2.0'],
+        return {'status':'ok','name':'AutoCadence','build':'0.6.0','version':__version__,'api_versions':['1.0','2.0'],
                 'templates':['rc_lowpass','general_circuit'],
                 'queue':manager.stats(),'server_check':'not_run','authentication_required':bool(settings.api_token)}
     @app.get('/api/v1/capabilities',dependencies=deps)
@@ -109,6 +109,14 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
         result=manager.get(run_id)
         if result is None:raise ApiFailure(404,'RUN_NOT_FOUND','No such run')
         return result
+    @app.get('/api/v2/runs/{run_id}/ai-context',dependencies=deps)
+    def ai_context(run_id:str):
+        result=manager.get(run_id)
+        if result is None:raise ApiFailure(404,'RUN_NOT_FOUND','No such run')
+        if result.status not in ('succeeded','failed'):
+            raise ApiFailure(409,'RUN_NOT_FINISHED','请等待本次仿真结束')
+        from .result_context import build_result_context
+        return JSONResponse(build_result_context(result,manager.artifact_path),headers={'Cache-Control':'no-store'})
     @app.get('/api/v1/runs/{run_id}/artifacts/{artifact_id}',dependencies=deps)
     def artifact(run_id:str,artifact_id:str,download:bool=False):
         item=manager.artifact_path(run_id,artifact_id)

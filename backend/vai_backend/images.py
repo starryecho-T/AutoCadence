@@ -129,7 +129,9 @@ def convert_and_validate(evidence_dir: Path, general: bool = False) -> dict:
 
 def _general_canvas_stats(image, kind, native=False):
     """Check the drawing area without assuming a trace count, color or shape."""
-    fractions = ((.03,.05,.97,.95) if kind == 'schematic' else (.26,.20,.96,.88)) if native else ((.15,.18,.98,.93) if kind == 'schematic' else (.49,.23,.93,.87))
+    # Native ViVA exports omit the window toolbar. Their plot starts near y=5%,
+    # not y=20%: that old crop discarded flat traces near the top of the axes.
+    fractions = ((.03,.05,.97,.95) if kind == 'schematic' else (.28,.075,.97,.91)) if native else ((.15,.18,.98,.93) if kind == 'schematic' else (.49,.23,.93,.87))
     w,h = image.size
     box = tuple(int(size*frac) for size,frac in zip((w,h,w,h),fractions))
     crop = image.convert('RGB').crop(box)

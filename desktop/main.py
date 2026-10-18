@@ -16,17 +16,19 @@ import time
 
 from server import DesktopServer
 
-TITLE = 'AutoCAD'
+TITLE = 'AutoCadence'
 
 
 def data_directory():
-    override = os.environ.get('AUTOCAD_DATA_DIR') or os.environ.get('CIRCUIT_SIM_DATA_DIR')
+    override = os.environ.get('AUTOCADENCE_DATA_DIR') or os.environ.get('AUTOCAD_DATA_DIR') or os.environ.get('CIRCUIT_SIM_DATA_DIR')
     if override:
         return Path(override)
-    directory = Path(os.environ['LOCALAPPDATA']) / 'AutoCAD'
-    legacy = Path(os.environ['LOCALAPPDATA']) / 'CircuitSim'
-    if not directory.exists() and legacy.exists():
-        shutil.copytree(legacy, directory)
+    directory = Path(os.environ['LOCALAPPDATA']) / 'AutoCadence'
+    for previous_name in ('AutoCAD', 'CircuitSim'):
+        legacy = Path(os.environ['LOCALAPPDATA']) / previous_name
+        if not directory.exists() and legacy.exists():
+            shutil.copytree(legacy, directory)
+            break
     return directory
 
 
@@ -35,7 +37,7 @@ def acquire_instance(directory):
     kernel.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_bool, ctypes.c_wchar_p]
     kernel.CreateMutexW.restype = ctypes.c_void_p
     suffix = hashlib.sha256(str(directory.resolve()).encode()).hexdigest()[:16]
-    handle = kernel.CreateMutexW(None, False, 'Local\\AutoCAD-' + suffix)
+    handle = kernel.CreateMutexW(None, False, 'Local\\AutoCadence-' + suffix)
     if not handle:
         raise ctypes.WinError(ctypes.get_last_error())
     if ctypes.get_last_error() == 183:
@@ -107,7 +109,7 @@ def main():
             config.update(json.loads(config_path.read_text(encoding='utf-8')))
         else:
             config_path.write_text(json.dumps(config, indent=2), encoding='utf-8')
-        backend_url = os.environ.get('AUTOCAD_BACKEND_URL') or os.environ.get('CIRCUIT_SIM_BACKEND_URL', config['backend_url'])
+        backend_url = os.environ.get('AUTOCADENCE_BACKEND_URL') or os.environ.get('AUTOCAD_BACKEND_URL') or os.environ.get('CIRCUIT_SIM_BACKEND_URL', config['backend_url'])
         assets = Path(sys._MEIPASS) / 'frontend' if getattr(sys, 'frozen', False) else Path(__file__).resolve().parents[1] / 'frontend' / 'dist'
         if not (assets / 'index.html').is_file():
             raise RuntimeError('未找到界面文件，请先运行桌面构建脚本。')

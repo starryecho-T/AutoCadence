@@ -7,6 +7,7 @@ import { formatNumber, METRIC_LABELS } from '../circuit'
 import { engineering } from '../units'
 import Icon from './Icon'
 import Modal from './Modal'
+import ResultChat from './ResultChat'
 
 interface Props { run: RunRecord; onRestart: () => void; onEdit?: () => void }
 function fmtVal(value: JsonValue | undefined): string {
@@ -31,7 +32,7 @@ function FileLinks({ files, runId }: { files: Artifact[]; runId: string }) {
   return <div className="report-links">{files.filter(a => a.url).map(a => {
     const report = a.kind.startsWith('report')
     return <a key={a.id} href={artifactUrl(a)} target={desktop && report ? undefined : '_blank'} rel="noreferrer"
-      download={desktop && report ? `RC-${runId}.${a.kind === 'report_html' ? 'html' : 'md'}` : undefined}>
+      download={desktop && report ? `AutoCadence-${runId}.${a.kind === 'report_html' ? 'html' : 'md'}` : undefined}>
       <Icon name={report ? 'download' : 'file'} /><span>{report ? `${desktop ? '保存' : '查看'}${a.kind === 'report_html' ? '网页版报告' : 'Markdown 报告'}` : a.filename || a.label || a.id}</span>
     </a>
   })}</div>
@@ -110,6 +111,7 @@ export default function ResultView({ run, onRestart, onEdit }: Props) {
       {warnings}
       {!!arts.length && <details className="detail-section"><summary>诊断文件（{arts.length}）</summary><FileLinks files={arts} runId={run.run_id} /></details>}
     </div>}
+    <ResultChat key={run.run_id} run={run} />
     <footer className="actionbar"><details className="run-identity"><summary>任务信息</summary><div><code>{run.run_id}</code>{run.created_at && <p>{new Date(run.created_at).toLocaleString('zh-CN')}</p>}</div></details><div className="actions"><button className="btn ghost" onClick={onRestart}>新建仿真</button>{onEdit && <button className="btn" onClick={onEdit}>{run.status === 'failed' ? '修改参数并重试' : '调整参数再运行'}<Icon name="arrow" /></button>}</div></footer>
   </section>
 }
