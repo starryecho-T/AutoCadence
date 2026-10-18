@@ -21,7 +21,9 @@ export const METRIC_LABELS: Record<string, [string, string]> = {
   vout_at_tau: ['τ 时刻输出电压', 'V'], vout_at_100us: ['100 µs 时刻输出电压', 'V'],
   tran_points: ['瞬态数据点数', '点'], ac_points: ['AC 数据点数', '点'],
   tran_end_s: ['瞬态终点', 's'], transient_max_relative_error: ['瞬态最大相对误差', '倍'],
-  validation_status: ['数值验收结果', '—']
+  ac_input_output_aligned: ['频域输入与输出对齐', '—'], tran_input_output_aligned: ['时域输入与输出对齐', '—'],
+  max_ac_gain_error_db: ['幅频最大误差', 'dB'], transient_max_abs_error_v: ['瞬态最大电压误差', 'V'],
+  vout_at_end: ['结束时输出电压', 'V'], validation_status: ['数值验收结果', '—']
 }
 
 export function validateTask(task: TaskSpec): string | null {
@@ -34,7 +36,7 @@ export function validateTask(task: TaskSpec): string | null {
   if (task.kind === 'rc_lowpass' || task.kind === undefined) {
     for (const key of ['r_ohm', 'c_farad']) {
       if (typeof p[key] !== 'number' || !Number.isFinite(p[key]) || p[key] <= 0) {
-        return `${PARAM_LABELS[key]}必须是大于 0 的数值，请使用 SI 单位`
+        return `${PARAM_LABELS[key]}必须是大于 0 的数值`
       }
     }
     const rc = Number(p.r_ohm) * Number(p.c_farad)

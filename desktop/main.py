@@ -57,18 +57,20 @@ def smoke_test(window, output):
         raise AssertionError('Desktop smoke test timed out: ' + script)
 
     def click(text):
-        window.evaluate_js(f"[...document.querySelectorAll('button')].find(b => b.textContent.trim() === {json.dumps(text)}).click()")
+        window.evaluate_js(f"[...document.querySelectorAll('button')].find(b => b.textContent.trim() === {json.dumps(text)} || b.getAttribute('aria-label') === {json.dumps(text)}).click()")
         time.sleep(0.1)
 
     try:
-        wait_for("document.body.innerText.includes('演示模式（后端未连接）')")
+        wait_for("document.body.innerText.includes('演示模式')")
         click('填入示例题目')
         click('解析题目')
-        wait_for("document.body.innerText.includes('时间常数 τ = 1 ms')")
+        wait_for("!!document.querySelector('[data-testid=theory-cutoff]')")
+        assert window.evaluate_js("document.querySelector('#param-r_ohm').value === '1' && document.querySelector('#param-c_farad').value === '1'")
         click('确认并开始仿真')
-        wait_for("document.body.innerText.includes('仿真完成 · 成果截图')")
+        wait_for("document.body.innerText.includes('仿真完成')")
         wait_for("[...document.querySelectorAll('.shot img')].length === 2 && [...document.querySelectorAll('.shot img')].every(i => i.complete && i.naturalWidth > 0)")
-        assert window.evaluate_js("!!document.querySelector('.report-links a[download]')")
+        click('报告与文件')
+        assert window.evaluate_js("!!document.querySelector('#panel-files:not([hidden]) .report-links a[download]')")
         previous = window.evaluate_js("localStorage.getItem('desktop-smoke-marker')")
         window.evaluate_js("localStorage.setItem('desktop-smoke-marker', 'saved')")
         result = {'ok': True, 'title': TITLE, 'report_download': True, 'previous_storage': previous}
@@ -107,7 +109,7 @@ def main():
         import webview
         webview.settings['ALLOW_DOWNLOADS'] = True
         webview.settings['ALLOW_FILE_URLS'] = False
-        window = webview.create_window(TITLE, server.origin + '/?desktop=1', width=1120, height=820, min_size=(760, 560), background_color='#f6f5f2', text_select=True, hidden=bool(args.smoke_test))
+        window = webview.create_window(TITLE, server.origin + '/?desktop=1', width=1120, height=820, min_size=(760, 560), background_color='#f5f7fa', text_select=True, hidden=bool(args.smoke_test))
         callback = (lambda: smoke_test(window, args.smoke_test)) if args.smoke_test else None
         webview.start(callback, gui='edgechromium', private_mode=False, storage_path=str(directory / 'WebView2'))
     except Exception as error:

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { HealthInfo, ParseResult, RunRecord, TaskDraft, TaskSpec } from './types'
 import { getHealth, getRun, listRuns, postRun, demoRunGet, isDemoMode, retainDemoRuns } from './api'
-import { formatNumber } from './circuit'
+import { engineering } from './units'
+import Icon from './components/Icon'
+import Modal from './components/Modal'
 import { pollSequentially } from './polling'
 import TaskInput from './components/TaskInput'
 import ConfirmPanel from './components/ConfirmPanel'
@@ -23,6 +25,8 @@ export default function App() {
   const [connectionAttempt, setConnectionAttempt] = useState(0)
   const [phase, setPhase] = useState<Phase>('input')
   const [submitting, setSubmitting] = useState(false)
+  const [inputBusy, setInputBusy] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [parse, setParse] = useState<ParseResult | null>(null)
   const [draft, setDraft] = useState<TaskDraft>({ text: '' })
   const [run, setRun] = useState<RunRecord | null>(null)
@@ -77,6 +81,7 @@ export default function App() {
   }, [history, run])
 
   function handleParsed(_text: string, result: ParseResult) {
+    setInputBusy(false)
     setParse(result)
     setPhase('confirm')
   }
@@ -117,57 +122,85 @@ export default function App() {
     setPollError('')
     setNotice('')
     setRun(selected)
+    setShowHistory(false)
     if (selected.status === 'queued' || selected.status === 'running') {
       setPhase('running')
       startPolling(selected)
     } else setPhase('result')
   }
 
+  function editRun() {
+    if (!run?.task) return
+    stopPolling()
+    setParse({ ok: true, task: run.task })
+    setDraft({ text: run.task.source_text ?? '' })
+    setNotice('')
+    setPhase('confirm')
+  }
   const demo = health?.demo === true
-  return (
-    <div className="app">
-      <header className="topbar">
-        <div className="logo">⚡</div>
-        <h1>电路仿真助手</h1>
-        <span className="tagline">RC 低通 · 自动仿真与截图</span>
-        <div className="spacer" />
-        {health === null ? <span className="status-chip">连接后端中…</span>
-          : demo ? <span className="status-chip demo">演示模式（后端未连接）</span>
-          : <span className="status-chip ok">后端在线{health.version ? ` · ${health.version}` : ''}{health.queue !== undefined ? ` · 队列 ${health.queue}` : ''}</span>}
-        {phase === 'input' && <button className="btn ghost" disabled={!health} onClick={() => setConnectionAttempt((value) => value + 1)}>重新连接</button>}
+  const locked = submitting || inputBusy
+  const currentStep = phase === 'input' ? 0 : phase === 'confirm' ? 1 : 2
+  const headings = {
+    input: ['从电路题目开始', '描述电路与验证目标，或添加一张题目截图。'],
+    confirm: ['确认电路参数', '核对元件与输入信号，准备好后开始仿真。'],
+    running: ['运行进度', '正在处理你的电路，完成后会自动展示结果。'],
+    result: ['仿真结果', '先看关键结论，再查看截图、指标与原始文件。'],
+  }
+  function historyItems() {
+    return history.length ? history.map(item => <button className={`history-item ${item.run_id === run?.run_id && (phase === 'result' || phase === 'running') ? 'selected' : ''}`}
+      key={item.run_id} data-run-id={item.run_id} title={item.run_id} disabled={locked || !health} onClick={() => selectRun(item)}>
+      <Icon name="history" /><span className="history-copy"><strong>{item.demo ? '演示 · ' : ''}{item.task?.title || 'RC 低通滤波器'}</strong>
+        <span className="history-summary">{summarizeParams(item.task?.params)}</span>
+        <span className="history-meta"><span className={`status-text ${item.status}`}>{STATUS_LABELS[item.status]}</span>{item.created_at && <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time>}</span>
+      </span>
+    </button>) : <p className="history-empty">完成第一次仿真后，<br />可以在这里再次查看。</p>
+  }
+  return <div className="app-shell">
+    <aside className="sidebar" aria-label="工作台导航">
+      <div className="brand"><div className="brand-mark"><Icon name="circuit" /></div><div>CircuitSim<small>电路仿真工作台</small></div></div>
+      <button className="new-task" disabled={locked} onClick={restart}><Icon name="plus" />新建仿真</button>
+      <div className="sidebar-label">最近任务 <span>{history.length || ''}</span></div>
+      <div className="history-list">{historyItems()}</div>
+      <div className="sidebar-footer"><button className="sidebar-action" onClick={() => setShowOcrSettings(true)}><Icon name="settings" />设置</button>
+        <button className="sidebar-action" disabled={!health || phase === 'running' || locked} onClick={() => setConnectionAttempt(value => value + 1)}><Icon name="refresh" />重新连接</button>
+        <span className="sidebar-caption">一阶 RC 低通 · {demo ? '本地演示' : '仿真工作台'}</span>
+      </div>
+    </aside>
+    <div className="app-main">
+      <header className="topbar"><div className="breadcrumb"><span>工作台</span><span className="separator">/</span><strong>RC 低通滤波器</strong></div>
+        <div className="topbar-actions"><button className="icon-button mobile-only" aria-label="最近任务" onClick={() => setShowHistory(true)}><Icon name="history" /></button>
+          <button className="icon-button mobile-only" aria-label="设置" onClick={() => setShowOcrSettings(true)}><Icon name="settings" /></button>
+          {health === null ? <span className="status-chip">连接中…</span> : demo ? <span className="status-chip demo">演示模式 · 后端未连接</span> : <span className="status-chip ok" title={health.version ? `服务版本 ${health.version}` : undefined}>后端在线{Number(health.queue) > 0 ? ` · 排队 ${health.queue}` : ''}</span>}
+        </div>
       </header>
-
-      {notice && <div className="note err" role="alert">{notice}</div>}
-      {phase === 'input' && <TaskInput draft={draft} onDraftChange={setDraft} disabled={!health} onParsed={handleParsed} onOpenOcrSettings={() => setShowOcrSettings(true)} />}
-      {phase === 'confirm' && parse && <ConfirmPanel parse={parse} sourceText={draft.text} busy={submitting} onConfirm={handleSubmit} onBack={() => { setNotice(''); setPhase('input') }} />}
-      {phase === 'running' && run && (
-        <>
+      <main className="workspace"><header className="page-heading"><div><h1>{headings[phase][0]}</h1><p>{headings[phase][1]}</p></div><span className="type-badge">一阶 RC 低通</span></header>
+        <nav className="steps" aria-label="仿真步骤">{['输入题目', '确认参数', '仿真与结果'].map((label, index) => <div key={label} className={`step ${index === currentStep ? 'active' : index < currentStep ? 'done' : ''}`} aria-current={index === currentStep ? 'step' : undefined}>
+          <span className="step-number">{index < currentStep ? <Icon name="check" /> : index + 1}</span><span>{label}</span>{index < 2 && <span className="step-line" />}
+        </div>)}</nav>
+        {notice && <div className="note err" role="alert">{notice}</div>}
+        {phase === 'input' && <TaskInput draft={draft} onDraftChange={setDraft} disabled={!health} onParsed={handleParsed} onOpenOcrSettings={() => setShowOcrSettings(true)} onBusyChange={setInputBusy} />}
+        {phase === 'confirm' && parse && <ConfirmPanel parse={parse} sourceText={draft.text} busy={submitting} onConfirm={handleSubmit}
+          onTaskChange={task => setParse(current => current ? { ...current, task } : current)} onBack={() => { setNotice(''); setPhase('input') }} />}
+        {phase === 'running' && run && <>
           <RunProgress run={run} />
-          {pollError && <div className="note err" role="alert">
-            进度查询中断：{pollError}。任务可能仍在后端运行。
-            <div className="btnrow"><button className="btn" onClick={() => startPolling(run)}>重新查询进度</button></div>
-          </div>}
-          <div className="btnrow"><button className="btn ghost" onClick={restart}>返回输入新题目</button></div>
-        </>
-      )}
-      {phase === 'result' && run && <ResultView run={run} onRestart={restart} />}
-
-      {history.length > 0 && <div className="card">
-        <h2>最近任务</h2>
-        <div className="sub">点击查看进度或结果；演示任务保留在当前页面会话中</div>
-        {history.map((item) => <button className="history-item" key={item.run_id} disabled={submitting || !health} onClick={() => selectRun(item)}>
-          <span className={`badge ${item.status}`}>{STATUS_LABELS[item.status]}</span>
-          <span className="rid">{item.demo ? '演示 · ' : ''}{item.run_id}</span>
-          <span className="history-summary">{summarizeParams(item.task?.params)}</span>
-          {item.created_at && <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString('zh-CN')}</time>}
-        </button>)}
-      </div>}
-      {showOcrSettings && <OcrSettings onClose={() => setShowOcrSettings(false)} />}
+          {pollError && <div className="note err" role="alert">暂时无法获取进度，任务可能仍在运行。<details><summary>查看连接详情</summary>{pollError}</details><button className="btn ghost" onClick={() => startPolling(run)}>重新查询进度</button></div>}
+          <div className="actionbar"><span className="muted small">切换页面后，可从最近任务继续查看</span><button className="btn ghost" onClick={restart}>新建仿真</button></div>
+        </>}
+        {phase === 'result' && run && <ResultView key={run.run_id} run={run} onRestart={restart} onEdit={run.task ? editRun : undefined} />}
+        {phase === 'input' && demo && <div className="note warn">当前可体验演示流程。启动仿真服务后，点击“重新连接”切换到真实仿真。<button className="text-button mobile-only" onClick={() => setConnectionAttempt(value => value + 1)}>重新连接</button></div>}
+      </main>
     </div>
-  )
+    {showHistory && <Modal title="最近任务" onClose={() => setShowHistory(false)}><button className="btn ghost" disabled={locked} onClick={() => { setShowHistory(false); restart() }}><Icon name="plus" />新建仿真</button>{historyItems()}</Modal>}
+    {showOcrSettings && <OcrSettings onClose={() => setShowOcrSettings(false)} />}
+  </div>
 }
 
 function summarizeParams(params: TaskSpec['params']): string {
-  if (!params) return ''
-  return Object.entries(params).slice(0, 4).map(([key, value]) => `${key}=${typeof value === 'number' ? formatNumber(value) : value}`).join(' · ')
+  if (!params) return '查看运行记录'
+  return ([['r_ohm', 'resistance'], ['c_farad', 'capacitance']] as const).flatMap(([key, dimension]) => {
+    const value = params[key]
+    if (typeof value !== 'number') return []
+    const formatted = engineering(value, dimension)
+    return `${formatted.value} ${formatted.unit}`
+  }).join(' · ')
 }

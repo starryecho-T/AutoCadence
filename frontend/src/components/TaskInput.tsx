@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ParseResult, TaskDraft } from '../types'
 import { postParse } from '../api'
 import { loadOcrConfig, ocrImage } from '../ocr'
+import Icon from './Icon'
 
 interface Props {
   draft: TaskDraft
@@ -9,6 +10,7 @@ interface Props {
   disabled: boolean
   onParsed: (text: string, result: ParseResult) => void
   onOpenOcrSettings: () => void
+  onBusyChange: (busy: boolean) => void
 }
 
 const EXAMPLE =
@@ -17,7 +19,7 @@ const EXAMPLE =
   '给出 -3 dB 截止频率与脉冲响应波形。'
 
 /** 第 1 步：题目输入（文字粘贴 + 图片上传预览 + AI 识别回填） */
-export default function TaskInput({ draft, onDraftChange, disabled, onParsed, onOpenOcrSettings }: Props) {
+export default function TaskInput({ draft, onDraftChange, disabled, onParsed, onOpenOcrSettings, onBusyChange }: Props) {
   const { text, image: img } = draft
   const [busy, setBusy] = useState(false)
   const [ocrBusy, setOcrBusy] = useState(false)
@@ -28,6 +30,7 @@ export default function TaskInput({ draft, onDraftChange, disabled, onParsed, on
   const ocrController = useRef<AbortController | null>(null)
   const [reading, setReading] = useState(false)
   const locked = busy || ocrBusy || reading
+  useEffect(() => { onBusyChange(locked); return () => onBusyChange(false) }, [locked, onBusyChange])
   useEffect(() => () => { readerRef.current?.abort(); ocrController.current?.abort() }, [])
 
   function pickFile(f: File | undefined) {
@@ -82,70 +85,28 @@ export default function TaskInput({ draft, onDraftChange, disabled, onParsed, on
     }
   }
 
-  return (
-    <div className="card fade-in">
-      <h2><span className="stepno">1</span> 输入题目</h2>
-      <div className="sub">粘贴电路仿真作业的文字描述，或上传截图后用 AI 识别自动转文字（当前版本仅支持文字 RC 低通题目）</div>
-
-      <textarea
-        aria-label="题目文字"
-        disabled={locked}
-        value={text}
-        placeholder={'例如：' + EXAMPLE}
-        onChange={(e) => onDraftChange({ ...draft, text: e.target.value })}
-        onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); pickFile(f) } }}
-      />
-
-      <div style={{ marginTop: 12 }}>
-        <input
-          ref={fileRef}
-          type="file"
-          disabled={locked}
-          accept="image/png,image/jpeg"
-          style={{ display: 'none' }}
-          onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }}
-        />
-        <div
-          className="upload-zone"
-          role="button"
-          tabIndex={locked ? -1 : 0}
-          aria-label="上传题目截图"
-          aria-disabled={locked}
-          onKeyDown={(e) => { if (!locked && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); fileRef.current?.click() } }}
-          onClick={() => { if (!locked) fileRef.current?.click() }}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { e.preventDefault(); pickFile(e.dataTransfer.files?.[0]) }}
-        >
-          {img ? (
-            <>
-              <div>📎 {img.name} —— 点击可更换</div>
-              <img className="preview" src={img.dataUrl} alt="题目截图预览" />
-            </>
-          ) : (
-            <>📷 上传题目截图（点击选择，或把图片拖到这里）· 可选</>
-          )}
-        </div>
+  return <section className="fade-in">
+    <div className="card input-card" onPaste={event => {
+      const file = [...event.clipboardData.items].find(item => item.type.startsWith('image/'))?.getAsFile()
+      if (file && !locked) { event.preventDefault(); pickFile(file) }
+    }} onDragOver={event => event.preventDefault()} onDrop={event => { if (event.dataTransfer.files.length) { event.preventDefault(); pickFile(event.dataTransfer.files[0]) } }}>
+      <div className="section-heading"><h2>描述你想验证的电路</h2><Icon name="circuit" /></div>
+      <p className="sub">写下电路类型、元件参数或目标频率，以及需要观察的现象。</p>
+      <div className="composer">
+        <textarea aria-label="题目文字" disabled={locked} value={text} placeholder={'例如：' + EXAMPLE}
+          onChange={event => onDraftChange({ ...draft, text: event.target.value })}
+          onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void doParse() } }} />
+        <div className="composer-toolbar"><button className="text-button" disabled={locked} onClick={() => fileRef.current?.click()}><Icon name="image" />添加题目截图</button><span>支持拖入或粘贴图片 · PNG / JPG · 最大 8 MB</span></div>
       </div>
-
-      {img && (
-        <div className="btnrow" style={{ marginTop: 10 }}>
-          <button className="btn" disabled={locked} onClick={doOcr}>
-            {ocrBusy ? '识别中…' : '🤖 识别图片题目'}
-          </button>
-          <button className="btn ghost" onClick={onOpenOcrSettings}>AI 识别设置</button>
-          <button className="btn ghost" disabled={locked} onClick={() => { onDraftChange({ text }); setOcrTip(null) }}>移除图片</button>
-        </div>
-      )}
-      {ocrTip && <div className="note info" style={{ marginTop: 10, wordBreak: 'break-all' }}>{ocrTip}</div>}
-
-      {err && <div className="note err" role="alert" style={{ marginTop: 12 }}>{err}</div>}
-
-      <div className="btnrow">
-        <button className="btn" disabled={disabled || locked} onClick={doParse}>
-          {disabled ? '连接后端中…' : reading ? '读取图片中…' : busy ? '解析中…' : '解析题目'}
-        </button>
-        <button className="btn ghost" disabled={locked} onClick={() => onDraftChange({ ...draft, text: EXAMPLE })}>填入示例题目</button>
-      </div>
+      <input ref={fileRef} type="file" disabled={locked} accept="image/png,image/jpeg" hidden onChange={event => { pickFile(event.target.files?.[0]); event.target.value = '' }} />
+      {img && <div className="attachment"><img src={img.dataUrl} alt="题目截图预览" /><div className="attachment-body"><strong>{img.name}</strong><p className="muted small">识别后请核对文字，再解析题目。</p><div className="btnrow">
+        <button className="btn ghost" disabled={locked} onClick={doOcr}>{ocrBusy ? '识别中…' : '识别图片题目'}</button>
+        <button className="text-button" onClick={onOpenOcrSettings}>AI 识别设置</button>
+      </div></div><button className="icon-button" aria-label="移除图片" disabled={locked} onClick={() => { onDraftChange({ text }); setOcrTip(null) }}><Icon name="close" /></button></div>}
+      {ocrTip && <div className="note info" role="status">{ocrTip}</div>}
+      {err && <div className="note err" role="alert">{err}</div>}
+      <div className="example-row"><span>试试示例</span><button className="example-chip" aria-label="填入示例题目" disabled={locked} onClick={() => onDraftChange({ ...draft, text: EXAMPLE })}>1 kHz 低通滤波器<Icon name="arrow" /></button></div>
     </div>
-  )
+    <footer className="actionbar"><span className="action-status muted">支持一阶 RC 低通电路 · Ctrl + Enter 解析</span><button className="btn" disabled={disabled || locked} onClick={doParse}>{disabled ? '连接后端中…' : reading ? '读取图片中…' : busy ? '解析中…' : '解析题目'}<Icon name="arrow" /></button></footer>
+  </section>
 }

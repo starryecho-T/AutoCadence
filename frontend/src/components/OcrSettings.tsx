@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Modal from './Modal'
 import { OCR_PRESETS, loadOcrConfig, saveOcrConfig, testOcrConfig } from '../ocr'
 
 interface Props {
@@ -50,33 +51,31 @@ export default function OcrSettings({ onClose }: Props) {
   }
 
   return (
-    <div className="lightbox" style={{ background: 'rgba(50,55,62,0.45)' }} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="card fade-in" role="dialog" aria-modal="true" aria-label="AI 识别设置" style={{ width: 520, maxWidth: '92vw', margin: 0, boxShadow: '0 12px 40px rgba(60,70,85,0.25)', cursor: 'default' }}>
-        <h2>AI 识别设置</h2>
-        <div className="sub">用于把题目截图自动转录为文字。API Key 仅保存在本机浏览器（localStorage），请求直接发往你配置的服务商。</div>
+    <Modal title="AI 识别设置" onClose={onClose}>
+        <div className="sub">用于把题目截图自动转录为文字。密钥保存在本机，识别时图片会发送给你配置的服务商。</div>
 
-        <div className="btnrow" style={{ marginTop: 0, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div className="preset-buttons" aria-label="识别服务商">
           {OCR_PRESETS.map((p, i) => (
-            <button key={p.name} className="btn ghost" style={{ fontSize: 12.5, padding: '4px 12px' }} onClick={() => applyPreset(i)}>
+            <button key={p.name} aria-pressed={baseUrl === p.baseUrl && model === p.model} disabled={testing} onClick={() => applyPreset(i)}>
               {p.name}
             </button>
           ))}
         </div>
 
         <div className="param-item" style={{ marginBottom: 10 }}>
-          <label>Base URL（OpenAI 兼容接口根地址）</label>
-          <input type="text" value={baseUrl} placeholder="https://open.bigmodel.cn/api/paas/v4"
-            onChange={(e) => setBaseUrl(e.target.value.trim())} />
+          <label htmlFor="ocr-url">服务地址（OpenAI 兼容）</label>
+          <input id="ocr-url" type="text" disabled={testing} value={baseUrl} placeholder="https://open.bigmodel.cn/api/paas/v4"
+            onChange={(e) => { setBaseUrl(e.target.value.trim()); setResult(null) }} />
         </div>
         <div className="param-item" style={{ marginBottom: 10 }}>
-          <label>API Key</label>
-          <input type="password" value={apiKey} placeholder="sk-..."
-            onChange={(e) => setApiKey(e.target.value.trim())} />
+          <label htmlFor="ocr-key">API 密钥</label>
+          <input id="ocr-key" type="password" autoComplete="off" disabled={testing} value={apiKey} placeholder="sk-..."
+            onChange={(e) => { setApiKey(e.target.value.trim()); setResult(null) }} />
         </div>
         <div className="param-item" style={{ marginBottom: 6 }}>
-          <label>模型名（需支持图片输入）</label>
-          <input type="text" value={model} placeholder="glm-4v-plus-0111"
-            onChange={(e) => setModel(e.target.value.trim())} />
+          <label htmlFor="ocr-model">模型名称（需支持图片）</label>
+          <input id="ocr-model" type="text" disabled={testing} value={model} placeholder="glm-4v-plus-0111"
+            onChange={(e) => { setModel(e.target.value.trim()); setResult(null) }} />
         </div>
 
         {result && (
@@ -86,11 +85,10 @@ export default function OcrSettings({ onClose }: Props) {
         )}
 
         <div className="btnrow">
-          <button className="btn" disabled={testing} onClick={doTest}>{testing ? '测试中…' : '测试连通'}</button>
-          <button className="btn" onClick={doSave}>保存</button>
+          <button className="btn ghost" disabled={testing} onClick={doTest}>{testing ? '测试中…' : '测试连通'}</button>
+          <button className="btn" disabled={testing} onClick={doSave}>保存设置</button>
           <button className="btn ghost" onClick={onClose}>取消</button>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }
