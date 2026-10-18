@@ -8,9 +8,9 @@
 |---|---|---|---|
 | M1 | 固定 RC 电路端到端跑通 | ✅ | runs/vai_20261018_141418_21e24c15 |
 | M2 | 可靠参数化（两组参数、完整周期、重复稳定、失败判定） | ✅ | [docs/M2_验收报告.md](docs/M2_验收报告.md) |
-| M3 | 执行接口（TaskSpec → 任务 → Result 统一状态/日志/工件） | ✅ 后端侧达成（API v1.0 冻结 + skill 工具库；前端联调 B 侧） | contracts/ + skill/ |
+| M3 | 执行接口（TaskSpec → 任务 → Result 统一状态/日志/工件） | ✅ 后端与浏览器前端对接通过，API v1.0 保持冻结 | contracts/ + [本轮验收](docs/M1_M5_完善与验收.md) |
 | M4 | 题目到报告（读题→推导确认→执行→同次证据作答） | ✅ | [docs/M4_验收报告.md](docs/M4_验收报告.md) |
-| M5 | 演示验收（回归 + 冻结） | 材料就绪 | [docs/M5_回归与冻结.md](docs/M5_回归与冻结.md)（v1.0.0） |
+| M5 | 演示验收（回归 + 冻结） | ✅ RC 低通浏览器核心流程已实测验收 | [本轮验收](docs/M1_M5_完善与验收.md)；[历史冻结](docs/M5_回归与冻结.md)（v1.0.0） |
 
 ## 架构
 
@@ -66,6 +66,10 @@ vai_backend/
 ```
 
 ## 快速开始
+
+**在当前电脑上首次启动或从其他电脑复制项目后**，先运行 `./setup_backend.ps1` 创建 `.venv-local`，再运行 `./start_backend.ps1`。复制来的 `.venv` 可能仍指向原电脑的 Python，不能仅凭目录存在判断可用。下方历史命令中的 `.venv` 可替换为 `.venv-local`。
+
+本轮 M1～M5 的完善项、验证结果和可重复命令见 [M1_M5_完善与验收.md](docs/M1_M5_完善与验收.md)。历史验收材料与本轮复验分开保存。
 
 ```powershell
 # 1) 虚拟环境（已就绪）
@@ -130,6 +134,8 @@ $env:VAI_CONFIG = "$PWD\examples\config_env_missing.json"
 - 行为类题目（只给 fc）：agent 用 `skill.vai_client.derive_rc_from_cutoff()` 选 E24 标准值并 `precheck_spec()` 预检，经用户确认后提交。
 
 ## 安全与可溯源性
+
+- **本机 SSH 配置**：`ssh_host` 可填写 `用户名@主机`；`ssh_port` 支持非标准端口。`ssh_identity_file`、`ssh_known_hosts_file` 指定本地认证文件；`ssh_legacy_rsa: true` 仅为当前连接启用旧服务器需要的 RSA 算法。仍强制 `BatchMode=yes` 和主机密钥校验。本机 `.local-ssh/` 不提交 Git，认证配置不上传到执行器。
 
 - **保护机制**：`protected_files`（课程 cds.lib、EElearn cell、历史基线）每次运行前后 SHA-256 对比，任何变化即判 `PROTECTED_FILE_CHANGED` 失败。
 - **路径白名单**：SSH 主机与全部远程路径走严格正则校验；证据 tar 解包拒绝 `..`/软硬链接；工件下载经 `artifact_index.json` 二次寻址。

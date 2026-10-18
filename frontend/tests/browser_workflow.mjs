@@ -13,7 +13,8 @@ mkdirSync(output, { recursive: true })
 const server = spawn(python, ['-X', 'utf8', 'tests/workflow_server.py'], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
 let serverErrors = ''
 server.stderr.on('data', (data) => { serverErrors += data.toString() })
-let browser
+let browser, page
+const errors = [], submissions = [], networkFailures = []
 try {
   const info = await new Promise((resolveInfo, reject) => {
     const timeout = setTimeout(() => reject(new Error('Browser test server startup timed out: ' + serverErrors)), 15000)
@@ -30,9 +31,10 @@ try {
     await new Promise((resolveWait) => setTimeout(resolveWait, 100))
   }
   browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) })
-  const page = await browser.newPage({ viewport: { width: 1360, height: 1000 } })
-  const errors = [], submissions = []
+  page = await browser.newPage({ viewport: { width: 1360, height: 1000 } })
   page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
+  page.on('requestfailed', (request) => networkFailures.push({ url: request.url(), error: request.failure()?.errorText }))
   page.on('request', (request) => {
     if (request.method() === 'POST' && request.url().endsWith('/api/v1/runs')) submissions.push(request.postDataJSON())
   })
@@ -49,7 +51,7 @@ try {
   assert.equal(await page.getByRole('button', { name: '确认并开始仿真' }).isDisabled(), true)
   await page.locator('#param-stop_s').fill('0.0083')
   await page.getByText(/参数预检通过/).waitFor()
-  await page.screenshot({ path: resolve(output, 'confirmation.png'), fullPage: true })
+  await page.screenshot({ path: resolve(output, 'confirmation.png'), fullPage: true, animations: 'disabled' })
   await page.getByRole('button', { name: '确认并开始仿真' }).click()
   await page.getByRole('heading', { name: /仿真失败/ }).waitFor()
   assert.equal(submissions.length, 1)
@@ -57,7 +59,7 @@ try {
   assert.equal(submissions[0].params, undefined)
   await page.getByText('ENVIRONMENT_MISSING', { exact: true }).waitFor()
   assert.ok(await page.getByRole('link', { name: /api-worker.log/ }).count())
-  await page.screenshot({ path: resolve(output, 'failure-fixture.png'), fullPage: true })
+  await page.screenshot({ path: resolve(output, 'failure-fixture.png'), fullPage: true, animations: 'disabled' })
 
   let evidenceResult = 'not_bundled'
   if (info.historical_id) {
@@ -66,10 +68,10 @@ try {
     await page.waitForFunction(() => [...document.querySelectorAll('.shots img')].length === 2 && [...document.querySelectorAll('.shots img')].every((img) => img.complete && img.naturalWidth > 0))
     await page.getByText(/本次 Spectre 实测截止频率为/).waitFor()
     const report = page.getByRole('link', { name: /report.html/ })
-    assert.equal((await page.request.get(await report.getAttribute('href'))).status(), 200)
+    assert.equal((await page.request.get(new URL(await report.getAttribute('href'), info.url).href)).status(), 200)
     await page.getByText(/数值验收明细/).click()
     await page.getByText(/运行证据索引/).click()
-    await page.screenshot({ path: resolve(output, 'historical-result.png'), fullPage: true })
+    await page.screenshot({ path: resolve(output, 'historical-result.png'), fullPage: true, animations: 'disabled' })
     evidenceResult = 'historical_evidence_rendered'
   }
   assert.deepEqual(errors, [])
@@ -79,6 +81,12 @@ try {
     browser_errors: errors, checked_at: new Date().toISOString() }
   writeFileSync(resolve(output, 'browser-summary.json'), JSON.stringify(summary, null, 2))
   console.log(JSON.stringify(summary))
+} catch (error) {
+  if (page) {
+    await page.screenshot({ path: resolve(output, 'test-failure.png'), fullPage: true })
+    console.error(JSON.stringify({ page_errors: errors, networkFailures, body: (await page.locator('body').innerText()).slice(0, 4000), serverErrors }))
+  }
+  throw error
 } finally {
   await browser?.close()
   server.stdin.end('\n')

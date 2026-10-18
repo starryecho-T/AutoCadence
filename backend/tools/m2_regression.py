@@ -27,6 +27,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import sys
 import threading
 import time
@@ -48,9 +49,9 @@ from vai_backend.api import create_app
 from vai_backend.config import Settings
 
 HOST = '127.0.0.1'
-PORT = 8765
+PORT = int(os.getenv('VAI_PORT', '8765'))
 BASE_URL = f'http://{HOST}:{PORT}'
-SUMMARY_PATH = ROOT / 'docs' / 'm2_regression_summary.json'
+SUMMARY_PATH = Path(os.getenv('VAI_SUMMARY_PATH', str(ROOT / 'docs' / 'm2_regression_summary.json')))
 POLL_INTERVAL_S = 2.0
 PER_RUN_TIMEOUT_S = 300.0
 OVERALL_DEADLINE_S = 540.0

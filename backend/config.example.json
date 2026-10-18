@@ -1,5 +1,6 @@
 {
   "ssh_host": "school-eda",
+  "ssh_port": 22,
   "remote_base": "/data/home/YOUR_ACCOUNT/vai_runs",
   "environment_script": "/etc/profile",
   "virtuoso_bin": "/opt/cadence/IC617/bin/virtuoso",

@@ -14,9 +14,27 @@ class PipelineError(RuntimeError):
 
 def _ssh(config):
     host=config['ssh_host']
-    if not re.fullmatch(r'[A-Za-z0-9_.@-]+',host) or host.startswith('-'):
+    if not isinstance(host,str) or not re.fullmatch(r'[A-Za-z0-9_.@-]+',host) or host.startswith('-'):
         raise PipelineError('CONFIG_ERROR','upload','Invalid SSH host alias')
-    return ['ssh','-T','-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12',host]
+    args=['ssh','-T','-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12']
+    port=config.get('ssh_port',22)
+    if isinstance(port,bool) or not isinstance(port,int) or not 1<=port<=65535:
+        raise PipelineError('CONFIG_ERROR','upload','ssh_port must be an integer between 1 and 65535')
+    if 'ssh_port' in config:args+=['-p',str(port)]
+    for key,option in [('ssh_identity_file','IdentityFile'),('ssh_known_hosts_file','UserKnownHostsFile')]:
+        if key not in config:continue
+        value=config[key]
+        if not isinstance(value,str) or any(c in value for c in '\r\n\x00') or not Path(value).is_file():
+            raise PipelineError('CONFIG_ERROR','upload','Missing or invalid local file: '+key)
+        args+=['-o',option+'='+str(Path(value).resolve())]
+    if config.get('ssh_identity_file'):args+=['-o','IdentitiesOnly=yes']
+    legacy=config.get('ssh_legacy_rsa',False)
+    if not isinstance(legacy,bool):
+        raise PipelineError('CONFIG_ERROR','upload','ssh_legacy_rsa must be boolean')
+    if legacy:
+        # Old course servers may only offer RSA/SHA-1; scoped to this connection.
+        args+=['-o','HostKeyAlgorithms=+ssh-rsa','-o','PubkeyAcceptedAlgorithms=+ssh-rsa']
+    return args+[host]
 
 def _validate_config(config,run_id):
     if not re.fullmatch(r'[a-z][a-z0-9_]{5,80}',run_id):raise PipelineError('RUN_ID_INVALID','upload','Invalid run ID')
@@ -33,7 +51,8 @@ def _archive(task,run_id,config):
     with tarfile.open(fileobj=memory,mode='w:gz') as tf:
         for path in [PACKAGE/'worker/run.py',PACKAGE/'worker/capture.py']+list((PACKAGE/'worker/templates').glob('*.il')):
             tf.add(path,arcname=path.relative_to(PACKAGE/'worker').as_posix(),recursive=False)
-        payload=json.dumps({'task':task,'run_id':run_id,'config':config},ensure_ascii=True).encode()
+        remote_config={key:value for key,value in config.items() if not key.startswith('ssh_')}
+        payload=json.dumps({'task':task,'run_id':run_id,'config':remote_config},ensure_ascii=True).encode()
         info=tarfile.TarInfo('input.json');info.size=len(payload);info.mode=0o600
         tf.addfile(info,io.BytesIO(payload))
     return memory.getvalue()

@@ -43,6 +43,9 @@ test('missing or conflicting components require editing; explicit analysis limit
   assert.equal(plan.task.params.max_step_s, .001)
   assert.equal(plan.task.params.freq_min_hz, 1000)
   assert.ok(validateBackendTask(plan.task))
+  const conflictingPulse = planQuestion(question + ' 高电平为 3 V。', empty)
+  assert.equal(conflictingPulse.task.params.high_v, '')
+  assert.ok(validateBackendTask(conflictingPulse.task))
 })
 
 test('v1.0 prechecks reject incomplete cycles, excessive step and budgets, and noninteger AC counts', () => {

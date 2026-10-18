@@ -41,7 +41,7 @@ PULSE = {'low_v': 0, 'high_v': 2, 'period_s': 0.004, 'width_s': 0.002,
          'rise_s': 1e-9, 'fall_s': 1e-9, 'delay_s': 1e-6}
 TRANSIENT_STOP_S = 0.0083   # >= delay + 2.05*period = 8.201 ms (two full cycles)
 MAX_STEP_S = 2e-6           # <= min(tau/20 = 8 us, period/200 = 20 us, width/20 = 100 us)
-SUMMARY_PATH = ROOT / 'docs' / 'm4_demo_summary.json'
+SUMMARY_PATH = Path(os.getenv('VAI_SUMMARY_PATH', str(ROOT / 'docs' / 'm4_demo_summary.json')))
 
 
 def log(message: str) -> None:

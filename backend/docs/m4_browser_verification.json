@@ -1,0 +1,84 @@
+{
+  "verdict": "PASS",
+  "mode": "real_browser_and_remote_cadence",
+  "checked_at": "2026-10-18T08:15:50.052Z",
+  "run_id": "vai_20261018_081516_bc09f692e652",
+  "status": "succeeded",
+  "confirmation": "browser_click_after_parameter_review",
+  "submissions": 1,
+  "task": {
+    "schema_version": "1.0",
+    "template_id": "rc_lowpass",
+    "title": "RC 低通仿真",
+    "question": "设计一阶 RC 低通滤波器，要求截止频率约为 1 kHz。使用 0 到 2 V、周期 4 ms、脉宽 2 ms 的脉冲激励验证其时域响应，给出 -3 dB 截止频率与脉冲响应波形。",
+    "r_ohm": 16000,
+    "c_f": 1e-8,
+    "pulse": {
+      "low_v": 0,
+      "high_v": 2,
+      "period_s": 0.004,
+      "width_s": 0.002,
+      "rise_s": 1e-9,
+      "fall_s": 1e-9,
+      "delay_s": 0.000001
+    },
+    "ac": {
+      "start_hz": 10,
+      "stop_hz": 1000000,
+      "points_per_decade": 50
+    },
+    "transient": {
+      "stop_s": 0.008301,
+      "max_step_s": 0.000001
+    }
+  },
+  "stages_passed": 13,
+  "numeric_checks_passed": 18,
+  "fc_hz": 994.6088146504248,
+  "fc_theory_hz": 994.7183943243458,
+  "fc_relative_error_pct": 0.011016150354326015,
+  "failure_case_run_id": "vai_20261018_081319_661b1c0ad69b",
+  "artifact_downloads": [
+    {
+      "filename": "schematic_window.png",
+      "sha256": "7622dcfacacb1bd05d8875793b172bd408c475ad5fd47d6792011ac8a4237880",
+      "bytes": 62421
+    },
+    {
+      "filename": "waveform_window.png",
+      "sha256": "d2f1f59ee7c5af4c243e0eecaf81836c0a0367ff47bcbb2ae59c8609214c0b57",
+      "bytes": 103429
+    },
+    {
+      "filename": "report.html",
+      "sha256": "bef3db535cd97513021d0511fa171ff363942260314f9c3eff4922cd8e57f70e",
+      "bytes": 312064
+    },
+    {
+      "filename": "report.md",
+      "sha256": "61a756dc0aaee0232a7e64f3de3eeb388e0a77f8b9c5298caa668f2bfa539249",
+      "bytes": 10561
+    },
+    {
+      "filename": "metrics.json",
+      "sha256": "f136dedc9f1980418b3899a18fd97de45f7195c478843d55dd198eb6a17cf5e0",
+      "bytes": 5495
+    },
+    {
+      "filename": "input.scs",
+      "sha256": "d0c05ee1f567d694d7966d7fedaa548a815fd1ddeb5271606278e92d0ea4cd39",
+      "bytes": 1258
+    },
+    {
+      "filename": "image_validation.json",
+      "sha256": "8736905b8a1d7f54cfb3509f51f41f18cba3fa0b108c60edc9851c4e014f8b45",
+      "bytes": 2737
+    },
+    {
+      "filename": "protection.json",
+      "sha256": "21e1dfc48d58717e8d905d2dcfac84a1f06bbf36840d681b73ba1b14427db60e",
+      "bytes": 529
+    }
+  ],
+  "browser_errors": []
+}

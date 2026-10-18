@@ -4,6 +4,7 @@ An existing M4 run, if present, is copied with its original ID to test historica
 evidence rendering. It is never relabeled as the result of a new submission.
 """
 import json
+import mimetypes
 from pathlib import Path
 import shutil
 import socket
@@ -12,6 +13,8 @@ from tempfile import TemporaryDirectory
 import threading
 
 ROOT = Path(__file__).resolve().parents[2]
+mimetypes.add_type('text/javascript', '.js')
+mimetypes.add_type('text/css', '.css')
 sys.path.insert(0, str(ROOT / 'backend'))
 
 import uvicorn

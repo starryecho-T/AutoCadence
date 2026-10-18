@@ -49,6 +49,7 @@ export function planQuestion(text: string, parsed: ParseResult): ParseResult {
   const explicitlySet = new Set<string>()
   function set(key: string, value: number | undefined | null) {
     if (value === undefined) return
+    if (explicitlySet.has(key) && p[key] !== value) value = null
     p[key] = value ?? ''
     explicitlySet.add(key)
     delete defaults[key]

@@ -1,0 +1,14 @@
+{
+  "verdict": "PASS",
+  "run_id": "vai_20261018_081319_661b1c0ad69b",
+  "mode": "real_remote_failure_injection",
+  "checked_at": "2026-10-18T08:13:25.211763+00:00",
+  "status": "failed",
+  "error": {
+    "code": "ENVIRONMENT_MISSING",
+    "stage": "preflight",
+    "message": "virtuoso_bin not found"
+  },
+  "artifacts_verified": 8,
+  "problems": []
+}

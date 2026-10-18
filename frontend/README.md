@@ -28,6 +28,11 @@ npm run build      # 产出静态文件到 dist/
 # main.py 里加
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+import mimetypes
+
+# Windows 注册表可能把 .js 关联为 text/plain，需明确模块 MIME 类型
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/css", ".css")
 
 app.mount("/ui", StaticFiles(directory="frontend/dist", html=True), name="ui")
 
@@ -38,7 +43,7 @@ async def ui_spa(path: str):
 
 然后访问 `http://127.0.0.1:8765/ui/`。
 
-**Windows EXE 桌面版**：已提供 `../desktop/main.py` 和 `../desktop/build.ps1`，使用 pywebview + WebView2 + PyInstaller。双击 EXE 打开独立窗口，包含前端与 Python 运行时；真实后端通过本机接口连接，待后续集成。桌面版报告可直接保存到电脑，AI 识别设置跨次启动保留。构建方法见 [桌面版说明](../desktop/README.md)。
+**Windows EXE 桌面版**：已提供 `../desktop/main.py` 和 `../desktop/build.ps1`，使用 pywebview + WebView2 + PyInstaller。双击 EXE 打开独立窗口，包含前端与 Python 运行时；桌面静态服务代理本机后端接口，后端需另行启动。桌面版报告可直接保存到电脑，AI 识别设置跨次启动保留。构建方法见 [桌面版说明](../desktop/README.md)。本轮主要验收浏览器界面，未重新打包 EXE。
 
 ## AI 识别（题目截图 → 文字）
 
@@ -47,7 +52,7 @@ async def ui_spa(path: str):
 - **设置**：输入页 → 上传图片 → "AI 识别设置"，预置智谱 GLM / 阿里通义 / OpenAI，也可填自定义 OpenAI 兼容中转
 - **协议**：标准 OpenAI `/chat/completions` + `image_url`（base64），任何兼容服务都能用
 - **隐私**：API Key 只存浏览器 localStorage；请求从你的浏览器**直连**所选服务商，不经过本项目后端
-- 识别失败不影响主流程：图片仍以 `image_b64` 随 parse 请求发给后端
+- 识别失败时可手动录入文字。后端严格只接受 `{text}`；图片保留在输入页供核对，不发送 `image_b64`。
 
 ## 演示模式
 
@@ -77,14 +82,24 @@ npm test           # 单位解析、RC 数值、API 响应校验、轮询取消�
 npm run build      # TypeScript 检查和生产构建
 ```
 
-测试使用 Node.js 自带测试运行器和 Vite 随附的 esbuild，不调用外部识别服务。
+测试使用 Node.js 自带测试运行器和 Vite 随附的 esbuild，不调用外部识别服务。新增工作流测试调用真实 Python 后端的解析和 TaskSpec 校验；先执行 `backend/setup_backend.ps1`，或通过 `VAI_TEST_PYTHON` 指向已安装后端依赖的 Python。
+
+`npm run test:browser` 使用 Playwright 检查用户确认、参数阻断、失败日志与历史证据展示；需构建前端并提供 Playwright（可用 `PLAYWRIGHT_MODULE` 指定模块路径、`PLAYWRIGHT_CHANNEL=msedge` 使用 Edge）。该测试使用临时目录与明确的失败夹具，不运行远程仿真。`VAI_BROWSER_OUTPUT` 指定截图和检查结果目录。
+
+## M3/M4 真实流程
+
+- `src/contract.ts` 将界面的扁平输入转换成冻结的 API v1.0 TaskSpec：顶层 `r_ohm/c_f`，以及 `pulse/ac/transient` 子对象；默认项和警告均保留。
+- `src/planning.ts` 针对明确截止频率搜索 E24 电阻和常用电容；支持提取有单位的脉冲电平、时间和 AC 扫描范围。显式条件优先，冲突或缺失值留给用户填写。
+- 确认页展示完整参数、推导误差和预检。检查元件范围、扫描覆盖、至少 2.05 个周期、时间步长、点数预算；通过后仍需点击确认。
+- 结果优先展示真实 Cadence 窗口截图；数值检查、警告、网表、日志和 SHA-256 索引均可查看。API v1.0 工件地址必须属于当前 `run_id`。
+- 上述推导属于有限规则实现；通用自然语言 agent 和其他电路类型不属于本轮验收范围。
 
 ## 与后端的契约对接
 
 | 页面行为 | 接口 |
 |---|---|
 | 启动健康检查 | `GET /health`（失败 → 演示模式） |
-| 解析题目 | `POST /api/v1/parse`，body `{ text, image_b64? }`；`image_b64` 为题目截图 base64（不带 data: 前缀），是本前端的**契约扩展字段**，后端可忽略 |
+| 解析题目 | `POST /api/v1/parse`，body `{ text }`；读取 `supported/task/missing_fields/defaults_applied/warnings`，截图须先转文字 |
 | 提交仿真（用户确认后，绝不自动） | `POST /api/v1/runs`（TaskSpec），202 → run_id |
 | 进度轮询 | `GET /api/v1/runs/{run_id}`，1.5 s 一次，终态停止 |
 | 截图/报告 | `GET artifacts[].url`（相对后端）；`kind=schematic` 原理图、`kind=waveform` 仿真结果、`kind=report_html/report_markdown` 报告 |
@@ -92,7 +107,7 @@ npm run build      # TypeScript 检查和生产构建
 
 - 只有 `status=succeeded` 视为成功；`failed` 展示 `error.code/stage/message` 并保留日志链接
 - 响应兼容 `run_id/id`、`stages/progress`、`artifacts/files` 等别名；缺少任务 ID、未知状态、错配 ID 或无法识别的列表结构会显示错误，字段命名以后端 openapi.json 为准
-- 参数命名暂用 `r_ohm`/`c_farad`（SI 单位），如后端契约不同改 `src/api.ts` 顶部即可
+- 界面内部使用 `params.r_ohm/params.c_farad`；提交时由 `src/contract.ts` 转为后端的顶层 `r_ohm/c_f`，不会直接发送界面结构。
 
 ## 目录结构
 

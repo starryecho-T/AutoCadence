@@ -1,39 +1,84 @@
-# 电路仿真助手 · CircuitSim
+# Circuit Sim · RC 电路仿真助手
 
-面向 Windows 桌面的 RC 低通电路仿真助手：题目输入和图片识别、参数推导与确认、任务进度、原理图与波形、指标和实验报告。
+文字题目（或截图识别后的文字）→ 参数推导与确认 → 真实 Cadence / Spectre 仿真 → 截图、数值验收和报告。
 
-## 桌面版下载
+## Windows 桌面版
 
-从本仓库的 **Releases** 下载 `CircuitSim.exe`，双击打开独立窗口。EXE 已包含界面与 Python 运行时，使用系统 Microsoft Edge WebView2。
+已有桌面版本可从本仓库的 **Releases** 下载 `CircuitSim.exe`，双击打开独立窗口。EXE 包含界面与 Python 运行时，使用系统 Microsoft Edge WebView2；真实后端需另行启动，Cadence/Virtuoso/Spectre 及许可证不包含在 EXE 中。本轮 M1～M5 完善已在浏览器验收，未重新打包已发布的 EXE。
 
-当前桌面版通过 `http://127.0.0.1:8765` 连接后端，后端需要单独启动；连接失败时进入明确标注的演示模式。Cadence/Virtuoso/Spectre 及其授权不包含在桌面 EXE 中。
-
-## 项目组成
-
-| 目录 | 内容 |
-| --- | --- |
-| [frontend](frontend/README.md) | React + TypeScript 界面、题目规划与后端契约适配 |
-| [backend](backend/README.md) | FastAPI 服务、Cadence/Spectre 远程任务、结果校验和报告 |
-| [desktop](desktop/README.md) | Windows 独立窗口、接口转发和 EXE 构建脚本 |
-| [backend/contracts](backend/contracts) | TaskSpec、结果与 OpenAPI 契约 |
-| [backend/docs](backend/docs) | 验收材料和回归摘要 |
-
-## 开发与构建
-
-前端：在 `frontend` 执行 `npm ci`、`npm run dev`。`npm test` 运行前端回归检查，`npm run build` 生成静态界面。
-
-后端：参考 [后端说明](backend/README.md)，创建本机 Python 环境并安装 `requirements-dev.txt`；根据 `config.example.json` 创建本机配置，再启动 `serve.py`。真实仿真需要可用的远程 EDA 环境。
-
-Windows EXE：在项目根目录执行：
+从当前源码构建桌面版：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File desktop/build.ps1
 ```
 
-产物默认位于 `desktop/release/CircuitSim.exe`。详细系统要求、配置位置和开发步骤见 [桌面版说明](desktop/README.md)。
+默认产物为 `desktop/release/CircuitSim.exe`，配置、系统要求和开发步骤见 [桌面版说明](desktop/README.md)。
+
+## 项目组成
+
+| 目录 | 内容 |
+|---|---|
+| [frontend](frontend/README.md) | React + TypeScript 界面、题目规划与后端契约适配 |
+| [backend](backend/README.md) | FastAPI 服务、Cadence/Spectre 远程任务、结果校验和报告 |
+| [desktop](desktop/README.md) | Windows 独立窗口、接口转发和 EXE 构建 |
+| [backend/contracts](backend/contracts) | TaskSpec、结果与 OpenAPI 契约 |
+| [backend/docs](backend/docs) | 验收材料和回归摘要 |
+
+## 启动
+
+在一个 PowerShell 窗口启动后端：
+
+```powershell
+cd D:\GitHub\circuit-sim\backend
+.\setup_backend.ps1       # 首次安装或换电脑时执行，创建 .venv-local
+.\start_backend.ps1       # 本机 http://127.0.0.1:8765
+```
+
+在另一个窗口启动前端：
+
+```powershell
+cd D:\GitHub\circuit-sim\frontend
+npm install
+npm run dev
+```
+
+打开 http://localhost:5173 。先确认顶栏显示“后端在线”，再填入示例题目、解析、检查参数并点击确认。离线演示模式有明确标注，其公式曲线不属于真实仿真证据。
+
+## M1～M5 工作流程
+
+| 里程碑 | 输入 → 工作 → 交付 | 验收门槛 |
+|---|---|---|
+| M1 固定电路 | 固定 RC → 真实建图、网表、仿真、截图 → 首次运行证据 | 真实端到端成功，结果可追溯 |
+| M2 参数化 | 两组参数 → A/B/A 重复运行、完整脉冲、失败注入 → 回归记录 | 13 阶段、18 项数值检查、重复稳定、失败证据完整 |
+| M3 接口接入 | API v1.0 → 前端确认、提交、轮询、工件下载 → 可操作界面 | 严格 TaskSpec、统一状态与错误、工件属于同一任务 |
+| M4 题目到报告 | 有单位的文字条件 → 标准 R/C 推导、预检、用户确认 → 实测作答 | 题目条件可核对；确认前零提交；报告只引用本次证据 |
+| M5 演示验收 | 单元/接口/浏览器检查 + 真实成功/失败回归 → 验收记录与冻结核对 | 清楚标识真实运行、历史证据和测试夹具；契约哈希一致 |
+
+详细实现与证据见 [后端 README](backend/README.md)、[前端 README](frontend/README.md)、[本轮完善与验收记录](backend/docs/M1_M5_完善与验收.md)。
+
+## 当前范围
+
+- 一阶 RC 低通；支持有单位的显式 R/C，或按明确截止频率搜索 E24 电阻与常用电容组合。
+- 确认页可编辑电平、周期、脉宽、上升/下降时间、延迟、AC 范围与点数、瞬态终点和最大步长。
+- 前端规则只提取支持的明确条件；其余条件仍需用户核对。任意电路拓扑和通用自然语言设计不在本版本范围内。
+- 截图先通过用户配置的视觉服务转成文字；后端 `/parse` 仅接受 `{text}`。
+- 后端连接配置在 `backend/config.local.json`，本机密钥在 `backend/.local-ssh/`，均不提交 Git。换电脑时重建 Python 环境和本机 SSH 认证。
+
+## 验证
+
+```powershell
+cd D:\GitHub\circuit-sim\frontend
+npm test
+npm run build
+cd ..\backend
+.\.venv-local\Scripts\python -m pytest tests -q
+.\.venv-local\Scripts\python tools\verify_release.py
+```
+
+真实回归会使用服务器上的 Cadence 许可证。执行方法和浏览器验收见本轮验收记录；不要同时启动多个服务实例指向同一个 `runs/` 目录。
 
 ## 发布产物
 
-Git 仓库保存源码、测试、说明和验收文档。Release 提供 Windows EXE、前端静态构建包、仿真运行证据包、使用说明与 SHA-256 校验清单。依赖目录、虚拟环境、缓存和本机私有配置由各目录的 `.gitignore` 管理。
+Git 仓库保存源码、测试、说明和验收摘要。已有 Release 提供 Windows EXE、前端静态构建包、仿真运行证据包、使用说明与 SHA-256 校验清单；发布包与本轮源码更新的验收范围分别以对应版本说明为准。
 
-运行证据包解压到项目根目录后会恢复 `backend/runs/`，可用于后端已有的离线证据回归；不需要为此重新执行远程仿真。
+运行证据包解压到项目根目录后会恢复 `backend/runs/`，可用于已有的离线证据回归。依赖目录、虚拟环境、缓存、本机私有配置和 SSH 密钥由 `.gitignore` 管理。

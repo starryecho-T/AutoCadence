@@ -100,7 +100,7 @@ export default function ConfirmPanel({ parse, sourceText, busy, onConfirm, onBac
 
       {Object.keys(defaults).length > 0 && (
         <div className="note info" style={{ marginTop: 14 }}>
-          默认项说明：{Object.entries(defaults).map(([k, v]) => `${k}：${String(v)}`).join('；')}
+          初始建议值：{Object.entries(defaults).map(([k, v]) => `${PARAM_LABELS[k] ?? k}：${typeof v === 'number' ? formatNumber(v) : String(v)}`).join('；')}。提交以上方当前填写值为准。
         </div>
       )}
 
