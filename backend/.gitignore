@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+.venv/
+.venv-local/
+.env
+runs/
+*.log
+config.local.json
+# Imported archive includes a machine-specific virtual environment; source tests live in tests/.
+tests.zip

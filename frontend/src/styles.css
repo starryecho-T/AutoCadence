@@ -102,7 +102,7 @@ body {
 }
 
 /* ---------- 表单 ---------- */
-textarea, select, input[type="text"], input[type="number"] {
+textarea, select, input[type="text"], input[type="number"], input[type="password"] {
   width: 100%;
   font-family: inherit;
   font-size: 14px;
@@ -137,7 +137,7 @@ textarea { resize: vertical; min-height: 110px; }
 }
 .btn.ghost:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-bg); }
 
-.btnrow { display: flex; gap: 10px; margin-top: 14px; align-items: center; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
 
 /* ---------- 上传区 ---------- */
 .upload-zone {
@@ -266,6 +266,8 @@ table.tbl {
 
 /* ---------- 历史列表 ---------- */
 .history-item {
+  width: 100%; background: transparent; color: inherit; font-family: inherit;
+  text-align: left; border: 0; border-radius: 4px;
   display: flex; align-items: center; gap: 10px;
   padding: 9px 4px;
   border-bottom: 1px solid var(--line);
@@ -273,6 +275,27 @@ table.tbl {
   cursor: pointer;
 }
 .history-item:hover { background: var(--accent-bg); }
+.history-item:disabled { opacity: 0.5; cursor: not-allowed; }
+.history-summary { margin-left: auto; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; }
+.history-item time { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+.image-button { display: block; width: 100%; border: 0; padding: 0; background: transparent; cursor: zoom-in; }
+.lightbox-close { position: absolute; top: 16px; right: 16px; }
+.tagline { color: var(--ink-soft); font-size: 13px; }
+button:focus-visible, .upload-zone:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 3px; }
+.note { margin-bottom: 14px; overflow-wrap: anywhere; }
+.lightbox .card { max-height: 90vh; overflow-y: auto; }
+@media (max-width: 640px) {
+  .app { padding: 14px 12px 36px; }
+  .topbar { flex-wrap: wrap; padding: 12px; gap: 8px; }
+  .tagline { display: none; }
+  .card { padding: 16px; }
+  .card h2 { flex-wrap: wrap; }
+  .params-grid { grid-template-columns: 1fr; }
+  .history-item { flex-wrap: wrap; }
+  .history-item .rid { max-width: calc(100% - 80px); overflow-wrap: anywhere; }
+  .history-summary { margin-left: 0; max-width: 100%; }
+  .lightbox { padding: 12px; }
+}
 .history-item .rid { font-family: Consolas, monospace; color: var(--ink-soft); font-size: 12.5px; }
 
 .badge {

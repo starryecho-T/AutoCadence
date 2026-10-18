@@ -4,6 +4,13 @@ interface Props {
   run: RunRecord
 }
 
+const LABELS: Record<string, string> = {
+  upload: '上传任务', preflight: '环境预检', build: '建立原理图', probe: '检查电路',
+  netlist: '生成网表', netlist_validation: '核对网表参数', spectre: 'Spectre 仿真',
+  export: '导出数据', capture: '获取真实截图', download: '回传证据',
+  image_validation: '校验截图', validation: '校验数值', report: '生成报告'
+}
+
 /** 第 3 步：仿真进行中，展示后端返回的 stages 与状态 */
 export default function RunProgress({ run }: Props) {
   const stages: StageInfo[] = run.stages?.length
@@ -26,7 +33,7 @@ export default function RunProgress({ run }: Props) {
             <span className="dot">
               {s.status === 'running' && <span className="spinner" style={{ width: 10, height: 10 }} />}
             </span>
-            {s.name}
+            {LABELS[s.name] ?? s.name}
             {s.status === 'failed' && <span style={{ color: 'var(--err)', fontSize: 12.5 }}>（失败）</span>}
           </li>
         ))}

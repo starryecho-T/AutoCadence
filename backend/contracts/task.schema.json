@@ -1,0 +1,170 @@
+{
+  "$defs": {
+    "AC": {
+      "additionalProperties": false,
+      "properties": {
+        "start_hz": {
+          "default": 10,
+          "exclusiveMinimum": 0,
+          "maximum": 100000000.0,
+          "title": "Start Hz",
+          "type": "number"
+        },
+        "stop_hz": {
+          "default": 1000000.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000.0,
+          "title": "Stop Hz",
+          "type": "number"
+        },
+        "points_per_decade": {
+          "default": 50,
+          "maximum": 100,
+          "minimum": 20,
+          "title": "Points Per Decade",
+          "type": "integer"
+        }
+      },
+      "title": "AC",
+      "type": "object"
+    },
+    "Pulse": {
+      "additionalProperties": false,
+      "properties": {
+        "low_v": {
+          "default": 0,
+          "maximum": 10,
+          "minimum": -10,
+          "title": "Low V",
+          "type": "number"
+        },
+        "high_v": {
+          "default": 1,
+          "maximum": 10,
+          "minimum": -10,
+          "title": "High V",
+          "type": "number"
+        },
+        "period_s": {
+          "default": 0.002,
+          "maximum": 0.1,
+          "minimum": 1e-05,
+          "title": "Period S",
+          "type": "number"
+        },
+        "width_s": {
+          "default": 0.001,
+          "exclusiveMinimum": 0,
+          "maximum": 0.1,
+          "title": "Width S",
+          "type": "number"
+        },
+        "rise_s": {
+          "default": 1e-09,
+          "maximum": 0.001,
+          "minimum": 1e-10,
+          "title": "Rise S",
+          "type": "number"
+        },
+        "fall_s": {
+          "default": 1e-09,
+          "maximum": 0.001,
+          "minimum": 1e-10,
+          "title": "Fall S",
+          "type": "number"
+        },
+        "delay_s": {
+          "default": 1e-06,
+          "maximum": 0.01,
+          "minimum": 0,
+          "title": "Delay S",
+          "type": "number"
+        }
+      },
+      "title": "Pulse",
+      "type": "object"
+    },
+    "Transient": {
+      "additionalProperties": false,
+      "properties": {
+        "stop_s": {
+          "default": 0.004201,
+          "exclusiveMinimum": 0,
+          "maximum": 0.5,
+          "title": "Stop S",
+          "type": "number"
+        },
+        "max_step_s": {
+          "default": 1e-06,
+          "maximum": 0.001,
+          "minimum": 1e-09,
+          "title": "Max Step S",
+          "type": "number"
+        }
+      },
+      "title": "Transient",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "template_id": {
+      "const": "rc_lowpass",
+      "default": "rc_lowpass",
+      "title": "Template Id",
+      "type": "string"
+    },
+    "title": {
+      "default": "RC low-pass simulation",
+      "maxLength": 120,
+      "title": "Title",
+      "type": "string"
+    },
+    "question": {
+      "anyOf": [
+        {
+          "maxLength": 10000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Question"
+    },
+    "r_ohm": {
+      "maximum": 1000000.0,
+      "minimum": 10,
+      "title": "R Ohm",
+      "type": "number"
+    },
+    "c_f": {
+      "maximum": 0.001,
+      "minimum": 1e-12,
+      "title": "C F",
+      "type": "number"
+    },
+    "pulse": {
+      "$ref": "#/$defs/Pulse"
+    },
+    "ac": {
+      "$ref": "#/$defs/AC"
+    },
+    "transient": {
+      "$ref": "#/$defs/Transient"
+    }
+  },
+  "required": [
+    "r_ohm",
+    "c_f"
+  ],
+  "title": "TaskSpec",
+  "type": "object"
+}

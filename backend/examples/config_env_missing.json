@@ -1,0 +1,17 @@
+{
+  "ssh_host": "101.6.64.74",
+  "remote_base": "/data/home/2025010196/vai_runs",
+  "environment_script": "/etc/profile",
+  "virtuoso_bin": "/opt/cadence/IC617/bin/virtuoso_m2_fault_injection",
+  "spectre_bin": "/opt/cadence/MMSIM151/bin/spectre",
+  "cadence_cds_lib": "/opt/cadence/IC617/share/cdssetup/cds.lib",
+  "protected_files": [
+    "/data/home/2025010196/cds.lib",
+    "/data/home/2025010196/EElearn/cds.lib",
+    "/data/home/2025010196/EElearn/10#2e9#2e3/2/schematic/sch.oa",
+    "/data/home/2025010196/vai_base_20261015_153946/db/vai_base_20261015_153946/rc_lpf/schematic/sch.oa",
+    "/data/home/2025010196/vai_feas_20261017_113555_4715/db/vai_feas_20261017_113555_4715/rc_lpf/schematic/sch.oa"
+  ],
+  "stage_timeout_s": 120,
+  "run_timeout_s": 600
+}

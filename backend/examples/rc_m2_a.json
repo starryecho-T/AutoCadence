@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "template_id": "rc_lowpass",
+  "title": "M2-A RC low-pass R=1k C=100nF pulse 3.3V period 1ms",
+  "r_ohm": 1000,
+  "c_f": 1e-7,
+  "pulse": {"low_v": 0, "high_v": 3.3, "period_s": 0.001, "width_s": 0.0004, "rise_s": 1e-9, "fall_s": 1e-9, "delay_s": 2e-6},
+  "ac": {"start_hz": 10, "stop_hz": 1000000, "points_per_decade": 50},
+  "transient": {"stop_s": 0.00206, "max_step_s": 1e-6}
+}

@@ -1,0 +1,269 @@
+{
+  "milestone": "M2",
+  "verdict": "PASS",
+  "driver": "tools/m2_regression.py",
+  "api_base": "http://127.0.0.1:8765",
+  "health": {
+    "status": "ok",
+    "version": "0.1.0",
+    "queue": {
+      "queued": 0,
+      "running": 0,
+      "worker_alive": true,
+      "recovery_warnings": []
+    },
+    "server_check": "not_run",
+    "authentication_required": false
+  },
+  "started_at": "2026-10-18T07:18:46.078681Z",
+  "finished_at": "2026-10-18T07:20:33.894137Z",
+  "total_elapsed_s": 107.8,
+  "tasks": [
+    {
+      "label": "m2_a",
+      "file": "examples\\rc_m2_a.json"
+    },
+    {
+      "label": "m2_b",
+      "file": "examples\\rc_m2_b.json"
+    },
+    {
+      "label": "m2_a_repeat",
+      "file": "examples\\rc_m2_a.json"
+    }
+  ],
+  "runs": {
+    "m2_a": {
+      "label": "m2_a",
+      "run_id": "vai_20261018_071847_8cebcb864343",
+      "status": "succeeded",
+      "elapsed_s": 36.8,
+      "warnings": [
+        "Frontend tool warning recorded in logs/build.log",
+        "Frontend tool warning recorded in logs/export.log",
+        "Frontend tool warning recorded in logs/netlist.log",
+        "Frontend tool warning recorded in logs/probe.log"
+      ],
+      "fc_hz": 1591.4121193254698,
+      "fc_theory_hz": 1591.5494309189537,
+      "fc_relative_error_pct": 0.008627541866823574,
+      "vout_at_tau": 2.0615120379723484,
+      "vout_at_100us": 2.0615120379723484,
+      "tran_end_s": 0.00206,
+      "ac_points": 251,
+      "tran_points": 2106,
+      "pulse_edges": {
+        "rising": [
+          3,
+          3,
+          3
+        ],
+        "falling": [
+          2,
+          2,
+          2
+        ]
+      },
+      "transient_max_relative_error": 1.4097929670398697e-05,
+      "stages_ok": 13,
+      "image_validation_ok": true,
+      "artifacts": {
+        "schematic_window.png": {
+          "bytes": 62408,
+          "sha256": "53d05cc84ddfa94a870d93918875f0e16f3804f31ae9cb0e60b082709aa445c0"
+        },
+        "waveform_window.png": {
+          "bytes": 106774,
+          "sha256": "e5f9331b7a24728af3be2064d320583c77c2963b5c534dace00515ca20297b8b"
+        },
+        "report.html": {
+          "bytes": 323716,
+          "sha256": "de0bf103c90b13152bb1d456fbc39496b4d849f86eb8132e90446f5f23898796"
+        },
+        "report.md": {
+          "bytes": 10161,
+          "sha256": "ba186880c7de43467795d329faae998e341db0eda125a6edfce012fb56f189e2"
+        },
+        "metrics.json": {
+          "bytes": 5439,
+          "sha256": "27aec101ceaf6b71dcf86bcb8ee08a4141c2b7df560dfabdc83e89fcfa07f75c"
+        },
+        "input.scs": {
+          "bytes": 1259,
+          "sha256": "f400233747efd22f1e85d342b806fe72b22aebfce97ab6b70e90acbe67cf5e95"
+        },
+        "image_validation.json": {
+          "bytes": 2737,
+          "sha256": "dfb4f6afecbef78f3445ab6237f56f556ef1aff6f15c14295498ba86b5208f9f"
+        }
+      }
+    },
+    "m2_b": {
+      "label": "m2_b",
+      "run_id": "vai_20261018_071847_526df1c0e321",
+      "status": "succeeded",
+      "elapsed_s": 34.7,
+      "warnings": [
+        "Frontend tool warning recorded in logs/build.log",
+        "Frontend tool warning recorded in logs/export.log",
+        "Frontend tool warning recorded in logs/netlist.log",
+        "Frontend tool warning recorded in logs/probe.log"
+      ],
+      "fc_hz": 159.14121193254624,
+      "fc_theory_hz": 159.15494309189535,
+      "fc_relative_error_pct": 0.008627541867267663,
+      "vout_at_tau": 1.5710591267241576,
+      "vout_at_100us": 0.21517139208964062,
+      "tran_end_s": 0.01645,
+      "ac_points": 251,
+      "tran_points": 8256,
+      "pulse_edges": {
+        "rising": [
+          3,
+          3,
+          3
+        ],
+        "falling": [
+          2,
+          2,
+          2
+        ]
+      },
+      "transient_max_relative_error": 9.999666674333838e-06,
+      "stages_ok": 13,
+      "image_validation_ok": true,
+      "artifacts": {
+        "schematic_window.png": {
+          "bytes": 62464,
+          "sha256": "a5959dcdb0e435457409417a174b5210d6f907c22ced0e98ea93a4b4e048db55"
+        },
+        "waveform_window.png": {
+          "bytes": 105524,
+          "sha256": "4cd45937f7e570eebaacefd706e34272c8cf454786a8a7210391c858d5b35eab"
+        },
+        "report.html": {
+          "bytes": 317864,
+          "sha256": "9b8f09836d427a4cf63cdd7e64197acff563c21d3ba51343d80a722156ce7335"
+        },
+        "report.md": {
+          "bytes": 10160,
+          "sha256": "d7826f34f635841bd53e21fd380a6580eabfe4e73d436e612758dcdd2a7c62f2"
+        },
+        "metrics.json": {
+          "bytes": 5433,
+          "sha256": "cee8439cf03114289af752dfeb8e7c4199b0d39f3d3934da1d30485bf1fd8d99"
+        },
+        "input.scs": {
+          "bytes": 1259,
+          "sha256": "a9dc2febc98584ebd13b73065d56bd70f2fbaaf36ee18eadb1e2ea94e66d644a"
+        },
+        "image_validation.json": {
+          "bytes": 2737,
+          "sha256": "6c63c8893feb71b69c2c6caa4bc2623406ebdeba56cb9398d4969b84d7855660"
+        }
+      }
+    },
+    "m2_a_repeat": {
+      "label": "m2_a_repeat",
+      "run_id": "vai_20261018_071847_3e4be013eab8",
+      "status": "succeeded",
+      "elapsed_s": 34.5,
+      "warnings": [
+        "Frontend tool warning recorded in logs/build.log",
+        "Frontend tool warning recorded in logs/export.log",
+        "Frontend tool warning recorded in logs/netlist.log",
+        "Frontend tool warning recorded in logs/probe.log"
+      ],
+      "fc_hz": 1591.4121193254698,
+      "fc_theory_hz": 1591.5494309189537,
+      "fc_relative_error_pct": 0.008627541866823574,
+      "vout_at_tau": 2.0615120379723484,
+      "vout_at_100us": 2.0615120379723484,
+      "tran_end_s": 0.00206,
+      "ac_points": 251,
+      "tran_points": 2106,
+      "pulse_edges": {
+        "rising": [
+          3,
+          3,
+          3
+        ],
+        "falling": [
+          2,
+          2,
+          2
+        ]
+      },
+      "transient_max_relative_error": 1.4097929670398697e-05,
+      "stages_ok": 13,
+      "image_validation_ok": true,
+      "artifacts": {
+        "schematic_window.png": {
+          "bytes": 62408,
+          "sha256": "53d05cc84ddfa94a870d93918875f0e16f3804f31ae9cb0e60b082709aa445c0"
+        },
+        "waveform_window.png": {
+          "bytes": 106667,
+          "sha256": "3854c82cb72c06d8b0e3fd2600a8402d5f59499817d1a075505ea51bba4e3357"
+        },
+        "report.html": {
+          "bytes": 323572,
+          "sha256": "054b901416f9158c5aba5af5cdcd79f694b28003f3553060dbe71093ed8794d5"
+        },
+        "report.md": {
+          "bytes": 10161,
+          "sha256": "884c03c65655dbaf4a912aaeeeabb5fd6d262b7e43e9bdbd1e43fb7b9d8985f0"
+        },
+        "metrics.json": {
+          "bytes": 5439,
+          "sha256": "27aec101ceaf6b71dcf86bcb8ee08a4141c2b7df560dfabdc83e89fcfa07f75c"
+        },
+        "input.scs": {
+          "bytes": 1259,
+          "sha256": "8ff4f584f4a06ffba25af0e30d54444c633c9d44d07709ca53d31cd50a22583d"
+        },
+        "image_validation.json": {
+          "bytes": 2737,
+          "sha256": "a4dd67c13e795be9daa7612eda6c17e7304652a44c3274652d7bff5a872b425f"
+        }
+      }
+    }
+  },
+  "stability": {
+    "status": "PASS",
+    "tolerance_relative": 1e-06,
+    "comparisons": [
+      {
+        "metric": "fc_hz",
+        "m2_a": 1591.4121193254698,
+        "m2_a_repeat": 1591.4121193254698,
+        "relative_diff": 0.0
+      },
+      {
+        "metric": "vout_at_tau",
+        "m2_a": 2.0615120379723484,
+        "m2_a_repeat": 2.0615120379723484,
+        "relative_diff": 0.0
+      },
+      {
+        "metric": "vout_at_100us",
+        "m2_a": 2.0615120379723484,
+        "m2_a_repeat": 2.0615120379723484,
+        "relative_diff": 0.0
+      },
+      {
+        "metric": "tran_end_s",
+        "m2_a": 0.00206,
+        "m2_a_repeat": 0.00206,
+        "relative_diff": 0.0
+      },
+      {
+        "metric": "transient_max_relative_error",
+        "m2_a": 1.4097929670398697e-05,
+        "m2_a_repeat": 1.4097929670398697e-05,
+        "relative_diff": 0.0
+      }
+    ]
+  },
+  "failures": []
+}

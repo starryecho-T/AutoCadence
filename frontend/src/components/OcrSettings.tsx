@@ -39,13 +39,19 @@ export default function OcrSettings({ onClose }: Props) {
 
   function doSave() {
     if (!baseUrl || !apiKey || !model) { setResult({ ok: false, msg: '请先填完三项再保存' }); return }
-    saveOcrConfig({ baseUrl, apiKey, model })
-    onClose()
+    try {
+      const url = new URL(baseUrl)
+      if (!['http:', 'https:'].includes(url.protocol)) throw new Error('请输入 HTTP 或 HTTPS 服务地址')
+      saveOcrConfig({ baseUrl, apiKey, model })
+      onClose()
+    } catch (error) {
+      setResult({ ok: false, msg: error instanceof Error ? error.message : '无法保存设置，请检查浏览器存储权限' })
+    }
   }
 
   return (
     <div className="lightbox" style={{ background: 'rgba(50,55,62,0.45)' }} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="card fade-in" style={{ width: 520, maxWidth: '92vw', margin: 0, boxShadow: '0 12px 40px rgba(60,70,85,0.25)' }}>
+      <div className="card fade-in" role="dialog" aria-modal="true" aria-label="AI 识别设置" style={{ width: 520, maxWidth: '92vw', margin: 0, boxShadow: '0 12px 40px rgba(60,70,85,0.25)', cursor: 'default' }}>
         <h2>AI 识别设置</h2>
         <div className="sub">用于把题目截图自动转录为文字。API Key 仅保存在本机浏览器（localStorage），请求直接发往你配置的服务商。</div>
 

@@ -1,0 +1,11 @@
+{
+  "ssh_host": "school-eda",
+  "remote_base": "/data/home/YOUR_ACCOUNT/vai_runs",
+  "environment_script": "/etc/profile",
+  "virtuoso_bin": "/opt/cadence/IC617/bin/virtuoso",
+  "spectre_bin": "/opt/cadence/MMSIM151/bin/spectre",
+  "cadence_cds_lib": "/opt/cadence/IC617/share/cdssetup/cds.lib",
+  "protected_files": [],
+  "stage_timeout_s": 120,
+  "run_timeout_s": 600
+}

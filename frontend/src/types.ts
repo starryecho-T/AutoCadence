@@ -1,7 +1,12 @@
 // 后端契约类型 —— 与 contracts/ 中的 schema 对应
-// 后端字段命名不完全确定时，解析层（api.ts 的 as* 帮助函数）会做兼容处理
+// API v1.0 的传输结构见 contract.ts；这里保留界面使用的扁平参数。
 
 export type RunStatus = 'queued' | 'running' | 'succeeded' | 'failed'
+
+export interface TaskDraft {
+  text: string
+  image?: { name: string; dataUrl: string }
+}
 
 /** 阶段进度（stage 名称以后端实际返回为准，这里做宽松匹配） */
 export interface StageInfo {
@@ -10,7 +15,8 @@ export interface StageInfo {
 }
 
 /** 仿真数值指标，SI 单位，如 { cutoff_hz: 159.15, ... } */
-export type Metrics = Record<string, number | string | null | undefined>
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
+export type Metrics = Record<string, JsonValue | undefined>
 
 export interface Artifact {
   id: string
@@ -22,6 +28,9 @@ export interface Artifact {
   url?: string
   /** 媒体类型，用于区分 图片/文本 */
   mime?: string
+  filename?: string
+  sha256?: string
+  bytes?: number
 }
 
 export interface RunError {
@@ -40,12 +49,15 @@ export interface RunRecord {
   metrics?: Metrics
   artifacts?: Artifact[]
   error?: RunError
+  warnings?: string[]
   /** 前端本地补充 */
   demo?: boolean
 }
 
 /** 提交仿真的任务描述（parse 确认后） */
 export interface TaskSpec {
+  contract?: '1.0'
+  title?: string
   kind?: string
   source_text?: string
   params?: Record<string, number | string>
@@ -61,6 +73,8 @@ export interface ParseResult {
   missing?: string[]
   /** 默认项说明 */
   defaults?: Record<string, unknown>
+  defaultNotes?: string[]
+  derivation?: { target_hz: number; achieved_hz: number; error_pct: number }
   /** 原样展示的提示信息 */
   hints?: string[]
 }

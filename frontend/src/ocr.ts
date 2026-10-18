@@ -46,8 +46,11 @@ function chatUrl(baseUrl: string): string {
 }
 
 /** 发送一次多模态请求；timeoutMs 毫秒无响应则报错 */
-async function chat(cfg: OcrConfig, messages: unknown[], timeoutMs = 60_000): Promise<string> {
+async function chat(cfg: OcrConfig, messages: unknown[], timeoutMs = 60_000, signal?: AbortSignal): Promise<string> {
   const ctrl = new AbortController()
+  const abort = () => ctrl.abort()
+  if (signal?.aborted) ctrl.abort()
+  signal?.addEventListener('abort', abort, { once: true })
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
     const res = await fetch(chatUrl(cfg.baseUrl), {
@@ -68,8 +71,12 @@ async function chat(cfg: OcrConfig, messages: unknown[], timeoutMs = 60_000): Pr
     const content = j?.choices?.[0]?.message?.content
     if (typeof content !== 'string' || !content) throw new Error('返回结构异常：没有 choices[0].message.content')
     return content
+  } catch (error) {
+    if (ctrl.signal.aborted && !signal?.aborted) throw new Error('识别服务响应超时，请稍后重试')
+    throw error
   } finally {
     clearTimeout(timer)
+    signal?.removeEventListener('abort', abort)
   }
 }
 
@@ -82,13 +89,13 @@ const OCR_PROMPT = `你是一个电路题目识别助手。请把图片中的电
 5. 全文用题目的语言（中文/英文）输出`
 
 /** OCR 主入口：把题目截图（data URL）转成文字 */
-export async function ocrImage(cfg: OcrConfig, imageDataUrl: string): Promise<OcrResult> {
+export async function ocrImage(cfg: OcrConfig, imageDataUrl: string, signal?: AbortSignal): Promise<OcrResult> {
   const content = await chat(cfg, [
     { role: 'user', content: [
       { type: 'image_url', image_url: { url: imageDataUrl } },
       { type: 'text', text: OCR_PROMPT }
     ] }
-  ], 90_000)
+  ], 90_000, signal)
   return { text: content.trim(), raw: content }
 }
 

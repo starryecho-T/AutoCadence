@@ -38,14 +38,7 @@ async def ui_spa(path: str):
 
 然后访问 `http://127.0.0.1:8765/ui/`。
 
-**打包为 Windows EXE（PyInstaller + 静态前端）**：
-
-1. `cd frontend && npm run build`
-2. 后端入口加载 `frontend/dist`（如上）；PyInstaller 打包时把 dist 作为 data 打进去：
-   `pyinstaller --add-data "frontend/dist;frontend/dist" --onefile main.py`
-3. 启动后自动打开浏览器访问 `http://127.0.0.1:8765/ui/`（或在 main 里 `webbrowser.open`）。
-
-备选：Tauri/PyWebview 把页面套成本机窗口，但服务器方案最简单，推荐先用 FastAPI 托管 + webbrowser 弹窗。
+**Windows EXE 桌面版**：已提供 `../desktop/main.py` 和 `../desktop/build.ps1`，使用 pywebview + WebView2 + PyInstaller。双击 EXE 打开独立窗口，包含前端与 Python 运行时；真实后端通过本机接口连接，待后续集成。桌面版报告可直接保存到电脑，AI 识别设置跨次启动保留。构建方法见 [桌面版说明](../desktop/README.md)。
 
 ## AI 识别（题目截图 → 文字）
 
@@ -65,6 +58,27 @@ async def ui_spa(path: str):
 - “实验报告”为可真实打开的 HTML Blob
 - 所有演示产物都带“演示”标注，不冒充实时结果（契约约定 fixture 不冒充真实结果）
 
+## 输入与结果校验
+
+- 参数确认页显示中文名称、单位、理论截止频率和时间常数；所有输入采用 SI 单位。
+- 演示解析支持 `kΩ`、`MΩ`、`mΩ`、`F`、`mF`、`µF/uF/μF`、`nF`、`pF` 和科学计数法；不会把 `kHz` 当成电阻。
+- 可从 `1 Hz ~ 100 kHz` 等题目文字读取扫描范围。R/C 必须为正数，结束频率必须大于起始频率。
+- 理想 RC 电路的直流增益为 1，时间常数使用 `τ(ms) = R(Ω) × C(F) × 1000`；结果和报告使用相同参数。
+- 从确认页返回后保留题目文字与截图；图片识别过程中暂停解析，避免识别结果与提交内容不一致。
+- 轮询按顺序执行，切换任务或离开进度页会取消旧请求。查询中断保留任务 ID，可点击“重新查询进度”，不会把连接异常误报为仿真失败。
+- 顶栏在输入页提供“重新连接”；连接确认前禁用解析。后端健康检查最长等待 5 秒，其余请求最长等待 15 秒。
+- 最近任务最多保留 20 条，演示任务保留在当前页面会话中。移出历史且未被查看的演示报告会释放资源；刷新页面会清空演示历史。
+- 构建资源使用相对路径，支持部署在 `/ui/` 下。
+
+## 验证
+
+```bash
+npm test           # 单位解析、RC 数值、API 响应校验、轮询取消与报告资源回收
+npm run build      # TypeScript 检查和生产构建
+```
+
+测试使用 Node.js 自带测试运行器和 Vite 随附的 esbuild，不调用外部识别服务。
+
 ## 与后端的契约对接
 
 | 页面行为 | 接口 |
@@ -77,7 +91,7 @@ async def ui_spa(path: str):
 | 历史 | `GET /api/v1/runs`（最近 20 条） |
 
 - 只有 `status=succeeded` 视为成功；`failed` 展示 `error.code/stage/message` 并保留日志链接
-- 所有响应经防御性解析（字段别名兼容：`run_id/id`、`stages/progress`、`artifacts/files` 等），字段命名以后端 openapi.json 为准，可随时对齐
+- 响应兼容 `run_id/id`、`stages/progress`、`artifacts/files` 等别名；缺少任务 ID、未知状态、错配 ID 或无法识别的列表结构会显示错误，字段命名以后端 openapi.json 为准
 - 参数命名暂用 `r_ohm`/`c_farad`（SI 单位），如后端契约不同改 `src/api.ts` 顶部即可
 
 ## 目录结构
