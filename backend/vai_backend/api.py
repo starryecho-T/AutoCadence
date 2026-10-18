@@ -43,7 +43,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
         manager.start()
         try:yield
         finally:manager.close()
-    app=FastAPI(title='VAI Virtuoso Automation API',version='1.0.0',lifespan=lifespan,
+    app=FastAPI(title='VAI Virtuoso Automation API',version=__version__,lifespan=lifespan,
         description='RC planning (v1) and general R/C/L/diode/source/ideal-opamp circuits (v2), isolated real Cadence runs, verified screenshots and reports. Single worker only.')
     app.state.manager=manager;app.state.settings=settings
     app.add_middleware(CORSMiddleware,allow_origins=list(settings.cors_origins),allow_credentials=False,
@@ -63,7 +63,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     deps=[Depends(authorize)]
     @app.get('/health')
     def health():
-        return {'status':'ok','version':__version__,'queue':manager.stats(),'server_check':'not_run','authentication_required':bool(settings.api_token)}
+        return {'status':'ok','version':__version__,'api_versions':['1.0','2.0'],'templates':['rc_lowpass','general_circuit'],'queue':manager.stats(),'server_check':'not_run','authentication_required':bool(settings.api_token)}
     @app.get('/api/v1/capabilities',dependencies=deps)
     def capabilities():
         return {'schema_version':'1.0','templates':[{'id':'rc_lowpass','label':'一阶 RC 低通','analyses':['ac','tran'],'devices':['analogLib/vpulse','analogLib/res','analogLib/cap','analogLib/gnd']}],

@@ -9,3 +9,4 @@ runs/
 config.local.json
 # Imported archive includes a machine-specific virtual environment; source tests live in tests/.
 tests.zip
+runs-general/
