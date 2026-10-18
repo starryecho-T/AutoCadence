@@ -10,6 +10,7 @@ import ConfirmPanel from './components/ConfirmPanel'
 import RunProgress from './components/RunProgress'
 import ResultView from './components/ResultView'
 import OcrSettings from './components/OcrSettings'
+import ConnectionSettings from './components/ConnectionSettings'
 
 type Phase = 'input' | 'confirm' | 'running' | 'result'
 const STATUS_LABELS = { queued: '排队中', running: '进行中', succeeded: '已完成', failed: '失败' }
@@ -34,6 +35,7 @@ export default function App() {
   const [notice, setNotice] = useState('')
   const [pollError, setPollError] = useState('')
   const [showOcrSettings, setShowOcrSettings] = useState(false)
+  const [showConnectionSettings, setShowConnectionSettings] = useState(false)
   const editController = useRef<AbortController | null>(null)
   useEffect(() => () => editController.current?.abort(), [])
   const stopPollingRef = useRef<(() => void) | null>(null)
@@ -89,6 +91,7 @@ export default function App() {
   }
 
   async function handleSubmit(task: TaskSpec) {
+    if (health?.connectionConfigured === false) { setShowConnectionSettings(true); return }
     setSubmitting(true)
     setNotice('')
     try {
@@ -178,19 +181,21 @@ export default function App() {
       <button className="new-task" disabled={locked} onClick={restart}><Icon name="plus" />新建仿真</button>
       <div className="sidebar-label">最近任务 <span>{history.length || ''}</span></div>
       <div className="history-list">{historyItems()}</div>
-      <div className="sidebar-footer"><button className="sidebar-action" onClick={() => setShowOcrSettings(true)}><Icon name="settings" />设置</button>
+      <div className="sidebar-footer"><button className="sidebar-action" disabled={locked || phase === 'running'} onClick={() => setShowConnectionSettings(true)}><Icon name="circuit" />仿真服务器</button><button className="sidebar-action" onClick={() => setShowOcrSettings(true)}><Icon name="settings" />AI 设置</button>
         <button className="sidebar-action" disabled={!health || phase === 'running' || locked} onClick={() => setConnectionAttempt(value => value + 1)}><Icon name="refresh" />重新连接</button>
-        <span className="sidebar-caption">通用模拟电路 · AutoCadence 0.6.1</span>
+        <span className="sidebar-caption">通用模拟电路 · AutoCadence 0.7.0</span>
       </div>
     </aside>
     <div className="app-main">
       <header className="topbar"><div className="breadcrumb"><span>工作台</span><span className="separator">/</span><strong>{general ? '通用电路' : 'RC 低通滤波器'}</strong></div>
         <div className="topbar-actions"><button className="icon-button mobile-only" aria-label="最近任务" onClick={() => setShowHistory(true)}><Icon name="history" /></button>
           <button className="icon-button mobile-only" aria-label="设置" onClick={() => setShowOcrSettings(true)}><Icon name="settings" /></button>
+          <button className="icon-button mobile-only" aria-label="仿真服务器" disabled={locked || phase === 'running'} onClick={() => setShowConnectionSettings(true)}><Icon name="circuit" /></button>
           {health === null ? <span className="status-chip">连接中…</span> : demo ? <span className="status-chip demo">后端未连接</span> : <span className="status-chip ok" title={health.version ? `服务版本 ${health.version}` : undefined}>后端在线{Number(health.queue) > 0 ? ` · 排队 ${health.queue}` : ''}</span>}
         </div>
       </header>
       <main className="workspace"><header className="page-heading"><div><h1>{headings[phase][0]}</h1><p>{headings[phase][1]}</p></div><span className="type-badge">{general ? '通用电路 · 晶体管 · 二端口' : '一阶 RC 低通'}</span></header>
+        {health?.connectionConfigured === false && <div className="note info connection-setup"><span>先连接你的仿真服务器，再开始运行电路。</span><button className="btn ghost" onClick={() => setShowConnectionSettings(true)}>配置服务器</button></div>}
         <nav className="steps" aria-label="仿真步骤">{['输入题目', '确认参数', '仿真与结果'].map((label, index) => <div key={label} className={`step ${index === currentStep ? 'active' : index < currentStep ? 'done' : ''}`} aria-current={index === currentStep ? 'step' : undefined}>
           <span className="step-number">{index < currentStep ? <Icon name="check" /> : index + 1}</span><span>{label}</span>{index < 2 && <span className="step-line" />}
         </div>)}</nav>
@@ -206,11 +211,12 @@ export default function App() {
           <div className="actionbar"><span className="muted small">切换页面后，可从最近任务继续查看</span><button className="btn ghost" onClick={restart}>新建仿真</button></div>
         </>}
         {phase === 'result' && run && <ResultView key={run.run_id} run={run} onRestart={restart} onEdit={run.task ? editRun : undefined} />}
-        {phase === 'input' && demo && <div className="note warn">当前可体验演示流程。启动仿真服务后，点击“重新连接”切换到真实仿真。<button className="text-button mobile-only" onClick={() => setConnectionAttempt(value => value + 1)}>重新连接</button></div>}
+        {phase === 'input' && demo && <div className="note warn">本地仿真服务暂未连接，请重新打开 AutoCadence，或启动已有后端后重新连接。<button className="text-button mobile-only" onClick={() => setConnectionAttempt(value => value + 1)}>重新连接</button></div>}
       </main>
     </div>
     {showHistory && <Modal title="最近任务" onClose={() => setShowHistory(false)}><button className="btn ghost" disabled={locked} onClick={() => { setShowHistory(false); restart() }}><Icon name="plus" />新建仿真</button>{historyItems()}</Modal>}
     {showOcrSettings && <OcrSettings onClose={() => setShowOcrSettings(false)} />}
+    {showConnectionSettings && <ConnectionSettings onClose={() => setShowConnectionSettings(false)} onSaved={() => setConnectionAttempt(value => value + 1)} />}
   </div>
 }
 

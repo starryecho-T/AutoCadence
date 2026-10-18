@@ -399,6 +399,7 @@ export async function getHealth(signal?: AbortSignal): Promise<HealthInfo> {
     return {
       ok: true,
       version: asString(r.version),
+      connectionConfigured: typeof r.connection_configured === 'boolean' ? r.connection_configured : undefined,
       queue: asNumber(asRecord(r.queue).queued ?? r.queue ?? r.queued) ?? asString(r.queue),
       detail: asString(r.status) === 'ok' || asString(r.status) === 'active' ? undefined : asString(r.status)
     }

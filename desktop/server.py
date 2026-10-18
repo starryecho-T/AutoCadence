@@ -66,7 +66,7 @@ class DesktopHandler(BaseHTTPRequestHandler):
             return
         path = urlsplit(self.path).path
         if path == '/desktop-info' and self.command == 'GET':
-            self._send(200, {'name': 'autocadence-desktop', 'version': '0.6.1'})
+            self._send(200, {'name': 'autocadence-desktop', 'version': '0.7.0'})
         elif path in ('/health', '/openapi.json') or path.startswith('/api/'):
             self._proxy()
         elif self.command not in ('GET', 'HEAD'):
@@ -103,7 +103,7 @@ class DesktopHandler(BaseHTTPRequestHandler):
         self.connection.settimeout(20)
         target = self.server.backend
         connection_type = http.client.HTTPSConnection if target.scheme == 'https' else http.client.HTTPConnection
-        connection = connection_type(target.hostname, target.port, timeout=20)
+        connection = connection_type(target.hostname, target.port, timeout=90 if self.path == '/api/v2/connection' else 20)
         try:
             body = self.rfile.read(length) if length else None
             headers = {'Content-Type': self.headers.get('Content-Type', 'application/json')}

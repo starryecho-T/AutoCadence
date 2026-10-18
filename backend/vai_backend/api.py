@@ -16,6 +16,8 @@ from .circuit_models import CircuitTask
 from .circuits import preview
 from .circuit_parsing import parse_circuit
 from .circuit_examples import EXAMPLES
+from .connection_settings import ConnectionInput, get_connection_store, connect_and_save
+from .ssh_transport import ConnectionFailure
 
 class ApiFailure(Exception):
     def __init__(self,status,code,message,details=None):
@@ -46,11 +48,16 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     app=FastAPI(title='AutoCadence API',version=__version__,lifespan=lifespan,
         description='RC planning (v1), general circuits and bounded transistor/parameter/two-port studies (v2), isolated real Cadence runs, verified screenshots and reports. Single worker only.')
     app.state.manager=manager;app.state.settings=settings
+    connections=get_connection_store()
     app.add_middleware(CORSMiddleware,allow_origins=list(settings.cors_origins),allow_credentials=False,
                        allow_methods=['GET','POST','OPTIONS'],allow_headers=['Authorization','Content-Type'])
     @app.exception_handler(ApiFailure)
     async def api_error(request,exc):
         return JSONResponse(status_code=exc.status,content={'error':{'code':exc.code,'message':exc.message,'details':exc.details}})
+    @app.exception_handler(ConnectionFailure)
+    async def connection_error(request,exc):
+        return JSONResponse(status_code=409 if exc.code.startswith('SSH_HOST_') else 400,
+                            content={'error':{'code':exc.code,'message':exc.message,'details':exc.details}},headers={'Cache-Control':'no-store'})
     @app.exception_handler(RequestValidationError)
     async def validation_error(request,exc):
         details=[{'location':list(e['loc']),'message':e['msg'],'type':e['type']} for e in exc.errors()]
@@ -61,9 +68,35 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
             if not authorization or not hmac.compare_digest(authorization.encode(),expected.encode()):
                 raise ApiFailure(401,'UNAUTHORIZED','A valid Bearer token is required')
     deps=[Depends(authorize)]
+    async def local_connection_access(request:Request):
+        if not request.client or request.client.host not in ('127.0.0.1','::1','testclient'):
+            raise ApiFailure(403,'LOCAL_SETTINGS_ONLY','SSH 连接设置只允许在运行后端的本机修改。')
+        origin=request.headers.get('origin')
+        if origin and origin not in settings.cors_origins:
+            raise ApiFailure(403,'INVALID_ORIGIN','不允许从此页面修改连接设置。')
+    connection_deps=deps+[Depends(local_connection_access)]
+    def ensure_idle():
+        stats=manager.stats()
+        if stats['running'] or stats['queued']:
+            raise ApiFailure(409,'SERVER_BUSY','请等待当前仿真及排队任务完成，再更换服务器连接。')
+    @app.get('/api/v2/connection',dependencies=connection_deps)
+    def connection_info():
+        return JSONResponse(connections.public(),headers={'Cache-Control':'no-store'})
+    @app.post('/api/v2/connection',dependencies=connection_deps)
+    def connection_save(body:ConnectionInput):
+        ensure_idle()
+        # Saving and queue submission use the same lock: queued jobs never silently switch account.
+        with manager.lock:
+            return JSONResponse(connect_and_save(connections,body,ensure_idle),headers={'Cache-Control':'no-store'})
+    @app.post('/api/v2/connection/forget-password',dependencies=connection_deps)
+    def connection_forget_password():
+        with manager.lock:
+            ensure_idle()
+            return JSONResponse(connections.forget_password(),headers={'Cache-Control':'no-store'})
     @app.get('/health')
     def health():
-        return {'status':'ok','name':'AutoCadence','build':'0.6.0','version':__version__,'api_versions':['1.0','2.0'],
+        return {'status':'ok','name':'AutoCadence','build':'0.7.0','version':__version__,'api_versions':['1.0','2.0'],
+                'connection_configured':connections.public()['configured'],
                 'templates':['rc_lowpass','general_circuit'],
                 'queue':manager.stats(),'server_check':'not_run','authentication_required':bool(settings.api_token)}
     @app.get('/api/v1/capabilities',dependencies=deps)

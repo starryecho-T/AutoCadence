@@ -98,6 +98,7 @@ export interface HealthInfo {
   version?: string
   queue?: number | string
   detail?: string
+  connectionConfigured?: boolean
 }
 
 export interface GeneralCircuit {

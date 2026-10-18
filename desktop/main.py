@@ -1,4 +1,4 @@
-"""Windows desktop entry point. The simulation backend remains independently supplied."""
+"""Windows desktop entry point with a bundled local simulation backend."""
 from __future__ import annotations
 
 import argparse
@@ -15,6 +15,7 @@ import threading
 import time
 
 from server import DesktopServer
+from local_backend import start_local_backend
 
 TITLE = 'AutoCadence'
 
@@ -97,6 +98,7 @@ def main():
     logging.basicConfig(level=logging.INFO, handlers=[RotatingFileHandler(directory / 'desktop.log', maxBytes=1_000_000, backupCount=1, encoding='utf-8')])
     mutex = None
     server = None
+    local_backend = None
     try:
         mutex = acquire_instance(directory)
         if mutex is None:
@@ -108,6 +110,7 @@ def main():
         else:
             config_path.write_text(json.dumps(config, indent=2), encoding='utf-8')
         backend_url = os.environ.get('AUTOCADENCE_BACKEND_URL') or os.environ.get('AUTOCAD_BACKEND_URL') or os.environ.get('CIRCUIT_SIM_BACKEND_URL', config['backend_url'])
+        local_backend = start_local_backend(backend_url, directory)
         assets = Path(sys._MEIPASS) / 'frontend' if getattr(sys, 'frozen', False) else Path(__file__).resolve().parents[1] / 'frontend' / 'dist'
         if not (assets / 'index.html').is_file():
             raise RuntimeError('未找到界面文件，请先运行桌面构建脚本。')
@@ -127,6 +130,8 @@ def main():
             ctypes.windll.user32.MessageBoxW(None, f'启动失败：{error}\n\n请确认已安装 Microsoft Edge WebView2 Runtime。\n详细日志：{directory / "desktop.log"}', TITLE, 0x10)
         return 1
     finally:
+        if local_backend:
+            local_backend.should_exit = True
         if server:
             server.shutdown()
             server.server_close()

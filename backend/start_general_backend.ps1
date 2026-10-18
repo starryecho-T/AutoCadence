@@ -4,11 +4,11 @@ $ErrorActionPreference = 'Stop'
 $generalHealth = $null
 try { $generalHealth = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 2 } catch { }
 if ($generalHealth) {
-    if ($generalHealth.build -eq '0.6.0') {
-        Write-Host "AutoCadence 0.6.0 backend is already available at http://127.0.0.1:$Port"
+    if ($generalHealth.build -eq '0.7.0') {
+        Write-Host "AutoCadence 0.7.0 backend is already available at http://127.0.0.1:$Port"
         return
     }
-    throw "Port $Port is running an older backend. Close its idle process and restart this script to load AutoCadence 0.6.0."
+    throw "Port $Port is running an older backend. Close its idle process and restart this script to load AutoCadence 0.7.0."
 }
 $previousRunsDirectory = $env:VAI_RUNS_DIR
 try {

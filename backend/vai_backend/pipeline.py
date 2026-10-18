@@ -45,7 +45,7 @@ def _validate_config(config,run_id):
             raise PipelineError('CONFIG_ERROR','upload','Invalid configured path: '+key)
     if config['remote_base'] in ['/','/tmp','/home','/data/home']:
         raise PipelineError('CONFIG_ERROR','upload','remote_base must be a dedicated user directory')
-    _ssh(config)
+    if config.get('ssh_transport') != 'paramiko': _ssh(config)
 
 def _archive(task,run_id,config):
     memory=io.BytesIO()
@@ -67,7 +67,11 @@ def _archive(task,run_id,config):
 
 def _download(config,root,run_dir):
     command='tar -czf - -C '+shlex.quote(root)+' evidence'
-    r=subprocess.run(_ssh(config)+[command],stdin=subprocess.DEVNULL,capture_output=True,timeout=60)
+    if config.get('ssh_transport') == 'paramiko':
+        from .ssh_transport import run
+        r=run(config,command,timeout=60)
+    else:
+        r=subprocess.run(_ssh(config)+[command],stdin=subprocess.DEVNULL,capture_output=True,timeout=60)
     if r.returncode:raise PipelineError('ARTIFACT_TRANSFER_FAILED','download',r.stderr.decode(errors='replace')[-1000:])
     if len(r.stdout)>40*1024*1024:raise PipelineError('ARTIFACT_LIMIT','download','Artifact archive exceeds limit')
     with tarfile.open(fileobj=io.BytesIO(r.stdout),mode='r:gz') as tf:
@@ -85,6 +89,22 @@ def _download(config,root,run_dir):
 
 def _run_remote(config,root,run_dir,emit):
     shell='source '+shlex.quote(config['environment_script'])+' >/dev/null 2>&1; exec timeout '+str(int(config.get('run_timeout_s',600)))+' python -u '+shlex.quote(root+'/run.py')+' '+shlex.quote(root)
+    if config.get('ssh_transport') == 'paramiko':
+        from .ssh_transport import run
+        pending=b'';final=None
+        with (run_dir/'evidence/remote.log').open('wb') as log:
+            def consume(chunk):
+                nonlocal pending,final
+                log.write(chunk);log.flush();pending+=chunk
+                while b'\n' in pending:
+                    line,pending=pending.split(b'\n',1)
+                    try:item=json.loads(line)
+                    except (ValueError,UnicodeDecodeError):continue
+                    if item.get('event')=='stage':emit(item['stage'])
+                    elif item.get('event')=='result':final=item['result']
+            result=run(config,'bash -lc '+shlex.quote(shell),timeout=config.get('run_timeout_s',600)+30,on_chunk=consume,merge_stderr=True)
+            if pending:consume(b'\n')
+        return result.returncode,final
     args=_ssh(config)+['bash -lc '+shlex.quote(shell)]
     # No remote interaction is needed. Inheriting a desktop/server input pipe
     # can leave Windows OpenSSH waiting for input after the remote job exits.
@@ -129,7 +149,11 @@ def execute(task_dict:dict,run_dir:Path,emit)->dict:
         return value
     def upload():
         command='umask 077; mkdir -p '+shlex.quote(config['remote_base'])+' && mkdir '+shlex.quote(root)+' && tar -xzf - -C '+shlex.quote(root)
-        r=subprocess.run(_ssh(config)+[command],input=_archive(task,run_id,config),capture_output=True,timeout=45)
+        if config.get('ssh_transport') == 'paramiko':
+            from .ssh_transport import run
+            r=run(config,command,input_data=_archive(task,run_id,config),timeout=45)
+        else:
+            r=subprocess.run(_ssh(config)+[command],input=_archive(task,run_id,config),capture_output=True,timeout=45)
         if r.returncode:raise PipelineError('SSH_UPLOAD_FAILED','upload',r.stderr.decode(errors='replace')[-1000:])
     stage('upload',upload)
     remote_error=None;rc=-1;result=None

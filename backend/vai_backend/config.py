@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -40,5 +39,5 @@ class Settings:
 
 def load_worker_config() -> dict:
     """Load local worker configuration without exposing its contents through HTTP."""
-    path = Path(os.getenv('VAI_CONFIG', str(Path(__file__).resolve().parents[1] / 'config.local.json')))
-    return json.loads(path.read_text(encoding='utf-8'))
+    from .connection_settings import get_connection_store
+    return get_connection_store().runtime()

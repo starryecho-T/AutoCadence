@@ -35,6 +35,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Desktop tests failed.' }
     --distpath $OutputDirectory `
     --workpath (Join-Path $PSScriptRoot 'build') `
     --specpath $PSScriptRoot `
+    --paths "$projectRoot\backend" `
+    --add-data "$projectRoot\backend\worker;worker" `
+    --collect-submodules uvicorn `
     --add-data "$frontendRoot\dist;frontend" `
     --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 --exclude-module PySide6 `
     (Join-Path $PSScriptRoot 'main.py')

@@ -2859,3 +2859,13 @@ input,select,textarea,summary {
 .chat-evidence { color: var(--ink-soft); font-size: 11px; line-height: 1.8; margin: 12px 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 @media (max-width: 800px) { .result-chat { padding: 18px; } .result-chat .section-heading { flex-wrap: wrap; gap: 12px; } .chat-compose-footer { align-items: flex-start; } .chat-compose-footer>span { max-width: 60%; } }
+
+.connection-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 14px 20px; margin: 22px 0; }
+.connection-grid .param-item { min-width: 0; }
+.connection-grid input,.connection-grid select { width: 100%; }
+.connection-remember { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 12px; margin: 16px 0; }
+.connection-remember input { margin-right: 8px; }
+.connection-actions,.connection-setup { display: flex; gap: 14px; align-items: center; justify-content: space-between; margin-top: 22px; }
+.connection-actions .btn { flex-shrink: 0; }
+.host-fingerprint { display: block; overflow-wrap: anywhere; font-size: 12px; margin: 12px 0; }
+@media (max-width: 700px) { .connection-grid { grid-template-columns: 1fr; gap: 14px; } .connection-actions { flex-wrap: wrap; } }
