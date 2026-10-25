@@ -1,5 +1,6 @@
 from __future__ import annotations
 import hmac
+import paramiko
 from contextlib import asynccontextmanager
 from typing import Literal
 from fastapi import FastAPI, Depends, Header, Request, Query
@@ -9,14 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from . import __version__
 from .config import Settings
-from .manager import RunManager
+from .manager import RunManager, QueueFull
 from .models import TaskSpec, RunResult, ParseRequest
 from .parsing import parse_question
 from .circuit_models import CircuitTask
 from .circuits import preview
 from .circuit_parsing import parse_circuit
 from .circuit_examples import EXAMPLES
-from .connection_settings import ConnectionInput, get_connection_store, connect_and_save
+from .connection_settings import ConnectionInput, get_connection_store, connect, probe_environment, fingerprint
 from .ssh_transport import ConnectionFailure
 
 class ApiFailure(Exception):
@@ -50,7 +51,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     app.state.manager=manager;app.state.settings=settings
     connections=get_connection_store()
     app.add_middleware(CORSMiddleware,allow_origins=list(settings.cors_origins),allow_credentials=False,
-                       allow_methods=['GET','POST','OPTIONS'],allow_headers=['Authorization','Content-Type'])
+                       allow_methods=['GET','POST','DELETE','OPTIONS'],allow_headers=['Authorization','Content-Type'])
     @app.exception_handler(ApiFailure)
     async def api_error(request,exc):
         return JSONResponse(status_code=exc.status,content={'error':{'code':exc.code,'message':exc.message,'details':exc.details}})
@@ -85,9 +86,26 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     @app.post('/api/v2/connection',dependencies=connection_deps)
     def connection_save(body:ConnectionInput):
         ensure_idle()
-        # Saving and queue submission use the same lock: queued jobs never silently switch account.
-        with manager.lock:
-            return JSONResponse(connect_and_save(connections,body,ensure_idle),headers={'Cache-Control':'no-store'})
+        # Mirrors connection_settings.connect_and_save, but the manager lock only covers
+        # the final idle check + save so a slow SSH connect/probe (up to ~40s) cannot
+        # block health, stats or run submission. The idle check and save stay atomic
+        # under the lock: queued jobs never silently switch account.
+        config=connections.prepare(body)
+        client=connect(config,body.trusted_fingerprint)
+        try:
+            missing=probe_environment(client,config)
+            for field in missing:config[field]=''
+            key=client.get_transport().get_remote_server_key()
+            with manager.lock:
+                ensure_idle()
+                profile=connections.save(config,key,body.remember_password)
+            return JSONResponse({'connection':profile,'ssh_connected':True,'ready':not missing,
+                                 'fingerprint':fingerprint(key),'missing_fields':missing,
+                                 'message':'连接已保存，可以开始仿真。' if not missing else 'SSH 已连接并保存，请补全高级设置中的 Cadence 环境路径。'},headers={'Cache-Control':'no-store'})
+        except (paramiko.SSHException,OSError,EOFError) as exc:
+            raise ConnectionFailure('SSH_ENVIRONMENT_FAILED','SSH 登录后检查或保存环境失败，请检查网络和本机目录权限。') from exc
+        finally:
+            client.close()
     @app.post('/api/v2/connection/forget-password',dependencies=connection_deps)
     def connection_forget_password():
         with manager.lock:
@@ -105,7 +123,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
                 'defaults':TaskSpec(r_ohm=1000,c_f=1e-7).model_dump(),
                 'question_input':{'text_parser':'bounded_rules','ai_agent':'Codex Skill reads the question and submits a validated TaskSpec','image_upload':False},
                 'artifacts':['schematic_window.png','waveform_window.png','schematic_native.png','waveform_native.png','input.scs','metrics.json','report.html','report.md'],
-                'limits':{'max_queued':20,'single_worker':True,'arbitrary_skill_execution':False,'supports_cancellation':False},
+                'limits':{'max_queued':manager.max_queued,'single_worker':True,'arbitrary_skill_execution':False,'supports_cancellation':True},
                 'stages':['upload','preflight','build','probe','netlist','netlist_validation','spectre','export','capture','download','image_validation','validation','report']}
     @app.post('/api/v1/parse',response_model=ParseResponse,dependencies=deps)
     def parse(body:ParseRequest):return parse_question(body.text)
@@ -127,14 +145,20 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     def circuit_preview(body:CircuitTask):return preview(body)
     @app.post('/api/v2/runs',response_model=RunResult,status_code=202,dependencies=deps)
     def circuit_submit(body:CircuitTask):
-        if manager.stats()['queued']>=20:raise ApiFailure(429,'QUEUE_FULL','Queue is full')
         try:return manager.submit(body)
+        except QueueFull:raise ApiFailure(429,'QUEUE_FULL','Queue is full')
         except RuntimeError as exc:raise ApiFailure(503,'SHUTTING_DOWN',str(exc)) from exc
     @app.post('/api/v1/runs',response_model=RunResult,status_code=202,dependencies=deps)
     def submit(body:TaskSpec):
-        if manager.stats()['queued']>=20:raise ApiFailure(429,'QUEUE_FULL','Queue is full; retry after a current run completes')
         try:return manager.submit(body)
+        except QueueFull:raise ApiFailure(429,'QUEUE_FULL','Queue is full; retry after a current run completes')
         except RuntimeError as exc:raise ApiFailure(503,'SHUTTING_DOWN',str(exc)) from exc
+    @app.delete('/api/v2/runs/{run_id}',response_model=RunResult,dependencies=deps)
+    @app.delete('/api/v1/runs/{run_id}',response_model=RunResult,dependencies=deps)
+    def cancel_run(run_id:str):
+        try:return manager.cancel(run_id)
+        except KeyError:raise ApiFailure(404,'RUN_NOT_FOUND','No such run')
+        except ValueError:raise ApiFailure(409,'RUN_NOT_CANCELLABLE','Only queued runs can be cancelled')
     @app.get('/api/v2/runs',response_model=RunList,dependencies=deps)
     @app.get('/api/v1/runs',response_model=RunList,dependencies=deps)
     def runs(limit:int=Query(default=50,ge=1,le=200)):return {'runs':manager.list(limit)}

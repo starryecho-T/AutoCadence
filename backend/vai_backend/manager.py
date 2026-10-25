@@ -19,6 +19,9 @@ from .circuit_models import CircuitTask
 
 LOG = logging.getLogger(__name__)
 
+class QueueFull(Exception):
+    """Raised by submit() when the configured queue capacity is already used."""
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
 
@@ -38,6 +41,16 @@ def default_executor(task: dict, run_dir: Path, emit: Callable[[dict], None]) ->
     from .pipeline import execute
     return execute(task, run_dir, emit)
 
+def hash_file(path: Path) -> tuple[str, int]:
+    """Content digest and byte size of a file, read in chunks."""
+    digest = hashlib.sha256()
+    size = 0
+    with path.open('rb') as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b''):
+            digest.update(chunk)
+            size += len(chunk)
+    return digest.hexdigest(), size
+
 def artifact_kind(path: Path) -> str:
     name, suffix = path.name.lower(), path.suffix.lower()
     if suffix in ('.html', '.htm'):
@@ -54,13 +67,16 @@ def artifact_kind(path: Path) -> str:
 
 class RunManager:
     """One process / one worker. Never execute this service with multiple workers."""
-    def __init__(self, data_dir: Path, executor: Callable = default_executor):
+    def __init__(self, data_dir: Path, executor: Callable = default_executor, max_queued: int = 20):
         self.data_dir = Path(data_dir).resolve()
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.executor = executor
+        self.max_queued = max_queued
         self.lock = threading.RLock()
         self.jobs: queue.Queue[str | None] = queue.Queue()
         self.records: dict[str, RunResult] = {}
+        # run_id -> {(relative_path, mtime_ns, size): (sha256_hex, bytes)}; only touched under self.lock.
+        self._digest_cache: dict[str, dict[tuple[str, int, int], tuple[str, int]]] = {}
         self.worker: threading.Thread | None = None
         self.stopping = threading.Event()
         self.recovery_warnings: list[str] = []
@@ -128,6 +144,10 @@ class RunManager:
         with self.lock:
             if self.stopping.is_set():
                 raise RuntimeError('Backend is shutting down')
+            # Capacity is checked inside the lock together with the insertion so
+            # concurrent submissions cannot oversell queue slots.
+            if sum(r.status == 'queued' for r in self.records.values()) >= self.max_queued:
+                raise QueueFull(f'Queue is full; at most {self.max_queued} runs may wait while one executes')
             (self.data_dir / run_id / 'evidence').mkdir(parents=True, exist_ok=False)
             self.records[run_id] = record
             self._log(run_id, 'QUEUED: task accepted')
@@ -136,6 +156,26 @@ class RunManager:
             snapshot = record.model_copy(deep=True)
             self.jobs.put(run_id)
             return snapshot
+
+    def cancel(self, run_id: str) -> RunResult:
+        """Cancel a queued run. KeyError if unknown, ValueError if it is not queued anymore."""
+        with self.lock:
+            record = self.records.get(run_id)
+            if record is None:
+                raise KeyError(run_id)
+            if record.status != 'queued':
+                raise ValueError(f'Run is {record.status}; only queued runs can be cancelled')
+            record.status = 'failed'
+            record.updated_at = utc_now()
+            record.error = RunError(code='CANCELLED', stage='queue', message='Run cancelled before execution started.')
+            # The worker skips the stale queue entry: _execute only starts runs still marked queued.
+            try:
+                self._log(run_id, 'CANCELLED: removed from queue before execution')
+                self._refresh_artifacts(record)
+                self._persist(record)
+            except OSError:
+                LOG.exception('Could not persist cancellation of run %s; in-memory state is terminal', run_id)
+            return record.model_copy(deep=True)
 
     def get(self, run_id: str) -> RunResult | None:
         with self.lock:
@@ -185,6 +225,9 @@ class RunManager:
 
     def _refresh_artifacts(self, record: RunResult) -> None:
         root = (self.data_dir / record.run_id / 'evidence').resolve()
+        cached = self._digest_cache.get(record.run_id, {})
+        # Rebuilt on every pass, so entries for deleted files are dropped naturally.
+        fresh: dict[tuple[str, int, int], tuple[str, int]] = {}
         artifacts, index = [], {}
         for path in sorted(root.rglob('*')):
             if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(root):
@@ -192,21 +235,23 @@ class RunManager:
             try:
                 relative = path.relative_to(root).as_posix()
                 artifact_id = hashlib.sha256(relative.encode('utf-8')).hexdigest()[:20]
-                digest = hashlib.sha256()
-                size = 0
-                with path.open('rb') as handle:
-                    for chunk in iter(lambda: handle.read(1024 * 1024), b''):
-                        digest.update(chunk)
-                        size += len(chunk)
+                stat = path.stat()
+                key = (relative, stat.st_mtime_ns, stat.st_size)
+                if key in cached:
+                    digest_hex, size = cached[key]
+                else:
+                    digest_hex, size = hash_file(path)
+                fresh[key] = (digest_hex, size)
                 artifacts.append(Artifact(
                     id=artifact_id, kind=artifact_kind(path), filename=relative,
                     media_type=mimetypes.guess_type(path.name)[0] or 'application/octet-stream',
-                    bytes=size, sha256=digest.hexdigest(),
+                    bytes=size, sha256=digest_hex,
                     url=f'/api/v1/runs/{record.run_id}/artifacts/{artifact_id}',
                 ))
                 index[artifact_id] = relative
             except OSError:
                 LOG.warning('Could not index changing artifact %s', path.name)
+        self._digest_cache[record.run_id] = fresh
         record.artifacts = artifacts
         atomic_json(self.data_dir / record.run_id / 'artifact_index.json', index)
 
@@ -246,8 +291,36 @@ class RunManager:
                 self.jobs.task_done()
 
     def _execute(self, run_id: str) -> None:
+        """Belt and braces: whatever happens, the record must end in a terminal state.
+
+        The failure handler below can itself raise (e.g. OSError while persisting);
+        without this wrapper such an error escapes into _loop, gets logged, and the
+        record is left non-terminal while the worker moves on.
+        """
+        try:
+            self._execute_inner(run_id)
+        except BaseException as fallback:
+            LOG.error('Run %s failure handling raised %s: %s', run_id, type(fallback).__name__, fallback)
+            try:
+                with self.lock:
+                    record = self.records.get(run_id)
+                    if record is not None and record.status not in ('succeeded', 'failed'):
+                        record.status = 'failed'
+                        record.updated_at = utc_now()
+                        if record.error is None:
+                            record.error = RunError(code='INTERNAL_ERROR', stage='pipeline',
+                                                    message=f'Run finalization raised {type(fallback).__name__}')
+                        self._log(run_id, f'FAILED INTERNAL: {type(fallback).__name__} escaped failure handling; record forced to failed')
+                    if record is not None:
+                        self._persist(record)  # Best-effort retry so the disk copy reaches a terminal state too.
+            except Exception:
+                LOG.exception('Run %s forced to failed in memory; disk record could not be updated', run_id)
+
+    def _execute_inner(self, run_id: str) -> None:
         with self.lock:
             record = self.records[run_id]
+            if record.status != 'queued':
+                return  # Cancelled while queued; cancel() already moved it to a terminal state.
             record.status = 'running'
             record.updated_at = utc_now()
             self._log(run_id, 'RUNNING: pipeline started')

@@ -95,6 +95,7 @@ def command(client, text, *, input_data=None, timeout=30, max_output=40 * 1024 *
                 errors.extend(channel.recv_stderr(65536)); progress = True
             if len(output) + len(errors) > max_output:
                 raise ConnectionFailure('SSH_OUTPUT_LIMIT', 'SSH 返回数据超过本次读取上限。')
+            # 老版 sshd 可能在 stdout 尾部数据到达前就发出 exit-status，必须等 EOF/closed 且缓冲排空。
             if (channel.exit_status_ready() and (channel.eof_received or channel.closed)
                     and not channel.recv_ready() and not channel.recv_stderr_ready()):
                 break

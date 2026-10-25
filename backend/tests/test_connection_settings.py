@@ -11,7 +11,7 @@ import paramiko
 import pytest
 from fastapi.testclient import TestClient
 
-from vai_backend.connection_settings import ConnectionInput, ConnectionStore, connect_and_save
+from vai_backend.connection_settings import ConnectionInput, ConnectionStore, connect_and_save, get_connection_store
 from vai_backend.ssh_transport import ConnectionFailure, command, connect, fingerprint
 from vai_backend.pipeline import _archive
 from vai_backend.api import create_app
@@ -160,3 +160,52 @@ def test_api_settings_are_local_and_errors_do_not_echo_password(tmp_path, monkey
         assert denied.status_code == 403
     with TestClient(app, client=('192.0.2.10', 1000)) as remote:
         assert remote.get('/api/v2/connection').status_code == 403
+
+
+class _LockProbe:
+    """Stands in for manager.lock and records how deeply it is currently held."""
+    def __init__(self):
+        self._inner = threading.RLock()
+        self.depth = 0
+    def __enter__(self):
+        self._inner.acquire(); self.depth += 1
+    def __exit__(self, *exc):
+        self.depth -= 1; self._inner.release()
+    def acquire(self, *args, **kwargs):
+        result = self._inner.acquire(*args, **kwargs)
+        if result: self.depth += 1
+        return result
+    def release(self):
+        self.depth -= 1; self._inner.release()
+
+
+def test_connection_save_probes_outside_manager_lock(ssh_server, tmp_path, monkeypatch):
+    monkeypatch.setenv('VAI_CONFIG', str(tmp_path/'absent.json'))
+    monkeypatch.setenv('VAI_CONNECTION_FILE', str(tmp_path/'connection.json'))
+    import vai_backend.api as api_module
+    port, key, _ = ssh_server
+    store = get_connection_store()
+    manager = RunManager(tmp_path/'runs')
+    probe = _LockProbe(); manager.lock = probe
+    held = []
+    real_connect, real_probe = api_module.connect, api_module.probe_environment
+    def spy_connect(config, expected=None):
+        held.append(('connect', probe.depth > 0)); return real_connect(config, expected)
+    def spy_probe(client, config):
+        held.append(('probe', probe.depth > 0)); return real_probe(client, config)
+    monkeypatch.setattr(api_module, 'connect', spy_connect)
+    monkeypatch.setattr(api_module, 'probe_environment', spy_probe)
+    real_save = store.save
+    def spy_save(config, server_key, remember):
+        held.append(('save', probe.depth > 0)); return real_save(config, server_key, remember)
+    store.save = spy_save
+    with TestClient(create_app(Settings(data_dir=tmp_path/'runs'), manager)) as client:
+        body = {'host': '127.0.0.1', 'port': port, 'username': 'student',
+                'password': 'fixture-secret', 'trusted_fingerprint': fingerprint(key)}
+        response = client.post('/api/v2/connection', json=body)
+        assert response.status_code == 200 and response.json()['ssh_connected'] is True
+        assert response.json()['ready'] is True
+    # SSH connect and environment probing happen without the manager lock;
+    # only the final idle check + save run while it is held.
+    assert ('connect', False) in held and ('probe', False) in held
+    assert ('save', True) in held
