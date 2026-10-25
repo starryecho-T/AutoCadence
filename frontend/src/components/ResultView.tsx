@@ -108,8 +108,8 @@ export default function ResultView({ run, onRestart, onEdit }: Props) {
       </div>
     </> : <div className="card failure-card">
       <h2><span className="result-mark failed"><Icon name="info" /></span>仿真失败</h2>
-      <p className="failure-title">{run.error?.code === 'ENVIRONMENT_MISSING' ? '仿真环境暂不可用' : '本次仿真未能完成'}</p>
-      <p className="muted">{run.error?.code === 'ENVIRONMENT_MISSING' ? '请检查仿真服务与运行环境，准备好后可以使用当前参数重试。' : '参数已保留。你可以查看错误详情，调整参数后重新提交。'}</p>
+      <p className="failure-title">{run.error?.code === 'ENVIRONMENT_MISSING' ? '仿真环境暂不可用' : run.error?.code === 'CMN018_NOT_CONFIGURED' ? '还差一步：配置 CMN018 模型文件' : '本次仿真未能完成'}</p>
+      <p className="muted">{run.error?.code === 'ENVIRONMENT_MISSING' ? '请检查仿真服务与运行环境，准备好后可以使用当前参数重试。' : run.error?.code === 'CMN018_NOT_CONFIGURED' ? 'NMOS/PMOS 题目默认使用 CMN018 工艺模型。打开「仿真服务器 → 高级设置」，在 CMN018 主模型文件填写服务器上的绝对路径并连接保存，然后重新运行即可。' : '参数已保留。你可以查看错误详情，调整参数后重新提交。'}</p>
       <details className="detail-section error-details"><summary>错误详情</summary><p>错误码：<code>{run.error?.code || '—'}</code> · 阶段：<code>{run.error?.stage || '—'}</code></p><p>{run.error?.message || '服务未提供错误详情'}</p></details>
       {warnings}
       {!!arts.length && <details className="detail-section"><summary>诊断文件（{arts.length}）</summary><FileLinks files={arts} runId={run.run_id} /></details>}

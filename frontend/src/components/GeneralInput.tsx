@@ -37,6 +37,7 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
   const offline = isDemoMode()
   const manual = general.input === 'connections'
   const hasCandidate = general.connections !== undefined
+  const mosDefault = capabilities !== null && !!(capabilities as { default_models?: { nmos?: string; pmos?: string } }).default_models
   const locked = !!busy
   useEffect(() => {
     let active = true
@@ -91,6 +92,7 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
     {offline && <div className="note warn">后端暂未连接。你可以先准备题目，连接后端后再检查电路并运行仿真。</div>}
     <div className="card input-card">
       <div className="section-heading"><div><h2>把电路问题交给工作台</h2><p className="sub">用自己的话说想做什么。AI 补出候选方案，你来判断是否采用。</p></div><span className="subtle-tag">AI 建议 · 你来决定</span></div>
+      {mosDefault && /M\d|nmos|pmos|nch|pch/i.test((draft.text || '') + ' ' + connections) && <div className="note info">NMOS/PMOS 题目默认使用 CMN018 工艺模型（{String((capabilities as { default_models?: { nmos?: string } }).default_models?.nmos)}/{String((capabilities as { default_models?: { pmos?: string } }).default_models?.pmos)}）。请先在「仿真服务器 → 高级设置」配置 CMN018 主模型文件路径，未配置时仿真预检会失败；教学近似可显式指定 generic_nmos / generic_pmos。</div>}
       <div className="input-methods" aria-label="输入方式">{([['text', '文字描述', 'file'], ['image', '电路截图', 'image'], ['connections', '连接描述', 'circuit']] as const).map(([id, label, icon]) => <button key={id} aria-pressed={general.input === id} disabled={locked} onClick={() => change({ input: id, stale: id !== general.input && id !== 'connections' && hasCandidate ? true : general.stale })}><Icon name={icon} />{label}</button>)}</div>
       {!manual && <>
         {general.input === 'image' && <div className="source-upload">

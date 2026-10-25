@@ -21,7 +21,7 @@ AutoCadence 0.7.1 面向“每人在自己的电脑上使用”：桌面程序�
 
 程序支持各用户提供自己的连接信息；不包含 Cadence 安装包或许可。管理员提供的环境初始化脚本通常用于加载程序路径、动态库和许可设置。
 
-若使用 CMN018 工艺模型，可在高级设置填写可选的 `cmn018_model_file`，指向服务器上已有的 `cmn018_gp2a_5v_v1d4.scs`。同目录还须有 `cmn018_gp2a_5v_v1d4_usage.scs`；连接检查只读取文件，不上传文件或启动 Cadence。支持范围及限制见 [CMN018 说明](docs/CMN018.md)。
+0.7.3 起 NMOS/PMOS 题目默认使用 CMN018 工艺模型，必须在高级设置填写 `cmn018_model_file`，指向服务器上已有的 `cmn018_gp2a_5v_v1d4.scs`（如 `/data/home/<你的学号>/cmn018_models/cmn018_gp2a_5v_v1d4.scs`）。同目录还须有 `cmn018_gp2a_5v_v1d4_usage.scs`；每位用户家目录各传一份，或由管理员放到公共只读目录共用。未配置时 MOS 仿真预检报 `CMN018_NOT_CONFIGURED`；R/C/L、二极管、BJT 题目不受影响。连接检查只读取文件，不上传文件或启动 Cadence。支持范围及限制见 [CMN018 说明](docs/CMN018.md)。
 
 ## 密码与本机配置
 

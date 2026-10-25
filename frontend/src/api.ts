@@ -124,7 +124,10 @@ function normalizeRun(v: unknown, demo = false): RunRecord {
     artifacts,
     warnings: Array.isArray(r.warnings) ? r.warnings.map(String) : [],
     error: Object.keys(err).length ? {
-      code: asString(err.code), stage: asString(err.stage), message: asString(err.message ?? err.detail)
+      code: asString(err.code), stage: asString(err.stage),
+      message: asString(err.code) === 'CMN018_NOT_CONFIGURED'
+        ? 'NMOS/PMOS 题目默认使用 CMN018 工艺模型：请先在「仿真服务器 → 高级设置」填写 CMN018 主模型文件路径（服务器上的 cmn018_gp2a_5v_v1d4.scs），保存后重新运行。'
+        : asString(err.message ?? err.detail)
     } : undefined,
     demo
   }
