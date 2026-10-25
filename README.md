@@ -61,6 +61,12 @@ SSH 更新针对性验证了密码登录、错误密码、服务器指纹确认�
 - 需在真实 Cadence 环境确认的点均已验证：analogLib `nmos4` 符号存在且端子为 D/G/S/B；端子电流按小写 `d/g/s/b` 导出；`mos1 type=n` 教学模型正常收敛。
 - 物理正确性：NMOS 栅压 DC 扫描（0→3.3V，W/L=10µm/1µm，vto=0.7V）实测 Id-Vgs 与 MOS1 平方律精确吻合——阈值以下完全截止，Vgs=1V 时 Id=0.048mA、Vgs=3.3V 时 Id=3.603mA，与含沟道长度调制（lambda=0.02）的理论值 3.60mA 一致，region=2（饱和区）。RC 示例回归仿真同步复测通过。
 
+**5. 0.7.2 发布与 CMN018 真机验收（2026-10-26）**
+
+- 版本号提升至 0.7.2（`/health` build、桌面白名单、启动脚本、侧栏、EXE 版本资源共 11 处），重新打包并通过真实仿真验收后发布 GitHub Release v0.7.2（EXE + 源码包 + 前端包 + 校验文件）。
+- 打包 EXE 曾在旧 0.7.1 后端存活时因白名单直接复用旧后端，无法验证新版本；验证新 EXE 前需先退出旧实例。本机旧 EXE（`D:\AutoCadence.exe` 与 `desktop/dist/` 各一）已删除，替换为从 Release 下载并校验 SHA256 的 0.7.2。
+- CMN018 模型卡（`model/cmn018_gp2a_5v_v1d4.scs` 及 usage 文件，即 NMOS 等器件的工艺参数文件）已上传至服务器 `/data/home/<user>/cmn018_models/`，并在连接高级设置中配置 `cmn018_model_file`。随后用打包 EXE 完成 `nch` NMOS 直流扫描验收：Vth≈0.43V 开启，Vgs=1.8V 时 Id=5.98mA（≈0.6mA/µm，符合 0.18µm 工艺电流密度），region=2 饱和区，validation PASS，模型卡哈希经 protection.json 审计且运行前后一致。
+
 **4. 已知事项**
 
 - `backend/contracts/openapi.json` 是静态快照，尚未包含新增的取消端点 `DELETE /runs/{id}`，下次契约刷新时同步。
