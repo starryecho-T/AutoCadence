@@ -44,12 +44,17 @@ SSH 更新针对性验证了密码登录、错误密码、服务器指纹确认�
 
 - 现象：远端仿真全部成功，本地解包报 `Compressed file ended before the end-of-stream marker was reached`，任务在 download 阶段失败。
 - 根因：`backend/vai_backend/ssh_transport.py` 的输出排空循环以 `exit_status_ready()` 作为退出条件。课程服务器的老版本 OpenSSH 会在 stdout 尾部数据到达之前先发出 exit-status，循环提前退出而 returncode 仍为 0。实测远端 354,063 字节的归档只传回 212,992 字节，且每次都复现。
-- 解决：退出条件改为 `channel.eof_received 且两个接收缓冲排空`（SSH 协议保证 EOF 在全部数据之后发出），之后才取退出码。本地测试用的内嵌 paramiko 服务端时序正常、不触发此 bug，因此此前未暴露；修复后用真实服务器对照验证，流式传输与远端落盘字节数完全一致。教训：针对传输层时序问题，验收必须在真实目标服务器上做大文件回归。
+- 解决：退出条件必须等待 channel EOF（或 closed）且接收缓冲排空，之后才取退出码。课程服务器的老版 OpenSSH 会在 stdout 尾部数据到达前先发出 exit-status，`exit_status_ready()` 单独作为退出条件会提前 break。本地测试用的内嵌 paramiko 服务端时序正常、不触发此 bug，因此此前未暴露；修复后用真实服务器对照验证，流式传输与远端落盘字节数完全一致。教训：针对传输层时序问题，验收必须在真实目标服务器上做大文件回归。当前代码采用条件 `exit_status_ready() and (eof_received or closed) and 缓冲排空`。
 
 **2. GitHub 无法访问时的代码同步（已处理）**
 
 - 现象：`git fetch` 直连与常见本地代理端口（7890/10809/1080，http 与 socks5）均连接失败（连接重置或超时）。
-- 解决：利用本地已缓存的 `origin/main` 引用完成同步——对 origin/main 全部 172 个文件逐个 `git hash-object` 与磁盘比对，165 个字节一致，唯一差异是上述 ssh_transport 修复（6 个中文名文档被 `core.quotepath` 转义误报为缺失，实际存在且一致）；随后 `git checkout -f -B main origin/main` 对齐分支、恢复修复。注意：若 GitHub 此后有更新的提交，需在网络恢复后重新 fetch 合并。
+- 解决：利用本地已缓存的 `origin/main` 引用完成同步——对 origin/main 全部 172 个文件逐个 `git hash-object` 与磁盘比对，165 个字节一致，唯一差异是上述 ssh_transport 修复（6 个中文名文档被 `core.quotepath` 转义误报为缺失，实际存在且一致）；随后 `git checkout -f -B main origin/main` 对齐分支、恢复修复。网络恢复后重新 fetch 即可。
+
+**2.1 推送被拒：远端出现新提交（已整合）**
+
+- 现象：首次 `git push` 被拒（non-fast-forward）。此时网络已恢复——被拒不是连接问题，而是远端已有新提交 `5c8ff7a`（新增 CMN018 器件与结果视图改进，且独立修复了同一个 SSH 截断 bug、加入了 NMOS 支持）。
+- 整合：`git rebase origin/main` 后逐文件解决 17 个重叠文件冲突，原则是远端 CMN018 逻辑全保留、两边 NMOS 取并集（NMOS 类与 model_types 映射用远端的继承式设计，保留本地新增的 MOS1Model 阈值符号校验器和 `bulk` 引脚标签），ssh 排空条件采用远端等价写法；两处测试断言随合并后语义适配（极性错配的报错文案、nmos+pmos 混合电路的「CMOS 电路」标题族）。整合后后端 115 项、前端 55 项测试全过，并在真实服务器复测 RC 与 NMOS 仿真均成功后推送。教训：推送被拒先 `git fetch` 看远端新增了什么、是否与本地改动语义重叠，不要直接 force push。
 
 **3. NMOS 真实服务器验收（通过）**
 
