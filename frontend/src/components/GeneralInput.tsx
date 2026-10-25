@@ -40,8 +40,9 @@ export default function GeneralInput({ draft, onDraftChange, disabled, onParsed,
   const locked = !!busy
   useEffect(() => {
     let active = true
-    if (!disabled && !isDemoMode()) void circuitCapabilities().then(x => { if (active) { setCapabilities(x); setExamples(x.examples); setCapabilityError('') } }).catch(() => { if (active) setCapabilityError('暂时无法读取通用后端能力，可先准备题目；预检需要新版后端。') })
-    return () => { active = false; controller.current?.abort(); reader.current?.abort() }
+    const capabilityAbort = new AbortController()
+    if (!disabled && !isDemoMode()) void circuitCapabilities(capabilityAbort.signal).then(x => { if (active) { setCapabilities(x); setExamples(x.examples); setCapabilityError('') } }).catch(() => { if (active) setCapabilityError('暂时无法读取通用后端能力，可先准备题目；预检需要新版后端。') })
+    return () => { active = false; capabilityAbort.abort(); controller.current?.abort(); reader.current?.abort() }
   }, [disabled])
   useEffect(() => {
     setElapsed(0)

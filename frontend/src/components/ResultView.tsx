@@ -9,6 +9,7 @@ import { imageLabel, resultImages } from '../resultArtifacts'
 import Icon from './Icon'
 import Modal from './Modal'
 import ResultChat from './ResultChat'
+import ErrorBoundary from './ErrorBoundary'
 
 interface Props { run: RunRecord; onRestart: () => void; onEdit?: () => void }
 function fmtVal(value: JsonValue | undefined): string {
@@ -48,6 +49,9 @@ function MetricTable({ rows }: { rows: [string, JsonValue | undefined][] }) {
 
 export default function ResultView({ run, onRestart, onEdit }: Props) {
   const [tab, setTab] = useState('shots')
+  // ErrorBoundary 重置：递增 key 只重挂出错的卡片（指标卡 / 波形卡），不影响其他区域
+  const [metricAttempt, setMetricAttempt] = useState(0)
+  const [waveAttempt, setWaveAttempt] = useState(0)
   const arts = run.artifacts ?? []
   const { images, schematic: sch, waveform: wav, shots } = resultImages(arts)
   const reports = arts.filter(a => a.kind.startsWith('report'))
@@ -70,15 +74,15 @@ export default function ResultView({ run, onRestart, onEdit }: Props) {
     {run.demo && <div className="note warn">演示数据：仅展示界面流程与理论计算，不是真实仿真结果。</div>}
     {run.status === 'succeeded' ? <>
       <div className="result-heading"><h2><span className="result-mark"><Icon name="check" /></span>仿真完成</h2><span className="small muted">{run.demo ? '本地演示' : '指标与文件来自本次仿真'}</span></div>
-      {run.task?.circuit ? <><div className="metric-cards"><div className="card metric-card"><span>仿真元件</span><div className="metric-number">{String(m.component_count ?? '—')}</div></div><div className="card metric-card"><span>数据校验</span><div className="metric-number">{m.validation_status === 'PASS' ? '通过' : String(m.validation_status ?? '—')}</div></div><div className="card metric-card"><span>目标指标</span><div className="metric-number">{m.requirements_status === 'NOT_SPECIFIED' ? '未指定' : m.requirements_status === 'PASS' ? '通过' : m.requirements_status === 'FAIL' ? '未通过' : String(m.requirements_status ?? '—')}</div></div></div><GeneralWaveforms run={run} /></> : <div className="metric-cards">
+      {run.task?.circuit ? <><ErrorBoundary key={`metrics-${metricAttempt}`} onReset={() => setMetricAttempt(n => n + 1)}><div className="metric-cards"><div className="card metric-card"><span>仿真元件</span><div className="metric-number">{String(m.component_count ?? '—')}</div></div><div className="card metric-card"><span>数据校验</span><div className="metric-number">{m.validation_status === 'PASS' ? '通过' : String(m.validation_status ?? '—')}</div></div><div className="card metric-card"><span>目标指标</span><div className="metric-number">{m.requirements_status === 'NOT_SPECIFIED' ? '未指定' : m.requirements_status === 'PASS' ? '通过' : m.requirements_status === 'FAIL' ? '未通过' : String(m.requirements_status ?? '—')}</div></div></div></ErrorBoundary><ErrorBoundary key={`waves-${waveAttempt}`} onReset={() => setWaveAttempt(n => n + 1)}><GeneralWaveforms run={run} /></ErrorBoundary></> : <ErrorBoundary key={`metrics-${metricAttempt}`} onReset={() => setMetricAttempt(n => n + 1)}><div className="metric-cards">
         <div className="card metric-card"><span>{run.demo ? '理论截止频率 · 演示' : '实测截止频率'}</span><div className="metric-number">{cutoff?.value ?? '—'}<small>{cutoff?.unit}</small></div><p>{typeof m.fc_theory_hz === 'number' ? `理论值 ${formatNumber(m.fc_theory_hz)} Hz` : '一阶 RC 低通滤波器'}</p></div>
         <div className="card metric-card"><span>{typeof m.fc_relative_error_pct === 'number' ? '相对理论误差' : '数值验收'}</span><div className="metric-number">{typeof m.fc_relative_error_pct === 'number' ? Number(m.fc_relative_error_pct.toPrecision(3)).toString() : fmtVal(m.validation_status)}<small>{typeof m.fc_relative_error_pct === 'number' ? '%' : ''}</small></div><p>{checks.length ? `${checks.filter(c => c.status === 'PASS').length} / ${checks.length} 项检查通过` : run.demo ? '演示不执行数值验收' : '查看数值指标了解详情'}</p></div>
         <div className="card metric-card"><span>时间常数 τ</span><div className="metric-number">{time?.value ?? '—'}<small>{time?.unit}</small></div><p>由元件值 R × C 计算</p></div>
-      </div>
+      </div></ErrorBoundary>
       }
       {warnings}
       {run.task?.circuit && <GeneralStudyResults metrics={m} />}
-      {!run.task?.circuit && arts.some(a => ['waveforms.json', 'tran_in.txt', 'tran_out.txt', 'ac_vdb_in.txt', 'ac_vdb_out.txt'].includes(a.filename ?? '')) && <GeneralWaveforms run={run} />}
+      {!run.task?.circuit && arts.some(a => ['waveforms.json', 'tran_in.txt', 'tran_out.txt', 'ac_vdb_in.txt', 'ac_vdb_out.txt'].includes(a.filename ?? '')) && <ErrorBoundary key={`waves-${waveAttempt}`} onReset={() => setWaveAttempt(n => n + 1)}><GeneralWaveforms run={run} /></ErrorBoundary>}
       <div className="card result-card">
         <div className="tabs" role="tablist" aria-label="结果内容">{tabs.map(([id, label], index) => <button key={id} role="tab" id={`tab-${id}`} aria-controls={`panel-${id}`} aria-selected={tab === id} tabIndex={tab === id ? 0 : -1} className={tab === id ? 'active' : ''}
           onClick={() => setTab(id)} onKeyDown={event => {

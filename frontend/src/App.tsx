@@ -207,7 +207,7 @@ export default function App() {
           onTaskChange={task => setParse(current => current ? { ...current, task } : current)} onBack={() => { setNotice(''); setPhase('input') }} />}
         {phase === 'running' && run && <>
           <RunProgress run={run} />
-          {pollError && <div className="note err" role="alert">暂时无法获取进度，任务可能仍在运行。<details><summary>查看连接详情</summary>{pollError}</details><button className="btn ghost" onClick={() => startPolling(run)}>重新查询进度</button></div>}
+          {pollError && <div className="note err" role="alert">暂时无法获取进度，正在自动重试（最多 3 次，间隔逐步加长）；若持续失败，请重新查询。任务可能仍在运行。<details><summary>查看连接详情</summary>{pollError}</details><button className="btn ghost" onClick={() => startPolling(run)}>重新查询进度</button></div>}
           <div className="actionbar"><span className="muted small">切换页面后，可从最近任务继续查看</span><button className="btn ghost" onClick={restart}>新建仿真</button></div>
         </>}
         {phase === 'result' && run && <ResultView key={run.run_id} run={run} onRestart={restart} onEdit={run.task ? editRun : undefined} />}

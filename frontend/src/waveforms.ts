@@ -43,6 +43,10 @@ export function parseNumericWave(text: string, analysis: string, signal: string,
   const series = validateWaveforms({ series: [{ analysis, signal, unit, original_samples: rows.length, rows }] })[0]
   return { ...series, rows: sampleWave(series.rows) }
 }
+/** 对整组波形做与 txt 路径一致的抽样；纯函数，不修改入参，original_samples 保留完整点数。 */
+export function sampleWaveforms(series: WaveSeries[]): WaveSeries[] {
+  return series.map(s => ({ ...s, rows: sampleWave(s.rows) }))
+}
 export function waveBounds(series: WaveSeries[], mode: WaveMode) {
   let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity
   for (const s of series) for (const row of s.rows) {
