@@ -75,8 +75,14 @@ async function chat(cfg: OcrConfig, messages: unknown[], timeoutMs = 60_000, sig
       let detail = `HTTP ${res.status}`
       try {
         const j = await res.json()
-        detail += '：' + (j?.error?.message ?? j?.message ?? JSON.stringify(j).slice(0, 150))
+        const serverMessage = j?.error?.message ?? j?.message ?? ''
+        if (serverMessage) detail += '：' + serverMessage
+        else if (res.status === 401) detail += '：服务端未接受 API Key。请重新复制平台的 API 密钥，并确认密钥有效；它不是账号登录密码。'
+        else if (res.status === 403) detail += '：账号或 API Key 无权调用此模型，或当前套餐/额度不允许调用。请检查模型授权和用量。'
+        else detail += '：' + JSON.stringify(j).slice(0, 150)
       } catch { /* ignore */ }
+      if (detail === `HTTP ${res.status}` && res.status === 401) detail += '：服务端未接受 API Key。请重新复制平台的 API 密钥，并确认密钥有效；它不是账号登录密码。'
+      if (detail === `HTTP ${res.status}` && res.status === 403) detail += '：账号或 API Key 无权调用此模型，或当前套餐/额度不允许调用。请检查模型授权和用量。'
       throw new Error(detail)
     }
     const j = await res.json()

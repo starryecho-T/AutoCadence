@@ -10,6 +10,7 @@ export interface TaskDraft {
   general?: {
     input: 'text' | 'image' | 'connections'
     connections?: string
+    exampleId?: string
     summary?: string
     title?: string
     issues?: { question: string; answer: string; confirmed: boolean }[]

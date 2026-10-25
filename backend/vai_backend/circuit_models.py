@@ -99,6 +99,11 @@ class PMOS(Strict):
     multiplicity: float = Field(default=1, gt=0, le=1e6)
 
 
+class NMOS(PMOS):
+    type: Literal['nmos'] = 'nmos'
+    model: Name = 'generic_nmos'
+
+
 class ControlledPins(Pins):
     cp: Node
     cn: Node
@@ -164,7 +169,7 @@ class Source(Part):
     waveform: Annotated[Sine | Pulse | Pwl, Field(discriminator='type')] | None = None
 
 
-Component = Annotated[Resistor | Capacitor | Inductor | Diode | Opamp | Wire | Source | BJT | PMOS | VoltageControlled | CurrentControlled, Field(discriminator='type')]
+Component = Annotated[Resistor | Capacitor | Inductor | Diode | Opamp | Wire | Source | BJT | PMOS | NMOS | VoltageControlled | CurrentControlled, Field(discriminator='type')]
 
 
 class DiodeModel(Strict):
@@ -199,7 +204,8 @@ class BJTModel(Strict):
 class MOS1Model(Strict):
     id: Name
     type: Literal['mos1']
-    threshold_voltage_v: float = Field(default=-.7, lt=0, ge=-1e3)
+    polarity: Literal['n', 'p'] = 'p'
+    threshold_voltage_v: float = Field(default=-.7, ge=-1e3, le=1e3)
     transconductance_a_v2: float = Field(default=1e-4, gt=0, le=1e3)
     channel_length_modulation_per_v: float = Field(default=.02, ge=0, le=100)
     body_effect_sqrt_v: float = Field(default=0, ge=0, le=100)
@@ -207,9 +213,21 @@ class MOS1Model(Strict):
     gate_source_overlap_f_m: float = Field(default=0, ge=0, le=1)
     gate_drain_overlap_f_m: float = Field(default=0, ge=0, le=1)
 
+class CMN018Model(Strict):
+    id: Name
+    type: Literal['cmn018']
+    name: Name
+
+    @model_validator(mode='after')
+    def supported_name(self):
+        from .cmn018 import CMN018_MODELS
+        if self.name not in CMN018_MODELS:
+            raise ValueError('unsupported CMN018 direct model name')
+        return self
+
 
 # Untagged diode models from the original v2 contract remain valid.
-DeviceModel = DiodeModel | BJTModel | MOS1Model
+DeviceModel = DiodeModel | BJTModel | MOS1Model | CMN018Model
 
 
 class ParameterSweep(Strict):
@@ -364,6 +382,7 @@ class CircuitTask(Strict):
     comparisons: list[CurveComparison] = Field(default_factory=list, max_length=30)
     bjt_transfer: BJTTransfer | None = None
     temperature_c: float = Field(default=27, ge=-100, le=200)
+    pdk_corner: Literal['tt', 'ss', 'ff'] = 'tt'
 
     @model_validator(mode='after')
     def references(self):
@@ -377,13 +396,24 @@ class CircuitTask(Strict):
         if len(kinds) != len(set(kinds)):
             raise ValueError('only one analysis of each type is allowed')
         parts = {c.id: c for c in self.components}
-        model_types = {'generic_diode':'diode', 'generic_npn':'bjt', 'generic_pnp':'bjt', 'generic_pmos':'mos1', **{m.id:m.type for m in self.models}}
+        from .cmn018 import CMN018_MODELS
+        model_types = {'generic_diode':'diode', 'generic_npn':'bjt', 'generic_pnp':'bjt',
+                       'generic_pmos':'pmos', 'generic_nmos':'nmos'}
+        for m in self.models:
+            model_types[m.id] = CMN018_MODELS[m.name][0] if m.type == 'cmn018' else (
+                ('nmos' if m.polarity == 'n' else 'pmos') if m.type == 'mos1' else m.type)
         nodes = {n for c in self.components for n in c.pins.model_dump().values()}
         if len({n.lower() for n in nodes}) != len(nodes):
             raise ValueError('node names differing only by case are ambiguous')
         for c in self.components:
-            if c.type in ('diode','bjt','pmos') and model_types.get(c.model) != {'diode':'diode','bjt':'bjt','pmos':'mos1'}[c.type]:
+            if c.type in ('diode','bjt','pmos','nmos') and model_types.get(c.model) != c.type:
                 raise ValueError(f'{c.id}: missing or incompatible device model {c.model}')
+            if c.type in ('pmos', 'nmos'):
+                selected = next((m for m in self.models if m.id == c.model), None)
+                if selected is not None and selected.type == 'cmn018':
+                    _, _, min_l, min_w, max_l, max_w = CMN018_MODELS[selected.name]
+                    if not (min_l <= c.length_m <= max_l and min_w <= c.width_m <= max_w):
+                        raise ValueError(f'{c.id}: CMN018 {selected.name} W/L outside model-card range')
             if c.type in ('cccs','ccvs') and (c.control_source not in parts or parts[c.control_source].type != 'voltage_source'):
                 raise ValueError('Current-controlled sources require an independent voltage-source current probe')
         for a in self.analyses:
@@ -399,13 +429,16 @@ class CircuitTask(Strict):
                 if part is None or part.type in ('wire','ideal_opamp'):
                     raise ValueError(f'{s.id}: invalid current/device reference')
                 if s.type == 'current':
-                    allowed = {'bjt':('c','b','e'), 'pmos':('d','g','s','bulk')}.get(part.type, ('p','n'))
+                    allowed = {'bjt':('c','b','e'), 'pmos':('d','g','s','bulk'),
+                               'nmos':('d','g','s','bulk')}.get(part.type, ('p','n'))
                     if s.terminal is not None and s.terminal not in allowed:
                         raise ValueError(f'{s.id}: incompatible current terminal')
                 else:
                     if 'ac' in kinds:
                         raise ValueError('器件工作点参数请在不含 AC 的 OP/DC/TRAN 任务中保存；AC 任务可保存端电流和节点电压')
-                    allowed = {'bjt':('region','gm','vbe','vbc','vce','ib','ic'), 'pmos':('region','gm','gds','vgs','vds','vth','ids')}.get(part.type, ())
+                    allowed = {'bjt':('region','gm','vbe','vbc','vce','ib','ic'),
+                               'pmos':('region','gm','gds','vgs','vds','vth','ids'),
+                               'nmos':('region','gm','gds','vgs','vds','vth','ids')}.get(part.type, ())
                     if s.parameter not in allowed:
                         raise ValueError(f'{s.id}: incompatible operating parameter')
         signals = {s.id for s in self.signals}

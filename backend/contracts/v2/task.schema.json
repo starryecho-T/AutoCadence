@@ -268,6 +268,33 @@
       "title": "BJTTransfer",
       "type": "object"
     },
+    "CMN018Model": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "cmn018",
+          "title": "Type",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "name"
+      ],
+      "title": "CMN018Model",
+      "type": "object"
+    },
     "Capacitor": {
       "additionalProperties": false,
       "properties": {
@@ -776,9 +803,18 @@
           "title": "Type",
           "type": "string"
         },
+        "polarity": {
+          "default": "p",
+          "enum": [
+            "n",
+            "p"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
         "threshold_voltage_v": {
           "default": -0.7,
-          "exclusiveMaximum": 0,
+          "maximum": 1000.0,
           "minimum": -1000.0,
           "title": "Threshold Voltage V",
           "type": "number"
@@ -957,6 +993,58 @@
         "operation"
       ],
       "title": "Measurement",
+      "type": "object"
+    },
+    "NMOS": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "nmos",
+          "default": "nmos",
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/MOSPins"
+        },
+        "model": {
+          "default": "generic_nmos",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Model",
+          "type": "string"
+        },
+        "width_m": {
+          "default": 1e-05,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Width M",
+          "type": "number"
+        },
+        "length_m": {
+          "default": 1e-06,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Length M",
+          "type": "number"
+        },
+        "multiplicity": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Multiplicity",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "pins"
+      ],
+      "title": "NMOS",
       "type": "object"
     },
     "OP": {
@@ -1634,6 +1722,7 @@
             "diode": "#/$defs/Diode",
             "ideal_opamp": "#/$defs/Opamp",
             "inductor": "#/$defs/Inductor",
+            "nmos": "#/$defs/NMOS",
             "pmos": "#/$defs/PMOS",
             "resistor": "#/$defs/Resistor",
             "vccs": "#/$defs/VoltageControlled",
@@ -1672,6 +1761,9 @@
             "$ref": "#/$defs/PMOS"
           },
           {
+            "$ref": "#/$defs/NMOS"
+          },
+          {
             "$ref": "#/$defs/VoltageControlled"
           },
           {
@@ -1695,6 +1787,9 @@
           },
           {
             "$ref": "#/$defs/MOS1Model"
+          },
+          {
+            "$ref": "#/$defs/CMN018Model"
           }
         ]
       },
@@ -1812,6 +1907,16 @@
       "minimum": -100,
       "title": "Temperature C",
       "type": "number"
+    },
+    "pdk_corner": {
+      "default": "tt",
+      "enum": [
+        "tt",
+        "ss",
+        "ff"
+      ],
+      "title": "Pdk Corner",
+      "type": "string"
     }
   },
   "required": [

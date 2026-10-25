@@ -1,6 +1,8 @@
 """Faithful XWD decoding and checks against blank Cadence canvases."""
 from __future__ import annotations
 
+import json
+import re
 import struct
 from pathlib import Path
 
@@ -109,18 +111,32 @@ def convert_and_validate(evidence_dir: Path, general: bool = False) -> dict:
     """
     evidence_dir = Path(evidence_dir)
     result = {'ok': True, 'images': {}}
-    for kind in ('schematic', 'waveform'):
-        xwd = evidence_dir / f'{kind}_window.xwd'
+    stages = ['schematic', 'waveform']
+    extra = set()
+    capture_record = evidence_dir / 'capture.json'
+    if capture_record.is_file():
+        details = json.loads(capture_record.read_text(encoding='utf-8'))
+        extra.update(stage for stage in details.get('captured_stages', [])
+                     if re.fullmatch(r'waveform_(?:tran|ac|dc|op)', stage))
+    extra.update(path.name[:-len('_window.xwd')]
+                 for path in evidence_dir.glob('waveform_*_window.xwd')
+                 if re.fullmatch(r'waveform_(?:tran|ac|dc|op)_window\.xwd', path.name))
+    stages.extend(sorted(extra))
+    for stage in stages:
+        kind = 'waveform' if stage.startswith('waveform') else 'schematic'
+        xwd = evidence_dir / f'{stage}_window.xwd'
         image = _decode_xwd(xwd)
-        png = evidence_dir / f'{kind}_window.png'
+        png = evidence_dir / f'{stage}_window.png'
         # No redraw, annotation, crop, resize, or synthesized pixels are saved.
         image.save(png, format='PNG')
-        stats = _general_canvas_stats(image, kind) if general else _canvas_stats(image, kind)
+        flexible = general or stage not in ('schematic', 'waveform')
+        stats = _general_canvas_stats(image, kind) if flexible else _canvas_stats(image, kind)
         result['images'][png.name] = {'width': image.width, 'height': image.height,
                                      'bytes': png.stat().st_size, 'source': xwd.name, **stats}
-        native = evidence_dir / f'{kind}_native.png'
-        native_image = _native_image(native, min_height=80 if general else 200)
-        native_stats = _general_canvas_stats(native_image, kind, native=True) if general else _canvas_stats(native_image, kind, native=True)
+        native = evidence_dir / f'{stage}_native.png'
+        native_image = _native_image(native, min_height=80 if flexible else 200)
+        native_stats = (_general_canvas_stats(native_image, kind, native=True) if flexible else
+                        _canvas_stats(native_image, kind, native=True))
         result['images'][native.name] = {'width': native_image.width, 'height': native_image.height,
                                         'bytes': native.stat().st_size, 'source': 'Cadence native export',
                                         **native_stats}

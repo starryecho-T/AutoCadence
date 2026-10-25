@@ -12,6 +12,18 @@ test('endpoint normalization accepts full endpoint and preserves provider paths'
   assert.throws(()=>ocr.chatUrl('https://model.test/v1?key=secret'))
 })
 
+test('authentication failures explain key and model access checks without exposing credentials', async () => {
+  globalThis.fetch = async () => Response.json({error:{message:''}}, {status:401})
+  await assert.rejects(() => ocr.testOcrConfig({baseUrl:'https://model.test/v1',apiKey:'private-fixture-secret',model:'fixture'}), error => {
+    assert.match(error.message,/HTTP 401.*未接受 API Key/)
+    assert.match(error.message,/不是账号登录密码/)
+    assert.doesNotMatch(error.message,/private-fixture-secret/)
+    return true
+  })
+  globalThis.fetch = async () => Response.json({message:'forbidden'}, {status:403})
+  await assert.rejects(() => ocr.testOcrConfig({baseUrl:'https://model.test/v1',apiKey:'private-fixture-secret',model:'fixture'}), /HTTP 403：forbidden/)
+})
+
 test('vision uses selected model and GLM fast mode; content blocks and truncation are handled', async () => {
   let body
   globalThis.fetch = async (_url,opts) => {body=JSON.parse(opts.body);return Response.json({choices:[{finish_reason:'stop',message:{content:[{type:'text',text:'{"title":"RL 阶跃响应","text":"R1 n1 0 100","issues":[]}'}]}}]})}

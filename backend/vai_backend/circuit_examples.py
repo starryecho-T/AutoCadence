@@ -28,6 +28,12 @@ M1 drain gate source source generic_pmos w=10u l=1u
 .dc VD 5 0 -0.05
 .step VG dc 4 3.5 3 2.5
 .save I(M1,d) I(M1,g) P(M1,region)'''),
+    'nmos_families': ('NMOS 输出特性与栅压扫描', '''VG gate 0 DC 1.5
+VD drain 0 DC 0
+M1 drain gate 0 0 generic_nmos w=10u l=1u
+.dc VD 0 5 0.05
+.step VG dc 1 1.5 2
+.save I(M1,d) I(M1,g) P(M1,region)'''),
     'controlled_sources': ('四种线性受控源', '''V1 input 0 DC 1 AC 1
 Rin input sense 1k
 VS sense 0 DC 0

@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 from .ssh_transport import ConnectionFailure, command, connect, fingerprint
 
 REMOTE_FIELDS = ('remote_base', 'environment_script', 'virtuoso_bin', 'spectre_bin', 'cadence_cds_lib')
+OPTIONAL_REMOTE_FIELDS = ('cmn018_model_file',)
 DEFAULT_SSH_HOST = '101.6.64.74'
 DEFAULT_SSH_PORT = 35167
 
@@ -38,6 +39,7 @@ class ConnectionInput(BaseModel):
     virtuoso_bin: str = Field(default='', max_length=512)
     spectre_bin: str = Field(default='', max_length=512)
     cadence_cds_lib: str = Field(default='', max_length=512)
+    cmn018_model_file: str = Field(default='', max_length=512)
     trusted_fingerprint: str | None = Field(default=None, max_length=100)
 
     @field_validator('host', 'username')
@@ -48,7 +50,7 @@ class ConnectionInput(BaseModel):
             raise ValueError('服务器和账号只能包含字母、数字、点、下划线、冒号和连字符')
         return value
 
-    @field_validator(*REMOTE_FIELDS)
+    @field_validator(*(REMOTE_FIELDS + OPTIONAL_REMOTE_FIELDS))
     @classmethod
     def safe_remote_path(cls, value):
         value = value.strip()
@@ -127,7 +129,8 @@ class ConnectionStore:
                     'username': username, 'auth_method': auth, 'identity_file': config.get('ssh_identity_file', ''),
                     'legacy_rsa': config.get('ssh_legacy_rsa', False), 'has_password': has_secret,
                     'remember_password': bool(config.get('ssh_password_encrypted')),
-                    **{k: config.get(k, '/etc/profile' if k == 'environment_script' else '') for k in REMOTE_FIELDS}}
+                    **{k: config.get(k, '/etc/profile' if k == 'environment_script' else '')
+                       for k in REMOTE_FIELDS + OPTIONAL_REMOTE_FIELDS}}
 
     def runtime(self):
         with self.lock:
@@ -147,7 +150,7 @@ class ConnectionStore:
                   'ssh_username': body.username, 'ssh_auth_method': body.auth_method,
                   'ssh_identity_file': body.identity_file if body.auth_method == 'key' else '',
                   'ssh_legacy_rsa': body.legacy_rsa, 'ssh_known_hosts_file': str(self.path.with_name('known_hosts')),
-                  **{k: getattr(body, k) for k in REMOTE_FIELDS},
+                  **{k: getattr(body, k) for k in REMOTE_FIELDS + OPTIONAL_REMOTE_FIELDS},
                   'protected_files': [], 'stage_timeout_s': 120, 'run_timeout_s': 600}
         if body.auth_method == 'key' and not Path(body.identity_file).is_file():
             raise ConnectionFailure('SSH_KEY_MISSING', '请选择本机存在的私钥文件。')
@@ -227,12 +230,19 @@ def probe_environment(client, config):
         response = command(client, 'bash -lc ' + shlex.quote(query), timeout=10, max_output=4096)
         config['cadence_cds_lib'] = response.stdout.decode(errors='replace').strip()
     # Revalidate discovered paths before any later command uses them.
-    for field in REMOTE_FIELDS:
-        if config[field]: ConnectionInput.safe_remote_path(config[field])
+    for field in REMOTE_FIELDS + OPTIONAL_REMOTE_FIELDS:
+        if config.get(field): ConnectionInput.safe_remote_path(config[field])
     if config['remote_base'] in ('/', '/tmp', '/home', '/data/home'):
         raise ConnectionFailure('SSH_DIRECTORY_INVALID', '运行目录必须是自己的专用子目录。')
     missing = [k for k in ('virtuoso_bin', 'spectre_bin', 'cadence_cds_lib') if not config[k]]
     checks = ['test -' + ('r' if k == 'cadence_cds_lib' else 'x') + ' ' + shlex.quote(config[k]) + ' || printf "MISSING=' + k + '\\n"' for k in ('virtuoso_bin', 'spectre_bin', 'cadence_cds_lib') if config[k]]
+    if config.get('cmn018_model_file'):
+        model_path = config['cmn018_model_file']
+        if model_path.rsplit('/', 1)[-1] != 'cmn018_gp2a_5v_v1d4.scs':
+            missing.append('cmn018_model_file')
+        else:
+            usage_path = model_path[:-4] + '_usage.scs'
+            checks.append('test -r ' + shlex.quote(model_path) + ' && test -r ' + shlex.quote(usage_path) + ' || printf "MISSING=cmn018_model_file\\n"')
     result = command(client, 'bash -lc ' + shlex.quote('; '.join(checks) or ':'), timeout=10, max_output=4096)
     missing.extend(re.findall(r'^MISSING=(\w+)$', result.stdout.decode(errors='replace'), re.M))
     return sorted(set(missing))
@@ -243,13 +253,17 @@ def connect_and_save(store, body, ensure_idle):
     client = connect(config, body.trusted_fingerprint)
     try:
         missing = probe_environment(client, config)
-        for field in missing: config[field] = ''
+        required_missing = [field for field in missing if field in REMOTE_FIELDS]
+        for field in required_missing: config[field] = ''
         ensure_idle()
         key = client.get_transport().get_remote_server_key()
         profile = store.save(config, key, body.remember_password)
+        message = ('SSH 已连接并保存，请补全高级设置中的 Cadence 环境路径。' if required_missing else
+                   'SSH 已连接，CMN018 模型文件未通过读取检查；通用器件仍可仿真。请核对高级设置。' if missing else
+                   '连接已保存，可以开始仿真。')
         return {'connection': profile, 'ssh_connected': True, 'ready': not missing,
                 'fingerprint': fingerprint(key), 'missing_fields': missing,
-                'message': '连接已保存，可以开始仿真。' if not missing else 'SSH 已连接并保存，请补全高级设置中的 Cadence 环境路径。'}
+                'message': message}
     except (paramiko.SSHException, OSError, EOFError) as exc:
         raise ConnectionFailure('SSH_ENVIRONMENT_FAILED', 'SSH 登录后检查或保存环境失败，请检查网络和本机目录权限。') from exc
     finally:

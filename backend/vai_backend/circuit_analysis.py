@@ -9,6 +9,7 @@ from pathlib import Path
 from .circuit_models import CircuitTask
 from .circuits import compile_task
 from .analysis import AnalysisError
+from .reporting import report_image_entries
 
 
 def fail(message):
@@ -211,11 +212,16 @@ def generate_report(task, metrics, evidence_dir, run_id, warnings):
             md.append('- '+': '.join(str(v) for v in values))
         content.append('</table>')
     for name in ('schematic_window.png', 'waveform_window.png'):
+        if not (root/name).is_file():
+            fail('Missing real screenshot: ' + name)
+    for name, caption in report_image_entries(root):
+        if not (root/name).is_file():
+            continue
         data = (root/name).read_bytes()
         if not data.startswith(b'\x89PNG\r\n\x1a\n'):
-            fail('Missing real screenshot: ' + name)
-        content.append(f'<figure><img alt="{name}" src="data:image/png;base64,{base64.b64encode(data).decode()}"><figcaption>{name}</figcaption></figure>')
-        md.append(f'![{name}]({name})')
+            fail('Invalid image evidence: ' + name)
+        content.append(f'<figure><img alt="{esc(caption)}" src="data:image/png;base64,{base64.b64encode(data).decode()}"><figcaption>{esc(caption)} · {esc(name)}</figcaption></figure>')
+        md.append(f'![{caption}]({name})')
     for label, value in [('输入电路', task), ('数值结果', metrics)]:
         raw = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False)
         content.append(f'<h2>{label}</h2><pre>{esc(raw)}</pre>')

@@ -12,6 +12,17 @@ _IMAGES = (
     ('schematic_native.png', 'Cadence 原理图原生导出（不是窗口截图）'),
     ('waveform_native.png', 'Cadence 波形原生导出（不是窗口截图）'),
 )
+_ANALYSIS_LABELS = {'ac': 'AC 波形', 'dc': 'DC 波形', 'op': '工作点', 'tran': '瞬态波形'}
+
+
+def report_image_entries(root: Path) -> list[tuple[str, str]]:
+    entries = list(_IMAGES)
+    for export, suffix in (('window', 'ViVA {}真实窗口截图'), ('native', 'Cadence {}原生导出（不是窗口截图）')):
+        for analysis, label in _ANALYSIS_LABELS.items():
+            name = f'waveform_{analysis}_{export}.png'
+            if (root/name).is_file():
+                entries.append((name, suffix.format(label)))
+    return entries
 
 
 def generate_report(task: dict, metrics: dict, evidence_dir: Path, run_id: str, warnings: list) -> None:
@@ -20,7 +31,7 @@ def generate_report(task: dict, metrics: dict, evidence_dir: Path, run_id: str, 
     esc = lambda value: html.escape(str(value), quote=True)
     warnings = [str(x) for x in warnings]
     images = []
-    for filename, caption in _IMAGES:
+    for filename, caption in report_image_entries(root):
         path = root/filename
         if not path.is_file():
             warnings.append(f'图像缺失：{filename}；本报告不将该项视为已验证。')

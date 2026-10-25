@@ -17,7 +17,8 @@ def parse_circuit(text):
     text = text.strip()
     if text.startswith('{'):
         return CircuitTask.model_validate(json.loads(text))
-    components, analyses, signals, sweeps, comparisons = [], [], [], [], []
+    components, analyses, signals, sweeps, comparisons, models = [], [], [], [], [], []
+    pdk_corner = 'tt'
     studies = {}
     for index, line in enumerate(text.splitlines(), 1):
         line = line.split(';', 1)[0].strip()
@@ -40,6 +41,10 @@ def parse_circuit(text):
                     analyses.append({'type': 'dc', 'source': args[0], 'start': value(args[1]), 'stop': value(args[2]), 'step': value(args[3])})
                 elif command == '.step' and len(args) >= 3:
                     sweeps.append({'component':args[0], 'parameter':args[1], 'values':[value(x) for x in args[2:]]})
+                elif command == '.model' and len(args) == 3 and args[1].lower() == 'cmn018':
+                    models.append({'id':args[0], 'type':'cmn018', 'name':args[2]})
+                elif command == '.corner' and len(args) == 1:
+                    pdk_corner = args[0].lower()
                 elif command == '.twoport' and len(args) in (3,4):
                     if 'two_port' in studies or len(args) == 4 and args[3].lower() != 'extract_only':
                         raise ValueError('二端口指令只允许一次；可选末尾 extract_only 仅提取')
@@ -85,7 +90,7 @@ def parse_circuit(text):
                     k, v = arg.split('=',1)
                     k = {'w':'width_m','l':'length_m','m':'multiplicity'}.get(k.lower())
                     if k is None or k in c:
-                        raise ValueError('PMOS 仅支持唯一的 w/l/m 参数')
+                        raise ValueError('MOS 仅支持唯一的 w/l/m 参数')
                     c[k] = value(v)
             elif kind in 'GE' and len(args) == 5:
                 c = {'id':name,'type':'vccs' if kind=='G' else 'vcvs','pins':dict(zip(('p','n','cp','cn'),args[:4])),'gain':value(args[4])}
@@ -123,5 +128,14 @@ def parse_circuit(text):
             raise ValueError(f'第 {index} 行：{exc}') from exc
     if not analyses or not signals:
         raise ValueError('请显式提供分析指令和 .save 测量节点/支路；不会自动猜测')
+    from .cmn018 import CMN018_MODELS
+    declared = {m['id']:m for m in models}
+    for c in components:
+        if c['type'] != 'pmos':
+            continue
+        model = c.get('model', 'generic_pmos')
+        if model == 'generic_nmos' or (model in declared and CMN018_MODELS.get(declared[model]['name'], (None,))[0] == 'nmos'):
+            c['type'] = 'nmos'
     return CircuitTask.model_validate({'components': components, 'analyses': analyses, 'signals': signals, 'question': text,
-                                      'parameter_sweeps':sweeps,'comparisons':comparisons, **studies})
+                                      'parameter_sweeps':sweeps,'comparisons':comparisons, 'models':models,
+                                      'pdk_corner':pdk_corner, **studies})

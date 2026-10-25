@@ -9,6 +9,7 @@ SWEEP_FIELDS = {
     'voltage_source': {'dc'}, 'current_source': {'dc'},
     'resistor': {'resistance_ohm'}, 'capacitor': {'capacitance_f'},
     'inductor': {'inductance_h'}, 'bjt': {'area'}, 'pmos': {'width_m', 'length_m'},
+    'nmos': {'width_m', 'length_m'},
     **{k: {'gain'} for k in ('vccs', 'vcvs', 'cccs', 'ccvs')},
 }
 
@@ -104,7 +105,8 @@ def validate_transfer(task):
     parts = {c['id']: c for c in normalize(task)['components']}
     try:
         q, vin, vcc, rb, rc = [parts[cfg[k]] for k in ('transistor', 'input_source', 'supply_source', 'base_resistor', 'collector_resistor')]
-        ok = (q['type'] == 'bjt' and device_models(data)[q['model']]['polarity'] == 'npn'
+        bjt_model = device_models(data)[q['model']]
+        ok = (q['type'] == 'bjt' and bjt_model['type'] == 'bjt' and bjt_model['polarity'] == 'npn'
               and vin['type'] == vcc['type'] == 'voltage_source' and vin['waveform'] is None and vcc['waveform'] is None
               and rb['type'] == rc['type'] == 'resistor' and q['pins']['e'] == vin['pins']['n'] == vcc['pins']['n'] == '0'
               and set(rb['pins'].values()) == {vin['pins']['p'], q['pins']['b']}

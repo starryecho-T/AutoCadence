@@ -82,10 +82,10 @@ def normalize(task):
                     raise ValueError('理想直流电压源约束互相矛盾')
                 if other not in potentials:
                     potentials[other] = expected; pending.append(other)
-    if any(c['type'] in ('diode','bjt','pmos') for c in parts) and any(a['type'] == 'ac' for a in data['analyses']):
+    if any(c['type'] in ('diode','bjt','pmos','nmos') for c in parts) and any(a['type'] == 'ac' for a in data['analyses']):
         warnings.append('非线性器件的 AC 结果是直流工作点附近的小信号响应；不代表大信号瞬态等效。')
-    if any(c['type'] in ('bjt','pmos') for c in parts):
-        warnings.append('默认晶体管为可配置的教学模型（BJT / PMOS MOS1），不包含特定工艺 PDK。')
+    if any(c['type'] in ('bjt','pmos','nmos') for c in parts):
+        warnings.append('generic 晶体管为可配置的教学模型；CMN018 模型需服务器本地模型文件，实际工艺适用性请核对。')
     if any(c['type'] == 'ideal_opamp' for c in parts):
         warnings.append('理想运放无供电限幅、带宽和压摆率；需要外围反馈或初始条件使方程有确定解。')
         dc_graph = {n: set() for n in graph}
@@ -125,14 +125,16 @@ def component_spec(c, normalized):
         if initial is not None:
             params['ic'] = initial
         return ('cap' if cap else 'ind'), ['PLUS', 'MINUS'], {k: number(v) for k, v in params.items()}, kind, params
-    if kind in ('diode', 'bjt', 'pmos'):
-        model = 'dm' + str(normalized['model_ids'].index(c['model']))
+    if kind in ('diode', 'bjt', 'pmos', 'nmos'):
+        selected = normalized['models'][c['model']]
+        model = selected['name'] if selected.get('type') == 'cmn018' else 'dm' + str(normalized['model_ids'].index(c['model']))
         if kind == 'diode':
             return 'diode', ['PLUS', 'MINUS'], {'model': model}, model, {}
         if kind == 'bjt':
-            return normalized['models'][c['model']]['polarity'], ['C','B','E'], {'model':model, 'area':number(c['area'])}, model, {'area':c['area']}
+            polarity = ('pnp' if selected['name'].startswith('pnp') else 'npn') if selected.get('type') == 'cmn018' else selected['polarity']
+            return polarity, ['C','B','E'], {'model':model, 'area':number(c['area'])}, model, {'area':c['area']}
         params = {'w':c['width_m'], 'l':c['length_m'], 'm':c['multiplicity']}
-        return 'pmos4', ['D','G','S','B'], {'model':model, **{k:number(v) for k,v in params.items()}}, model, params
+        return kind+'4', ['D','G','S','B'], {'model':model, **{k:number(v) for k,v in params.items()}}, model, params
     if kind in ('vccs','vcvs','cccs','ccvs'):
         prop, param = {'vccs':('ggain','gm'),'vcvs':('egain','gain'),'cccs':('fgain','gain'),'ccvs':('hgain','rm')}[kind]
         props, params = {prop:number(c['gain'])}, {param:c['gain']}
@@ -173,6 +175,7 @@ def device_models(data):
             'generic_npn':BJTModel(id='generic_npn',type='bjt').model_dump(),
             'generic_pnp':BJTModel(id='generic_pnp',type='bjt',polarity='pnp').model_dump(),
             'generic_pmos':MOS1Model(id='generic_pmos',type='mos1').model_dump(),
+            'generic_nmos':MOS1Model(id='generic_nmos',type='mos1',polarity='n',threshold_voltage_v=.7).model_dump(),
             **{m['id']:m for m in data['models']}}
 
 
@@ -180,12 +183,12 @@ def compile_task(task):
     data = task.model_dump() if hasattr(task, 'model_dump') else task
     n = normalize(data)
     n['models'] = device_models(data)
-    n['model_ids'] = sorted({'generic_diode'} | {c['model'] for c in n['components'] if c['type'] in ('diode','bjt','pmos')})
+    n['model_ids'] = sorted({'generic_diode'} | {c['model'] for c in n['components'] if c['type'] in ('diode','bjt','pmos','nmos')})
     n['instance_map'] = {c['id']: f'x{i+1}' for i, c in enumerate(n['components'])}
     devices = []
     for c in n['components']:
         symbol, terminals, props, master, params = component_spec(c, n)
-        pin_order = {'diode':['a','k'], 'bjt':['c','b','e'], 'pmos':['d','g','s','b'],
+        pin_order = {'diode':['a','k'], 'bjt':['c','b','e'], 'pmos':['d','g','s','b'], 'nmos':['d','g','s','b'],
                      'ideal_opamp':['plus','minus','out'], 'vccs':['p','n','cp','cn'], 'vcvs':['p','n','cp','cn']}.get(c['type'], ['p','n'])
         device_nodes = [n['node_map'][c['pins'][p]] for p in pin_order]
         if c['type'] == 'bjt':
@@ -195,9 +198,20 @@ def compile_task(task):
                         'properties': props, 'master': master, 'parameters': params, 'type': c['type']})
     models = []
     by_id = n['models']
+    from .cmn018 import CMN018_MODELS, MISMATCH_FLAGS, MODEL_PLACEHOLDER, section
+    pdk_sections = sorted({section(data['pdk_corner'], by_id[name]['name']) for name in n['model_ids']
+                           if by_id[name].get('type') == 'cmn018'})
+    if pdk_sections:
+        models.append('parOpt options redefinedparams=ignore')
+    models.extend(f'include "{MODEL_PLACEHOLDER}" section={name}' for name in pdk_sections)
+    flags = {MISMATCH_FLAGS.get(CMN018_MODELS[by_id[name]['name']][1]) for name in n['model_ids']
+             if by_id[name].get('type') == 'cmn018'}
+    models.extend(f'parameters {flag}=0' for flag in sorted(flags - {None}))
     for i, name in enumerate(n['model_ids']):
         m = by_id[name]
         kind = m.get('type','diode')
+        if kind == 'cmn018':
+            continue
         if kind == 'diode':
             values = {'is': m['saturation_current_a'], 'n': m['emission_coefficient'], 'rs': m['series_resistance_ohm'], 'cj': m['junction_capacitance_f'], 'tt': m['transit_time_s']}
             if m['breakdown_voltage_v'] is not None:
@@ -209,11 +223,11 @@ def compile_task(task):
                 'rc':'collector_resistance_ohm','re':'emitter_resistance_ohm','cje':'be_capacitance_f',
                 'cjc':'bc_capacitance_f','tf':'forward_transit_time_s'}.items()}}
         else:
-            values = {'type':'p', **{short:m[long] for short,long in {'vto':'threshold_voltage_v','kp':'transconductance_a_v2',
+            values = {'type':m['polarity'], **{short:m[long] for short,long in {'vto':'threshold_voltage_v','kp':'transconductance_a_v2',
                 'lambda':'channel_length_modulation_per_v','gamma':'body_effect_sqrt_v','phi':'surface_potential_v',
                 'cgso':'gate_source_overlap_f_m','cgdo':'gate_drain_overlap_f_m'}.items()}}
         models.append(f"model dm{i} {kind} " + ' '.join(f'{k}={v if isinstance(v,str) else number(v)}' for k, v in values.items()))
-    return {**n, 'devices': devices, 'model_text': '\n'.join(models)}
+    return {**n, 'devices': devices, 'model_text': '\n'.join(models), 'pdk_sections':pdk_sections}
 
 
 def render_netlist(task, compiled):

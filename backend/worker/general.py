@@ -6,6 +6,32 @@ import re
 import shutil
 
 
+MODEL_PLACEHOLDER = '@CMN018_MODEL_FILE@'
+MODEL_FILENAME = 'cmn018_gp2a_5v_v1d4.scs'
+USAGE_FILENAME = 'cmn018_gp2a_5v_v1d4_usage.scs'
+
+
+def resolve_model_file(config, compiled, error_class):
+    """Require the administrator-installed model deck before opening Cadence."""
+    sections = compiled.get('pdk_sections', [])
+    if not sections:
+        return None
+    path = config.get('cmn018_model_file', '')
+    if not path or not re.match(r'^/[A-Za-z0-9_./-]+$', path) or '..' in path.split('/') or os.path.basename(path) != MODEL_FILENAME:
+        raise error_class('CMN018_NOT_CONFIGURED', 'Set cmn018_model_file to the server-local ' + MODEL_FILENAME)
+    usage = os.path.join(os.path.dirname(path), USAGE_FILENAME)
+    if not os.path.isfile(path) or not os.access(path, os.R_OK) or not os.path.isfile(usage) or not os.access(usage, os.R_OK):
+        raise error_class('CMN018_MODEL_MISSING', 'The configured CMN018 model file and sibling usage file must both be readable')
+    deck = open(path).read()
+    wrapper = open(usage).read()
+    for section in sections:
+        if not re.search(r'^\s*section\s+' + re.escape(section) + r'\s*$', deck, re.M | re.I):
+            raise error_class('CMN018_SECTION_MISSING', 'CMN018 deck has no section ' + section)
+        if not re.search(r'^\s*include\s+"' + re.escape(MODEL_FILENAME) + r'"\s+section\s*=\s*' + re.escape(section) + r'\s*$', wrapper, re.M | re.I):
+            raise error_class('CMN018_SECTION_MISSING', 'CMN018 usage file has no section ' + section)
+    return path, usage
+
+
 def numeric(raw):
     m = re.match(r'^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)([A-Za-z]*)$', raw)
     scales = {'': 1, 'T': 1e12, 'G': 1e9, 'M': 1e6, 'meg': 1e6, 'k': 1e3, 'm': 1e-3, 'u': 1e-6, 'n': 1e-9, 'p': 1e-12, 'f': 1e-15, 'a': 1e-18}
@@ -49,16 +75,22 @@ def validate_netlist(text, compiled):
 def execute(runner, error_class):
     from run import write, save, sha
     r = runner
-    r.begin('preflight'); r.protect()
+    r.begin('preflight')
+    compiled = json.load(open(os.path.join(r.root, 'compiled.json')))
+    model_files = resolve_model_file(r.config, compiled, error_class)
+    if model_files:
+        r.config['protected_files'] = list(r.config.get('protected_files', [])) + list(model_files)
+    r.protect()
     for k in ['virtuoso_bin', 'spectre_bin', 'cadence_cds_lib']:
         if not os.path.isfile(r.config[k]):
             raise error_class('ENVIRONMENT_MISSING', k + ' not found')
-    compiled = json.load(open(os.path.join(r.root, 'compiled.json')))
     values = {'LIB': r.run_id, 'ROOT': r.root, 'DBPATH': os.path.join(r.root, 'db', r.run_id)}
     for name in ['build.il', 'probe.il', 'netlist.il', 'models.scs', 'export.il']:
         text = open(os.path.join(r.root, name)).read()
         for key, value in values.items():
             text = text.replace('@' + key + '@', value)
+        if model_files:
+            text = text.replace(MODEL_PLACEHOLDER, model_files[0])
         write(os.path.join(r.root, name), text)
         write(os.path.join(r.evidence, name), text)
     write(os.path.join(r.root, 'cds.lib'), 'INCLUDE ' + r.config['cadence_cds_lib'] + '\n')
@@ -89,6 +121,8 @@ def execute(runner, error_class):
         batch = os.path.join(r.root, 'batch' if cid == 'base' else 'batch_'+cid)
         os.mkdir(batch)
         executed = job['netlist'].replace('"ideal_opamp.va"', '"' + r.root + '/ideal_opamp.va"')
+        if model_files:
+            executed = executed.replace(MODEL_PLACEHOLDER, model_files[0])
         validate_netlist(executed,job['compiled'])
         write(os.path.join(batch,'input.scs'),executed)
         write(os.path.join(r.evidence,prefix+'input.scs'),executed)
@@ -117,7 +151,7 @@ def execute(runner, error_class):
 
 
 def current_terminal(kind, requested):
-    if kind in ('bjt','pmos'):
+    if kind in ('bjt','pmos','nmos'):
         return ('b' if requested == 'bulk' else requested or ('c' if kind == 'bjt' else 'd')), 1
     return ('a' if kind == 'diode' else 'p' if kind in ('voltage_source','vcvs','ccvs') else 'sink' if kind in ('current_source','vccs','cccs') else '1'), (-1 if requested == 'n' else 1)
 

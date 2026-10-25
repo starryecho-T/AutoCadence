@@ -140,7 +140,7 @@ dbSave(stopView) dbClose(stopView)
                 side = -1 if j % 2 == 0 else 1
                 if d['type'] == 'ideal_opamp':
                     side = 1 if term == 'out' else -1
-                elif d['type'] == 'pmos':
+                elif d['type'] in ('pmos', 'nmos'):
                     side = 1 if term == 'B' else -1
                 elif d['type'] == 'bjt' and term == 'B':
                     side = -1
@@ -262,7 +262,7 @@ procedure(gExport(path wave complexData)
 
 
 def current_terminal(kind, requested=None):
-    if kind in ('bjt','pmos'):
+    if kind in ('bjt','pmos','nmos'):
         return ('b' if requested == 'bulk' else requested or ('c' if kind == 'bjt' else 'd')), 1
     return ('a' if kind == 'diode' else 'p' if kind in ('voltage_source','vcvs','ccvs') else 'sink' if kind in ('current_source','vccs','cccs') else '1'), (-1 if requested == 'n' else 1)
 
@@ -292,10 +292,18 @@ def export_program(task, c, case='base'):
 
 
 def capture_config(task, c):
-    kind = next((k for k in ('tran', 'ac', 'dc') if any(a['type'] == k for a in task['analyses'])), 'op')
-    # OP values are shown as a flat two-point trace, explicitly labeled operating point.
-    exprs = [expression(s, c) for s in task['signals']]
-    if kind == 'ac':
-        exprs = [f'mag({x})' for x in exprs]
-    return {'cell': 'general', 'analysis': kind, 'expressions': exprs,
-            'labels': [s['id'] + (' [AC magnitude]' if kind == 'ac' else ' [operating point]' if kind == 'op' else '') for s in task['signals']]}
+    kinds = [kind for kind in ('tran', 'ac', 'dc')
+             if any(analysis['type'] == kind for analysis in task['analyses'])]
+    if not kinds:
+        kinds = ['op']
+    plots = []
+    for kind in kinds:
+        # OP values are shown as a flat two-point trace only when no curve analysis exists.
+        expressions = [expression(signal, c) for signal in task['signals']]
+        if kind == 'ac':
+            expressions = [f'mag({value})' for value in expressions]
+        plots.append({'analysis': kind, 'expressions': expressions,
+                      'labels': [signal['id'] + (' [AC magnitude]' if kind == 'ac' else
+                                               ' [operating point]' if kind == 'op' else '')
+                                 for signal in task['signals']]})
+    return {'cell': 'general', **plots[0], 'plots': plots}

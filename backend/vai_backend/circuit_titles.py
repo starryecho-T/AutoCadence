@@ -6,6 +6,8 @@ def circuit_title(task):
     kinds = {c['type'] for c in task['components']}
     if 'bjt' in kinds:
         family = 'BJT 晶体管电路'
+    elif 'nmos' in kinds:
+        family = 'NMOS 电路'
     elif 'pmos' in kinds:
         family = 'PMOS 电路'
     elif 'ideal_opamp' in kinds:

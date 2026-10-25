@@ -18,6 +18,7 @@ from vai_backend.circuit_compiler import scripts
 from vai_backend.circuit_analysis import analyze, evaluate
 from vai_backend.pipeline import _archive
 from vai_backend.images import ImageError, _general_canvas_stats
+from vai_backend.cmn018 import MODEL_PLACEHOLDER
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -144,6 +145,122 @@ def test_initialization_and_dc_sweep_do_not_use_ambiguous_simulator_defaults():
     assert "selectResults('dc)" not in both['export.il']
     assert evaluate([[10,5],[0,0]],{'analysis':'dc','operation':'at','representation':'real','at':2}) == 1
     assert evaluate([[1,-1,.01],[2,-1,-.01]],{'analysis':'ac','operation':'at','representation':'phase_deg','at':1.5}) == 180
+
+
+def test_capture_config_preserves_each_curve_analysis():
+    config = json.loads(scripts(parse_circuit(EXAMPLES['inverting'][1]))['capture_config.json'])
+    assert [plot['analysis'] for plot in config['plots']] == ['tran', 'ac']
+    assert config['analysis'] == 'tran'
+    assert all(len(plot['expressions']) == len(plot['labels']) for plot in config['plots'])
+    op_only = json.loads(scripts(parse_circuit(EXAMPLES['divider'][1]))['capture_config.json'])
+    assert [plot['analysis'] for plot in op_only['plots']] == ['op']
+
+
+def test_nmos_symbol_and_spectre_model_and_current_probe():
+    task = parse_circuit(EXAMPLES['nmos_families'][1])
+    compiled = compile_task(task)
+    mos = next(d for d in compiled['devices'] if d['id'] == 'M1')
+    assert mos['symbol'] == 'nmos4'
+    assert mos['master'].startswith('dm')
+    assert 'mos1 type=n vto=0.7' in compiled['model_text']
+    assert worker.validate_netlist(render_netlist(task, compiled), compiled)['status'] == 'PASS'
+    assert '"nmos4"' in scripts(task)['build.il']
+
+
+def test_cmn018_direct_models_use_only_allowlisted_server_sections():
+    task = parse_circuit('''VDD rail 0 DC 1.8
+VG gate 0 DC 1
+M1 rail gate 0 0 core_n w=10u l=0.18u
+.model core_n cmn018 nch
+.corner tt
+.op
+.save I(M1,d) P(M1,region)''')
+    compiled = compile_task(task)
+    assert compiled['pdk_sections'] == ['tt']
+    assert compiled['devices'][2]['master'] == 'nch'
+    assert f'include "{MODEL_PLACEHOLDER}" section=tt' in compiled['model_text']
+    netlist = render_netlist(task, compiled)
+    assert worker.validate_netlist(netlist, compiled)['status'] == 'PASS'
+    assert MODEL_PLACEHOLDER in scripts(task)['models.scs']
+    with tarfile.open(fileobj=io.BytesIO(_archive(task.model_dump(), 'vai_cmn018_archive',
+                                                  {'remote_base':'/test', 'cmn018_model_file':'/pdk/model/cmn018_gp2a_5v_v1d4.scs'})),mode='r:gz') as tf:
+        assert 'cmn018_gp2a_5v_v1d4.scs' not in tf.getnames()
+        assert 'models.scs' in tf.getnames()
+        assert b'@CMN018_MODEL_FILE@' in tf.extractfile('models.scs').read()
+
+
+def test_cmn018_rejects_unknown_model_wrong_type_and_out_of_range_geometry():
+    base = parse_circuit(EXAMPLES['nmos_families'][1]).model_dump()
+    base['models'] = [{'id':'core_n','type':'cmn018','name':'nch'}]
+    base['components'][2]['model'] = 'core_n'
+    assert CircuitTask.model_validate(base)
+    for name, width, length in [('unknown',10e-6,1e-6),('pch',10e-6,1e-6),
+                                ('nch',.1e-6,1e-6),('nch',10e-6,.1e-6)]:
+        bad = copy.deepcopy(base)
+        bad['models'][0]['name'] = name
+        bad['components'][2]['width_m'] = width
+        bad['components'][2]['length_m'] = length
+        with pytest.raises(ValueError):
+            CircuitTask.model_validate(bad)
+
+
+@pytest.mark.parametrize('corner', ['ss', 'ff'])
+def test_cmn018_mixed_families_use_selected_corner_sections(corner):
+    task = parse_circuit('''V1 rail 0 DC 1.8
+VG gate 0 DC 1
+R1 rail node 1k
+Q1 node rail 0 core_q
+D1 node 0 core_d
+M1 node gate 0 0 core_n w=1u l=0.18u
+M2 rail gate rail rail core_p w=1u l=0.18u
+.model core_q cmn018 npn2
+.model core_d cmn018 ndio
+.model core_n cmn018 nch
+.model core_p cmn018 pch
+.corner ''' + corner + '''
+.op
+.save I(Q1,c) I(D1)''')
+    compiled = compile_task(task)
+    assert compiled['pdk_sections'] == [corner, corner + '_bip', corner + '_dio']
+    assert {d['id']: d['master'] for d in compiled['devices']}['Q1'] == 'npn2'
+    assert {d['id']: d['master'] for d in compiled['devices']}['D1'] == 'ndio'
+    assert {d['id']: d['master'] for d in compiled['devices']}['M1'] == 'nch'
+    assert {d['id']: d['master'] for d in compiled['devices']}['M2'] == 'pch'
+    assert 'parOpt options redefinedparams=ignore' in compiled['model_text']
+    assert 'parameters mismatchflag_mos=0' in compiled['model_text']
+    assert 'parameters mismatchflag_bip=0' in compiled['model_text']
+    assert worker.validate_netlist(render_netlist(task, compiled), compiled)['status'] == 'PASS'
+
+
+def test_cmn018_preflight_checks_server_local_companion_and_sections(monkeypatch):
+    class ModelError(Exception):
+        def __init__(self, code, message):
+            self.code = code
+            super().__init__(message)
+
+    compiled = {'pdk_sections':['tt', 'tt_bip']}
+    with pytest.raises(ModelError, match='cmn018_model_file') as exc:
+        worker.resolve_model_file({}, compiled, ModelError)
+    assert exc.value.code == 'CMN018_NOT_CONFIGURED'
+    deck = '/pdk/cmn018_gp2a_5v_v1d4.scs'
+    usage = worker.os.path.join(worker.os.path.dirname(deck), 'cmn018_gp2a_5v_v1d4_usage.scs')
+    contents = {deck:'section tt\nendsection tt\nsection tt_bip\nendsection tt_bip\n',
+                usage:'include "cmn018_gp2a_5v_v1d4.scs" section=tt\n'
+                      'include "cmn018_gp2a_5v_v1d4.scs" section=tt_bip\n'}
+    monkeypatch.setattr(worker.os.path, 'isfile', lambda path: path in contents)
+    monkeypatch.setattr(worker.os, 'access', lambda path, mode: path in contents)
+    monkeypatch.setattr(worker, 'open', lambda path: io.StringIO(contents[path]), raising=False)
+    config = {'cmn018_model_file':deck}
+    assert worker.resolve_model_file(config, compiled, ModelError) == (deck, usage)
+    missing_usage = contents.pop(usage)
+    with pytest.raises(ModelError) as exc:
+        worker.resolve_model_file(config, compiled, ModelError)
+    assert exc.value.code == 'CMN018_MODEL_MISSING'
+    contents[usage] = missing_usage
+    contents[usage] = 'include "cmn018_gp2a_5v_v1d4.scs" section=tt\n'
+    with pytest.raises(ModelError) as exc:
+        worker.resolve_model_file(config, compiled, ModelError)
+    assert exc.value.code == 'CMN018_SECTION_MISSING'
 
 
 def test_generic_drawing_validation_accepts_a_constant_trace_but_rejects_only_toolbar():

@@ -5,6 +5,7 @@ import GeneralWaveforms from './GeneralWaveforms'
 import GeneralStudyResults from './GeneralStudyResults'
 import { formatNumber, METRIC_LABELS } from '../circuit'
 import { engineering } from '../units'
+import { imageLabel, resultImages } from '../resultArtifacts'
 import Icon from './Icon'
 import Modal from './Modal'
 import ResultChat from './ResultChat'
@@ -48,12 +49,10 @@ function MetricTable({ rows }: { rows: [string, JsonValue | undefined][] }) {
 export default function ResultView({ run, onRestart, onEdit }: Props) {
   const [tab, setTab] = useState('shots')
   const arts = run.artifacts ?? []
-  const sch = arts.find(a => a.filename === 'schematic_window.png') ?? arts.find(a => a.kind === 'schematic')
-  const wav = arts.find(a => a.filename === 'waveform_window.png') ?? arts.find(a => a.kind === 'waveform')
+  const { images, schematic: sch, waveform: wav, shots } = resultImages(arts)
   const reports = arts.filter(a => a.kind.startsWith('report'))
   const logs = arts.filter(a => a.kind === 'log' || /(?:^logs\/|\.log$)/i.test(a.filename ?? ''))
-  const images = arts.filter(a => a !== sch && a !== wav && (a.mime?.startsWith('image/') || /\.(png|xwd|svg)$/i.test(a.filename ?? '')))
-  const data = arts.filter(a => !reports.includes(a) && !logs.includes(a) && !images.includes(a) && a !== sch && a !== wav)
+  const data = arts.filter(a => !reports.includes(a) && !logs.includes(a) && !images.includes(a))
   const metrics = Object.entries(run.metrics ?? {}).filter(([, value]) => value === null || typeof value !== 'object')
   const knownMetrics = metrics.filter(([key]) => key in METRIC_LABELS)
   const technicalMetrics = metrics.filter(([key]) => !(key in METRIC_LABELS))
@@ -87,8 +86,8 @@ export default function ResultView({ run, onRestart, onEdit }: Props) {
             if (next >= 0) { event.preventDefault(); setTab(tabs[next][0]); document.getElementById(`tab-${tabs[next][0]}`)?.focus() }
           }}>{label}</button>)}</div>
         <div role="tabpanel" id="panel-shots" aria-labelledby="tab-shots" hidden={tab !== 'shots'}>
-          <div className="shots">{sch ? <Shot artifact={sch} label="电路原理图" /> : <div className="shot-empty">暂无电路原理图</div>}{wav ? <Shot artifact={wav} label="仿真波形" /> : <div className="shot-empty">暂无仿真波形截图</div>}</div>
-          <p className="artifact-caption">{run.demo ? '当前图形为公式生成的演示示意。' : '保留仿真工具原始截图，点击图片可放大核对。'}</p>
+          <div className="shots">{sch ? null : <div className="shot-empty">暂无电路原理图</div>}{wav ? null : <div className="shot-empty">暂无仿真波形截图</div>}{shots.map(a => <Shot key={a.id} artifact={a} label={imageLabel(a)} />)}</div>
+          <p className="artifact-caption">{run.demo ? '当前图形为公式生成的演示示意。' : '窗口截图及原生导出均来自本次仿真，点击图片可放大核对。'}</p>
         </div>
         <div role="tabpanel" id="panel-metrics" aria-labelledby="tab-metrics" hidden={tab !== 'metrics'}>
           {knownMetrics.length ? <MetricTable rows={knownMetrics} /> : <p className="empty-state">暂无数值指标</p>}
@@ -97,7 +96,7 @@ export default function ResultView({ run, onRestart, onEdit }: Props) {
         </div>
         <div role="tabpanel" id="panel-files" aria-labelledby="tab-files" hidden={tab !== 'files'}>
           <h3>仿真报告</h3>{reports.length ? <FileLinks files={reports} runId={run.run_id} /> : <p className="muted">本次没有生成报告。</p>}
-          <details className="detail-section"><summary>原始截图（{[sch, wav, ...images].filter(Boolean).length}）</summary><FileLinks files={[sch, wav, ...images].filter(Boolean) as Artifact[]} runId={run.run_id} /></details>
+          <details className="detail-section"><summary>图像文件（{shots.length}）</summary><FileLinks files={shots} runId={run.run_id} /></details>
           {!!data.length && <details className="detail-section"><summary>数值数据与电路文件（{data.length}）</summary><FileLinks files={data} runId={run.run_id} /></details>}
           {!!logs.length && <details className="detail-section"><summary>诊断日志（{logs.length}）</summary><FileLinks files={logs} runId={run.run_id} /></details>}
           {arts.some(a => a.sha256) && <details className="detail-section"><summary>运行证据索引</summary><div className="table-scroll"><table className="tbl"><thead><tr><th>文件</th><th>字节数</th><th>SHA-256</th></tr></thead><tbody>{arts.map(a => <tr key={a.id}><td>{a.filename ?? a.label ?? a.id}</td><td>{a.bytes ?? '—'}</td><td><code>{a.sha256 ?? '—'}</code></td></tr>)}</tbody></table></div></details>}

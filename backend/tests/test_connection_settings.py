@@ -42,6 +42,13 @@ def ssh_server():
                         if not chunk: break
                         data += chunk
                     channel.sendall(data)
+                elif text == b'late-binary':
+                    channel.sendall(b'first')
+                    channel.send_exit_status(0)
+                    time.sleep(.1)
+                    channel.sendall(b'second')
+                    channel.close()
+                    return
                 elif b'AUTOCADENCE_HOME' in text:
                     channel.sendall(b'AUTOCADENCE_HOME=/home/student\nAUTOCADENCE_VIRTUOSO=/opt/ic/bin/virtuoso\nAUTOCADENCE_SPECTRE=/opt/mmsim/bin/spectre\n')
                 elif b'readlink' in text:
@@ -81,6 +88,8 @@ def test_password_login_host_verification_and_binary_transport(ssh_server, tmp_p
         payload = b'\x00\xff\x10\r\n' * 10000
         result = command(client, 'echo-binary', input_data=payload)
         assert result.returncode == 0 and result.stdout == payload
+        delayed = command(client, 'late-binary')
+        assert delayed.returncode == 0 and delayed.stdout == b'firstsecond'
     finally: client.close()
     with pytest.raises(ConnectionFailure) as bad: connect({**config, 'ssh_password': 'wrong'}, fingerprint(key))
     assert bad.value.code == 'SSH_AUTH_FAILED'
@@ -108,6 +117,20 @@ def test_save_session_password_private_public_view_and_clear(ssh_server, tmp_pat
     assert b'fixture-secret' not in remote and b'ssh_' not in remote
     store.forget_password()
     assert not store.public()['has_password']
+
+
+def test_unreadable_optional_model_path_preserves_generic_connection(ssh_server, tmp_path, monkeypatch):
+    monkeypatch.setenv('VAI_CONFIG', str(tmp_path/'absent.json'))
+    port, key, _ = ssh_server
+    store = ConnectionStore(tmp_path/'connection.json')
+    body = ConnectionInput(host='127.0.0.1', port=port, username='student', password='fixture-secret',
+                           trusted_fingerprint=fingerprint(key), cmn018_model_file='/pdk/wrong.scs')
+    result = connect_and_save(store, body, lambda: None)
+    assert result['missing_fields'] == ['cmn018_model_file']
+    assert not result['ready'] and result['connection']['configured']
+    assert result['connection']['cmn018_model_file'] == '/pdk/wrong.scs'
+    assert 'CMN018' in result['message']
+    assert store.runtime()['cmn018_model_file'] == '/pdk/wrong.scs'
 
 
 @pytest.mark.skipif(os.name != 'nt', reason='Windows current-user encryption')

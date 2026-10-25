@@ -21,6 +21,8 @@ AutoCadence 0.7.1 面向“每人在自己的电脑上使用”：桌面程序�
 
 程序支持各用户提供自己的连接信息；不包含 Cadence 安装包或许可。管理员提供的环境初始化脚本通常用于加载程序路径、动态库和许可设置。
 
+若使用 CMN018 工艺模型，可在高级设置填写可选的 `cmn018_model_file`，指向服务器上已有的 `cmn018_gp2a_5v_v1d4.scs`。同目录还须有 `cmn018_gp2a_5v_v1d4_usage.scs`；连接检查只读取文件，不上传文件或启动 Cadence。支持范围及限制见 [CMN018 说明](docs/CMN018.md)。
+
 ## 密码与本机配置
 
 默认密码只保存在本次后端进程内存中，重启后需要重新输入。勾选“记住密码”后，Windows 使用当前用户的 DPAPI 加密保存到 `%LOCALAPPDATA%/AutoCadence/connection.json`。更换 Windows 用户或电脑后需重新填写，设置中可随时清除。

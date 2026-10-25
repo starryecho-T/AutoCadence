@@ -128,10 +128,18 @@ def _windows(tree, stage, run_id, initial):
             continue
         valid = ((stage == 'schematic' and run_id in title and
                   ('rc_lpf' in title or 'general' in title) and 'schematic' in title.lower()) or
-                 (stage == 'waveform' and
+                 (stage.startswith('waveform') and
                   ('ViVA' in title or 'Visualization' in title)))
         if valid:
             matches.append((wid, title))
+    return matches
+
+
+def _capture_windows(tree, stage, run_id, initial, previous_waveform):
+    matches = _windows(tree, stage, run_id, initial)
+    if not matches and stage.startswith('waveform') and previous_waveform:
+        # ViVA may place another plot in the existing top-level window.
+        matches = _windows(tree, stage, run_id, initial - set([previous_waveform[0]]))
     return matches
 
 
@@ -154,17 +162,55 @@ def _check_xwd(path):
     return {'width': h[4], 'height': h[5], 'bytes': expected}
 
 
-def _script(root, run_id, out):
-    # Timers are tenths of a second. Python starts waveform after schematic
-    # capture, preventing the waveform window from obscuring the schematic.
+def _plot_settings(root):
+    config_path = os.path.join(root, 'capture_config.json')
+    if os.path.isfile(config_path):
+        handle = open(config_path)
+        try:
+            config = json.load(handle)
+        finally:
+            handle.close()
+        cell = config['cell']
+        plots = config.get('plots')
+        if plots is None:
+            plots = [{'analysis': config['analysis'],
+                      'expressions': config['expressions'],
+                      'labels': config['labels']}]
+    else:
+        cell = 'rc_lpf'
+        plots = [{'analysis': 'tran', 'expressions': ['v("vin")', 'v("out")'],
+                  'labels': ['vin [V]', 'out [V]']},
+                 {'analysis': 'ac', 'expressions': ['db20(v("vin"))', 'db20(v("out"))'],
+                  'labels': ['vin [dB]', 'out [dB]']}]
+    if not isinstance(plots, list) or not plots or len(plots) > 4:
+        raise CaptureError('Expected one to four capture plots')
+    if any(plot.get('analysis') != 'op' for plot in plots):
+        plots = [plot for plot in plots if plot.get('analysis') != 'op']
+    seen = set()
+    for index, plot in enumerate(plots):
+        kind = plot.get('analysis')
+        exprs, labels = plot.get('expressions'), plot.get('labels')
+        if kind not in ('tran', 'ac', 'dc', 'op') or kind in seen:
+            raise CaptureError('Invalid or duplicate capture analysis')
+        if (not isinstance(exprs, list) or not exprs or
+                not isinstance(labels, list) or len(exprs) != len(labels)):
+            raise CaptureError('Capture expressions and labels must match')
+        seen.add(kind)
+        plot['stage'] = 'waveform' if index == 0 else 'waveform_' + kind
+    return cell, plots
+
+
+def _script(root, run_id, out, cell, plots):
+    # Timers are tenths of a second. Python starts each plot after capturing
+    # the preceding window so later ViVA windows cannot obscure its evidence.
     values = {'RUN': _skill_string(run_id),
+              'CELL': _skill_string(cell),
               'ROOT': _skill_string(os.path.join(root, 'batch', 'psf')),
               'SCH': _skill_string(os.path.join(out, 'schematic_native.png')),
               'READY': _skill_string(os.path.join(out, 'schematic.ready')),
-              'WREADY': _skill_string(os.path.join(out, 'waveform.ready')),
               'OUT': _skill_string(out)}
     source = r'''println("VAI_GUI_START")
-gwin=deOpenCellView(@RUN@ "rc_lpf" "schematic" "schematic" list(20:20 1520:920) "r")
+gwin=deOpenCellView(@RUN@ @CELL@ "schematic" "schematic" list(20:20 1520:920) "r")
 unless(gwin error("VAI_SCHEMATIC_OPEN_FAILED"))
 println(list("VAI_SCHEMATIC_EXPORT" hiExportImage(?window gwin ?fileName @SCH@ ?exportRegion 'entireDesign ?width 1500)))
 procedure(vaiSchematicFit()
@@ -176,32 +222,11 @@ procedure(vaiSchematicFit()
 procedure(vaiSchematicReady()
   f=outfile(@READY@) fprintf(f "ready") close(f)
 )
-procedure(vaiWave()
-  openResults(@ROOT@) selectResults('tran)
-  wv=awvCreatePlotWindow(?bBox list(40:40 1540:940))
-  unless(wv error("VAI_WAVE_OPEN_FAILED"))
-  awvPlotWaveform(wv list(v("vin") v("out")) ?expr list("vin [V]" "out [V]"))
-  hiRegTimer("vaiSaveWave()" 50)
-)
-procedure(vaiSaveWave()
-  println(list("VAI_WAVE_EXPORT" awvSaveWindowImage(wv @OUT@ "waveform_native" nil)))
-  f=outfile(@WREADY@) fprintf(f "ready") close(f)
-  println("VAI_GUI_DONE")
-)
-hiRegTimer("vaiSchematicFit()" 30)
 '''
     for key, value in values.items():
         source = source.replace('@' + key + '@', value)
-    config_path = os.path.join(root, 'capture_config.json')
-    if os.path.isfile(config_path):
-        config = json.load(open(config_path))
-        kind = config['analysis']
-        source = source.replace('"rc_lpf"', _skill_string(config['cell']))
-        select = 'selectResults("dcOp-dc")' if kind == 'op' else 'selectResults("dc-dc")' if kind == 'dc' else "selectResults('%s)" % kind
-        source = source.replace("selectResults('tran)", select)
-        expressions = config['expressions']
-        if kind == 'op':
-            helper = '''procedure(gConstant(value)
+    if any(plot['analysis'] == 'op' for plot in plots):
+        helper = '''procedure(gConstant(value)
   let((xx yy)
     xx=drCreateVec('double 2) yy=drCreateVec('double 2)
     drSetElem(xx 0 0.0) drSetElem(xx 1 1.0)
@@ -210,11 +235,44 @@ hiRegTimer("vaiSchematicFit()" 30)
   )
 )
 '''
-            source = helper + source
-            expressions = ['gConstant(%s)' % e for e in expressions]
-        plot = 'awvPlotWaveform(wv list(%s) ?expr list(%s))' % (' '.join(expressions), ' '.join(_skill_string(x) for x in config['labels']))
-        source = source.replace('awvPlotWaveform(wv list(v("vin") v("out")) ?expr list("vin [V]" "out [V]"))', plot)
-    return source
+        source = helper + source
+    for index, plot in enumerate(plots):
+        kind, stage = plot['analysis'], plot['stage']
+        select = ('selectResults("dcOp-dc")' if kind == 'op' else
+                  'selectResults("dc-dc")' if kind == 'dc' else
+                  "selectResults('%s)" % kind)
+        expressions = plot['expressions']
+        if kind == 'op':
+            expressions = ['gConstant(%s)' % item for item in expressions]
+        source += '''procedure(vaiWave%d()
+  openResults(%s) %s
+  wv%d=awvCreatePlotWindow(?bBox list(40:40 1540:940))
+  unless(wv%d error("VAI_WAVE_OPEN_FAILED"))
+  awvPlotWaveform(wv%d list(%s) ?expr list(%s))
+  hiRegTimer("vaiSaveWave%d()" 50)
+)
+procedure(vaiSaveWave%d()
+  println(list("VAI_WAVE_EXPORT" awvSaveWindowImage(wv%d %s %s nil)))
+  f=outfile(%s) fprintf(f "ready") close(f)
+%s)
+''' % (index, values['ROOT'], select, index, index, index,
+       ' '.join(expressions), ' '.join(_skill_string(item) for item in plot['labels']),
+       index, index, index, values['OUT'], _skill_string(stage + '_native'),
+       _skill_string(os.path.join(out, stage + '.ready')),
+       '  println("VAI_GUI_DONE")\n' if index == len(plots)-1 else '')
+    return source + 'hiRegTimer("vaiSchematicFit()" 30)\n'
+
+
+def _normalize_native(out, stage):
+    filename = stage + '_native.png'
+    canonical = os.path.join(out, filename)
+    if not os.path.isfile(canonical):
+        native = glob.glob(os.path.join(out, stage + '_nativewindow*.png'))
+        if len(native) != 1 or os.path.getsize(native[0]) == 0:
+            raise CaptureError('Expected one nonempty native ViVA image: ' + filename)
+        os.rename(native[0], canonical)
+    if os.path.getsize(canonical) == 0:
+        raise CaptureError('Native image is missing or empty: ' + filename)
 
 
 def capture(root, run_id, env, virt, timeout=100):
@@ -243,8 +301,15 @@ def capture(root, run_id, env, virt, timeout=100):
             raise CaptureError('Invalid run_id')
         if timeout <= 0:
             raise CaptureError('timeout must be positive')
-        for name in ('schematic.ready', 'waveform.ready', 'schematic_window.xwd',
-                     'waveform_window.xwd', 'schematic_native.png', 'waveform_native.png'):
+        cell, plots = _plot_settings(root)
+        plot_stages = [plot['stage'] for plot in plots]
+        deadline += 45 * (len(plots)-1)
+        result['plots'] = [{'analysis': plot['analysis'], 'stage': plot['stage']}
+                           for plot in plots]
+        names = ['schematic.ready', 'schematic_window.xwd', 'schematic_native.png']
+        for stage in plot_stages:
+            names.extend((stage + '.ready', stage + '_window.xwd', stage + '_native.png'))
+        for name in names:
             if os.path.lexists(os.path.join(out, name)):
                 raise CaptureError('Capture evidence already exists; use a fresh run directory')
         display, lock, token = _reserve_display()
@@ -294,7 +359,7 @@ def capture(root, run_id, env, virt, timeout=100):
         handle.close()
         script_path = os.path.join(logs, 'capture.il')
         handle = open(script_path, 'wb')
-        handle.write(_script(root, run_id, out).encode('utf-8'))
+        handle.write(_script(root, run_id, out, cell, plots).encode('utf-8'))
         handle.close()
         handle = open(os.path.join(logs, 'capture.stdout'), 'w')
         handles.append(handle)
@@ -303,7 +368,8 @@ def capture(root, run_id, env, virt, timeout=100):
                                    cwd=root, env=private_env, stdin=subprocess.PIPE,
                                    stdout=handle, stderr=subprocess.STDOUT, preexec_fn=os.setsid)
         processes.append(cadence)
-        for stage in ('schematic', 'waveform'):
+        previous_waveform = None
+        for stage in ['schematic'] + plot_stages:
             ready = os.path.join(out, stage + '.ready')
             while True:
                 if time.time() >= deadline:
@@ -315,7 +381,7 @@ def capture(root, run_id, env, virt, timeout=100):
                     rc, tree = _command(['xwininfo', '-root', '-tree'], private_env, deadline)
                     if rc != 0:
                         raise CaptureError('xwininfo failed while locating ' + stage)
-                    candidates = _windows(tree, stage, run_id, initial)
+                    candidates = _capture_windows(tree, stage, run_id, initial, previous_waveform)
                     if len(candidates) > 1:
                         raise CaptureError('Ambiguous ' + stage + ' windows')
                     if candidates:
@@ -333,12 +399,22 @@ def capture(root, run_id, env, virt, timeout=100):
             details = _check_xwd(dest)
             details.update({'run_id': run_id, 'window_id': wid, 'title': title,
                             'xwd': os.path.basename(dest), 'returncode': rc,
-                            'source_psf': result['source_psf'] if stage == 'waveform' else None})
+                            'source_psf': result['source_psf'] if stage != 'schematic' else None})
+            if stage != 'schematic':
+                details['analysis'] = plots[plot_stages.index(stage)]['analysis']
             result['windows'][stage] = details
             result['captured_stages'].append(stage)
+            initial.add(wid)
+            if stage.startswith('waveform'):
+                previous_waveform = (wid, title)
             if stage == 'schematic':
-                cadence.stdin.write(b'vaiWave()\n')
+                cadence.stdin.write(b'vaiWave0()\n')
                 cadence.stdin.flush()
+            else:
+                next_index = plot_stages.index(stage) + 1
+                if next_index < len(plots):
+                    cadence.stdin.write(('vaiWave%d()\n' % next_index).encode('ascii'))
+                    cadence.stdin.flush()
         cadence.stdin.write(b'exit()\n')
         cadence.stdin.flush()
         result['exit_requested'] = True
@@ -351,16 +427,11 @@ def capture(root, run_id, env, virt, timeout=100):
         result['returncode'] = cadence.returncode
         if cadence.returncode != 0:
             raise CaptureError('Cadence exited with code ' + str(cadence.returncode))
-        canonical_native = os.path.join(out, 'waveform_native.png')
-        if not os.path.isfile(canonical_native):
-            native = glob.glob(os.path.join(out, 'waveform_nativewindow*.png'))
-            if len(native) != 1 or os.path.getsize(native[0]) == 0:
-                raise CaptureError('Expected one nonempty native ViVA image')
-            os.rename(native[0], canonical_native)
-        for name in ('schematic_native.png', 'waveform_native.png'):
-            path = os.path.join(out, name)
-            if not os.path.isfile(path) or os.path.getsize(path) == 0:
-                raise CaptureError('Native image is missing or empty: ' + name)
+        for stage in plot_stages:
+            _normalize_native(out, stage)
+        path = os.path.join(out, 'schematic_native.png')
+        if not os.path.isfile(path) or os.path.getsize(path) == 0:
+            raise CaptureError('Native image is missing or empty: schematic_native.png')
         result['ok'] = True
     except Exception as exc:
         result['error'] = _text(str(exc))

@@ -43,6 +43,10 @@ def _validate_config(config,run_id):
         value=config.get(key,'')
         if not re.fullmatch(r'/[A-Za-z0-9_./-]+',value) or '..' in value.split('/'):
             raise PipelineError('CONFIG_ERROR','upload','Invalid configured path: '+key)
+    if config.get('cmn018_model_file'):
+        path = config['cmn018_model_file']
+        if not isinstance(path, str) or not re.fullmatch(r'/[A-Za-z0-9_./-]+', path) or '..' in path.split('/'):
+            raise PipelineError('CONFIG_ERROR','upload','Invalid configured path: cmn018_model_file')
     if config['remote_base'] in ['/','/tmp','/home','/data/home']:
         raise PipelineError('CONFIG_ERROR','upload','remote_base must be a dedicated user directory')
     if config.get('ssh_transport') != 'paramiko': _ssh(config)

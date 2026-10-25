@@ -111,9 +111,11 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     def parse(body:ParseRequest):return parse_question(body.text)
     @app.get('/api/v2/capabilities',dependencies=deps)
     def circuit_capabilities():
-        return {'schema_version':'2.0','components':['resistor','capacitor','inductor','diode','voltage_source','current_source','ideal_opamp','wire','bjt','pmos','vccs','vcvs','cccs','ccvs'],
+        from .cmn018 import CMN018_MODELS
+        return {'schema_version':'2.0','components':['resistor','capacitor','inductor','diode','voltage_source','current_source','ideal_opamp','wire','bjt','pmos','nmos','vccs','vcvs','cccs','ccvs'],
                 'analyses':['op','dc','ac','tran'],'studies':['parameter_sweeps','two_port_y','y_equivalence','curve_comparisons','bjt_transfer'],
-                'model_types':['diode','bjt_npn_pnp','pmos_mos1'],
+                'model_types':['diode','bjt_npn_pnp','pmos_mos1','nmos_mos1','cmn018'],
+                'cmn018':{'requires_server_model_file':True,'corners':['tt','ss','ff'], 'models':sorted(CMN018_MODELS)},
                 'limits':{'components':100,'signals':16,'transient_step_budget':200000,'parameter_axes':2,'parameter_combinations':20},
                 'ideal_opamp':'Infinite gain linear constraint; no rail saturation or bandwidth limit.',
                 'examples':[{'id':key,'label':label,'text':text} for key,(label,text) in EXAMPLES.items()]}
