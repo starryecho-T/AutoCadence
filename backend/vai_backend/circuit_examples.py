@@ -34,6 +34,20 @@ M1 drain gate 0 0 generic_nmos w=10u l=1u
 .dc VD 0 5 0.05
 .step VG dc 1 1.5 2
 .save I(M1,d) I(M1,g) P(M1,region)'''),
+    'nmos_id_vgs': ('NMOS 共源栅压扫描与漏极电流', json.dumps({
+        'components':[
+            {'id':'VDD','type':'voltage_source','pins':{'p':'drain','n':'0'},'dc':3.3},
+            {'id':'VG','type':'voltage_source','pins':{'p':'gate','n':'0'},'dc':0},
+            {'id':'M1','type':'nmos','pins':{'d':'drain','g':'gate','s':'0','b':'0'},'model':'generic_nmos','width_m':10e-6,'length_m':1e-6},
+        ],
+        'analyses':[{'type':'dc','source':'VG','start':0,'stop':3.3,'step':0.05}],
+        'signals':[
+            {'id':'id','type':'current','component':'M1','terminal':'d'},
+            {'id':'vgs','type':'device_parameter','component':'M1','parameter':'vgs'},
+            {'id':'region','type':'device_parameter','component':'M1','parameter':'region'},
+        ],
+        'measurements':[{'id':'id_max','analysis':'dc','signal':'id','operation':'max'}],
+    },ensure_ascii=False,indent=2)),
     'controlled_sources': ('四种线性受控源', '''V1 input 0 DC 1 AC 1
 Rin input sense 1k
 VS sense 0 DC 0

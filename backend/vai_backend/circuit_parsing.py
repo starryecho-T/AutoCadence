@@ -82,10 +82,13 @@ def parse_circuit(text):
             elif kind == 'Q' and len(args) in (3,4):
                 c = {'id':name,'type':'bjt','pins':dict(zip(('c','b','e'),args[:3])), 'model':args[3] if len(args)==4 else 'generic_npn'}
             elif kind == 'M' and len(args) >= 4:
-                c = {'id':name,'type':'pmos','pins':dict(zip(('d','g','s','b'),args[:4]))}
+                c = {'id':name,'pins':dict(zip(('d','g','s','b'),args[:4]))}
                 tail = args[4:]
+                model = 'generic_pmos'
                 if tail and '=' not in tail[0]:
-                    c['model'] = tail[0]; tail = tail[1:]
+                    model = tail[0]; tail = tail[1:]
+                c['type'] = 'nmos' if 'nmos' in model.lower() else 'pmos'
+                c['model'] = model
                 for arg in tail:
                     k, v = arg.split('=',1)
                     k = {'w':'width_m','l':'length_m','m':'multiplicity'}.get(k.lower())

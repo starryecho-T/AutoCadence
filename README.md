@@ -33,3 +33,31 @@ AutoCadence 是面向电路题目的桌面设计与仿真应用。普通语言�
 ## 验证
 
 SSH 更新针对性验证了密码登录、错误密码、服务器指纹确认、Windows 加密保存和凭据隔离；原有服务器私钥登录与 PMOS 真实仿真通过。发布前检查前端构建和无旧配置的 EXE 启动。历史 PMOS 截图裁剪误判和运放直流反馈提示的修复均保留。
+
+## 2026-10-25 更新与问题记录
+
+本次更新：新增 NMOS 器件端到端支持（模型卡 `mos1 type=n`、analogLib `nmos4` 符号、端子电流 d/g/s/b、原理图符号、文本解析、标题与 AI 能力清单，示例 `nmos_id_vgs`）；后端 artifacts 哈希增量缓存、任务失败路径兜底、`DELETE /api/v{1,2}/runs/{id}` 取消排队任务、队列上限检查移入锁内、保存连接时不再长时间持有全局锁；前端波形 JSON 路径统一降采样、独立曲线懒渲染、轮询失败指数退避重试（1.5s→3s→6s）、根级与卡片级 ErrorBoundary、波形加载失败重试按钮。
+
+### 问题记录与解决方法
+
+**1. SSH 下载结果包被静默截断（严重，已修复）**
+
+- 现象：远端仿真全部成功，本地解包报 `Compressed file ended before the end-of-stream marker was reached`，任务在 download 阶段失败。
+- 根因：`backend/vai_backend/ssh_transport.py` 的输出排空循环以 `exit_status_ready()` 作为退出条件。课程服务器的老版本 OpenSSH 会在 stdout 尾部数据到达之前先发出 exit-status，循环提前退出而 returncode 仍为 0。实测远端 354,063 字节的归档只传回 212,992 字节，且每次都复现。
+- 解决：退出条件改为 `channel.eof_received 且两个接收缓冲排空`（SSH 协议保证 EOF 在全部数据之后发出），之后才取退出码。本地测试用的内嵌 paramiko 服务端时序正常、不触发此 bug，因此此前未暴露；修复后用真实服务器对照验证，流式传输与远端落盘字节数完全一致。教训：针对传输层时序问题，验收必须在真实目标服务器上做大文件回归。
+
+**2. GitHub 无法访问时的代码同步（已处理）**
+
+- 现象：`git fetch` 直连与常见本地代理端口（7890/10809/1080，http 与 socks5）均连接失败（连接重置或超时）。
+- 解决：利用本地已缓存的 `origin/main` 引用完成同步——对 origin/main 全部 172 个文件逐个 `git hash-object` 与磁盘比对，165 个字节一致，唯一差异是上述 ssh_transport 修复（6 个中文名文档被 `core.quotepath` 转义误报为缺失，实际存在且一致）；随后 `git checkout -f -B main origin/main` 对齐分支、恢复修复。注意：若 GitHub 此后有更新的提交，需在网络恢复后重新 fetch 合并。
+
+**3. NMOS 真实服务器验收（通过）**
+
+- 需在真实 Cadence 环境确认的点均已验证：analogLib `nmos4` 符号存在且端子为 D/G/S/B；端子电流按小写 `d/g/s/b` 导出；`mos1 type=n` 教学模型正常收敛。
+- 物理正确性：NMOS 栅压 DC 扫描（0→3.3V，W/L=10µm/1µm，vto=0.7V）实测 Id-Vgs 与 MOS1 平方律精确吻合——阈值以下完全截止，Vgs=1V 时 Id=0.048mA、Vgs=3.3V 时 Id=3.603mA，与含沟道长度调制（lambda=0.02）的理论值 3.60mA 一致，region=2（饱和区）。RC 示例回归仿真同步复测通过。
+
+**4. 已知事项**
+
+- `backend/contracts/openapi.json` 是静态快照，尚未包含新增的取消端点 `DELETE /runs/{id}`，下次契约刷新时同步。
+- artifacts 增量缓存以 `(mtime_ns, size)` 为缓存键，同大小同纳秒时间戳的写入存在理论上的误判窗口（现有测试用显式 `os.utime` 规避）。
+- 桌面 `AutoCadence.exe` 内置后端仍是打包时的 0.7.1 代码，要获得上述修复与 NMOS 支持需重新 `desktop/build.ps1` 打包；`desktop/local_backend.py` 的版本白名单 `('0.7.0','0.7.1')` 需随新版本号一并更新。

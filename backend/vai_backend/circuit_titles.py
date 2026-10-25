@@ -10,6 +10,8 @@ def circuit_title(task):
         family = 'NMOS 电路'
     elif 'pmos' in kinds:
         family = 'PMOS 电路'
+    elif 'nmos' in kinds:
+        family = 'NMOS 电路'
     elif 'ideal_opamp' in kinds:
         family = '运放电路'
     elif 'diode' in kinds:

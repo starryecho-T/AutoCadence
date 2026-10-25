@@ -10,7 +10,7 @@ export function circuitTitle(circuit: GeneralCircuit): string {
 }
 
 export const COMPONENT_LABELS: Record<string, string> = { resistor: '电阻', capacitor: '电容', inductor: '电感', diode: '二极管', voltage_source: '电压源', current_source: '电流源', ideal_opamp: '理想运放', wire: '导线', bjt:'双极型晶体管', pmos:'PMOS', nmos:'NMOS', vccs:'压控电流源', vcvs:'压控电压源', cccs:'流控电流源', ccvs:'流控电压源' }
-export const PIN_LABELS: Record<string, string> = { p: '正端 / 端点 1', n: '负端 / 端点 2', a: '阳极', k: '阴极', plus: '同相端 +', minus: '反相端 −', out: '输出端', c:'集电极', b:'基极 / 衬底', e:'发射极', d:'漏极', g:'栅极', s:'源极', cp:'控制正端', cn:'控制负端' }
+export const PIN_LABELS: Record<string, string> = { p: '正端 / 端点 1', n: '负端 / 端点 2', a: '阳极', k: '阴极', plus: '同相端 +', minus: '反相端 −', out: '输出端', c:'集电极', b:'基极 / 衬底', e:'发射极', d:'漏极', g:'栅极', s:'源极', bulk:'衬底', cp:'控制正端', cn:'控制负端' }
 export const ANALYSIS_LABELS: Record<string, string> = { op: '直流工作点', ac: '交流扫频', tran: '瞬态响应', dc: '直流扫描' }
 export const FIELDS: Record<string, [string, string]> = {
   resistance_ohm: ['阻值', 'Ω'], capacitance_f: ['电容', 'F'], inductance_h: ['电感', 'H'],

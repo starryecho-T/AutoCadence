@@ -213,6 +213,16 @@ class MOS1Model(Strict):
     gate_source_overlap_f_m: float = Field(default=0, ge=0, le=1)
     gate_drain_overlap_f_m: float = Field(default=0, ge=0, le=1)
 
+    @model_validator(mode='after')
+    def threshold_sign(self):
+        # Spectre mos1 expects vto<0 for type=p and vto>0 for type=n.
+        if self.polarity == 'p' and self.threshold_voltage_v >= 0:
+            raise ValueError('p-channel MOS1 requires a negative threshold_voltage_v')
+        if self.polarity == 'n' and self.threshold_voltage_v <= 0:
+            raise ValueError('n-channel MOS1 requires a positive threshold_voltage_v')
+        return self
+
+
 class CMN018Model(Strict):
     id: Name
     type: Literal['cmn018']
