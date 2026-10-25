@@ -2,7 +2,7 @@
 
 AutoCadence 是面向电路题目的桌面设计与仿真应用。普通语言或图片输入 → AI 给出连接和参数建议 → 用户选择是／否 → 核对电路 → Cadence / Spectre 仿真 → 独立曲线与报告。
 
-当前版本 **0.7.1**。窗口、网页、EXE、桌面配置目录、文档与报告统一使用 AutoCadence。侧栏显示具体任务名称、元件和分析摘要，底部显示版本号。
+当前版本 **0.7.2**。窗口、网页、EXE、桌面配置目录、文档与报告统一使用 AutoCadence。侧栏显示具体任务名称、元件和分析摘要，底部显示版本号。
 
 新建任务统一进入通用电路输入，支持文字、截图和连接描述；已移除独立的 RC 低通题目入口。RC 电路也通过统一入口提交。后端未连接时可准备题目，连接后再预检和仿真。
 
@@ -65,4 +65,4 @@ SSH 更新针对性验证了密码登录、错误密码、服务器指纹确认�
 
 - `backend/contracts/openapi.json` 是静态快照，尚未包含新增的取消端点 `DELETE /runs/{id}`，下次契约刷新时同步。
 - artifacts 增量缓存以 `(mtime_ns, size)` 为缓存键，同大小同纳秒时间戳的写入存在理论上的误判窗口（现有测试用显式 `os.utime` 规避）。
-- 桌面 `AutoCadence.exe` 内置后端仍是打包时的 0.7.1 代码，要获得上述修复与 NMOS 支持需重新 `desktop/build.ps1` 打包；`desktop/local_backend.py` 的版本白名单 `('0.7.0','0.7.1')` 需随新版本号一并更新。
+- 发布 0.7.2 时已重新打包桌面 EXE（含全部修复与 NMOS/CMN018 支持）；`desktop/local_backend.py` 的版本白名单现接受 0.7.0/0.7.1/0.7.2。开发机上若 `node` 不在 PATH，`desktop/build.ps1` 的前端步骤需改用 Electron 内置 Node（`ELECTRON_RUN_AS_NODE=1`）等价执行。

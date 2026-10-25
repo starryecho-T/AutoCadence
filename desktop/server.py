@@ -66,7 +66,7 @@ class DesktopHandler(BaseHTTPRequestHandler):
             return
         path = urlsplit(self.path).path
         if path == '/desktop-info' and self.command == 'GET':
-            self._send(200, {'name': 'autocadence-desktop', 'version': '0.7.1'})
+            self._send(200, {'name': 'autocadence-desktop', 'version': '0.7.2'})
         elif path in ('/health', '/openapi.json') or path.startswith('/api/'):
             self._proxy()
         elif self.command not in ('GET', 'HEAD'):

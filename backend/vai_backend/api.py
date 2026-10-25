@@ -113,7 +113,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
             return JSONResponse(connections.forget_password(),headers={'Cache-Control':'no-store'})
     @app.get('/health')
     def health():
-        return {'status':'ok','name':'AutoCadence','build':'0.7.1','version':__version__,'api_versions':['1.0','2.0'],
+        return {'status':'ok','name':'AutoCadence','build':'0.7.2','version':__version__,'api_versions':['1.0','2.0'],
                 'connection_configured':connections.public()['configured'],
                 'templates':['rc_lowpass','general_circuit'],
                 'queue':manager.stats(),'server_check':'not_run','authentication_required':bool(settings.api_token)}
