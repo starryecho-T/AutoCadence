@@ -3,6 +3,7 @@ import json
 import re
 from pydantic import ValidationError
 from .circuit_models import CircuitTask
+from .cmn018 import CMN018_MODELS
 
 
 def value(raw):
@@ -84,10 +85,15 @@ def parse_circuit(text):
             elif kind == 'M' and len(args) >= 4:
                 c = {'id':name,'pins':dict(zip(('d','g','s','b'),args[:4]))}
                 tail = args[4:]
-                model = 'generic_pmos'
+                model = 'pch'
                 if tail and '=' not in tail[0]:
                     model = tail[0]; tail = tail[1:]
-                c['type'] = 'nmos' if 'nmos' in model.lower() else 'pmos'
+                if model in CMN018_MODELS:
+                    c['type'] = CMN018_MODELS[model][0]
+                elif model == 'generic_nmos' or 'nmos' in model.lower():
+                    c['type'] = 'nmos'
+                else:
+                    c['type'] = 'pmos'
                 c['model'] = model
                 for arg in tail:
                     k, v = arg.split('=',1)
@@ -131,12 +137,11 @@ def parse_circuit(text):
             raise ValueError(f'第 {index} 行：{exc}') from exc
     if not analyses or not signals:
         raise ValueError('请显式提供分析指令和 .save 测量节点/支路；不会自动猜测')
-    from .cmn018 import CMN018_MODELS
     declared = {m['id']:m for m in models}
     for c in components:
         if c['type'] != 'pmos':
             continue
-        model = c.get('model', 'generic_pmos')
+        model = c.get('model', 'pch')
         if model == 'generic_nmos' or (model in declared and CMN018_MODELS.get(declared[model]['name'], (None,))[0] == 'nmos'):
             c['type'] = 'nmos'
     return CircuitTask.model_validate({'components': components, 'analyses': analyses, 'signals': signals, 'question': text,

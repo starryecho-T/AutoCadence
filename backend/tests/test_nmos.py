@@ -8,6 +8,7 @@ from vai_backend.circuit_models import CircuitTask, MOS1Model
 from vai_backend.circuit_parsing import parse_circuit
 from vai_backend.circuit_examples import EXAMPLES
 from vai_backend.circuit_compiler import scripts, current_terminal
+from vai_backend.cmn018 import MODEL_PLACEHOLDER
 from vai_backend.circuit_studies import study_jobs
 from vai_backend.circuits import compile_task, render_netlist
 
@@ -56,7 +57,20 @@ def test_text_parser_maps_nmos_model_names_and_keeps_pmos_default():
     assert (m.type, m.model, m.pins.d, m.pins.g, m.pins.s, m.pins.b) == ('nmos', 'generic_nmos', 'drain', 'gate', '0', '0')
     assert parse_circuit(EXAMPLES['pmos_families'][1]).components[2].type == 'pmos'
     bare = 'VG gate 0 DC 0\nVD drain 0 DC 0\nM1 drain gate 0 0\n.dc VD 0 -1 -0.1\n.save I(M1,d)'
-    assert parse_circuit(bare).components[2].type == 'pmos'
+    bare_task = parse_circuit(bare)
+    assert (bare_task.components[2].type, bare_task.components[2].model) == ('pmos', 'pch')
+    nch = parse_circuit('VG gate 0 DC 0\nVD drain 0 DC 0\nM1 drain gate 0 0 nch w=10u l=0.18u\n.dc VD 0 1 0.1\n.save I(M1,d)')
+    assert (nch.components[2].type, nch.components[2].model) == ('nmos', 'nch')
+    compiled = compile_task(nch)
+    assert compiled['devices'][2]['master'] == 'nch'
+    assert MODEL_PLACEHOLDER in scripts(nch)['models.scs']
+    default_json = CircuitTask.model_validate({'components': [
+        {'id': 'VDD', 'type': 'voltage_source', 'pins': {'p': 'drain', 'n': '0'}, 'dc': 1.8},
+        {'id': 'VG', 'type': 'voltage_source', 'pins': {'p': 'gate', 'n': '0'}, 'dc': 0},
+        {'id': 'M1', 'type': 'nmos', 'pins': {'d': 'drain', 'g': 'gate', 's': '0', 'b': '0'}, 'width_m': 10e-6, 'length_m': 0.18e-6},
+    ], 'analyses': [{'type': 'dc', 'source': 'VG', 'start': 0, 'stop': 1.8, 'step': 0.1}],
+        'signals': [{'id': 'id', 'type': 'current', 'component': 'M1', 'terminal': 'd'}]})
+    assert default_json.components[2].model == 'nch'
 
 
 @pytest.mark.parametrize('change', [

@@ -85,7 +85,7 @@ def normalize(task):
     if any(c['type'] in ('diode','bjt','pmos','nmos') for c in parts) and any(a['type'] == 'ac' for a in data['analyses']):
         warnings.append('非线性器件的 AC 结果是直流工作点附近的小信号响应；不代表大信号瞬态等效。')
     if any(c['type'] in ('bjt','pmos','nmos') for c in parts):
-        warnings.append('generic 晶体管为可配置的教学模型；CMN018 模型需服务器本地模型文件，实际工艺适用性请核对。')
+        warnings.append('NMOS/PMOS 默认使用 CMN018 工艺模型（nch/pch），需在仿真服务器高级设置配置模型文件；如需教学近似可显式指定 generic_nmos/generic_pmos。实际工艺适用性请核对。')
     if any(c['type'] == 'ideal_opamp' for c in parts):
         warnings.append('理想运放无供电限幅、带宽和压摆率；需要外围反馈或初始条件使方程有确定解。')
         dc_graph = {n: set() for n in graph}
@@ -170,12 +170,14 @@ def component_spec(c, normalized):
 
 
 def device_models(data):
-    from .circuit_models import DiodeModel, BJTModel, MOS1Model
+    from .circuit_models import CMN018Model, DiodeModel, BJTModel, MOS1Model
     return {'generic_diode':DiodeModel(id='generic_diode').model_dump(),
             'generic_npn':BJTModel(id='generic_npn',type='bjt').model_dump(),
             'generic_pnp':BJTModel(id='generic_pnp',type='bjt',polarity='pnp').model_dump(),
             'generic_pmos':MOS1Model(id='generic_pmos',type='mos1').model_dump(),
             'generic_nmos':MOS1Model(id='generic_nmos',type='mos1',polarity='n',threshold_voltage_v=.7).model_dump(),
+            'nch':CMN018Model(id='nch',type='cmn018',name='nch').model_dump(),
+            'pch':CMN018Model(id='pch',type='cmn018',name='pch').model_dump(),
             **{m['id']:m for m in data['models']}}
 
 

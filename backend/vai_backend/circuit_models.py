@@ -93,7 +93,8 @@ class PMOS(Strict):
     id: Name
     type: Literal['pmos']
     pins: MOSPins
-    model: Name = 'generic_pmos'
+    # NMOS/PMOS default to the CMN018 process models served by cmn018_model_file.
+    model: Name = 'pch'
     width_m: float = Field(default=10e-6, gt=0, le=1)
     length_m: float = Field(default=1e-6, gt=0, le=1)
     multiplicity: float = Field(default=1, gt=0, le=1e6)
@@ -101,7 +102,7 @@ class PMOS(Strict):
 
 class NMOS(PMOS):
     type: Literal['nmos'] = 'nmos'
-    model: Name = 'generic_nmos'
+    model: Name = 'nch'
 
 
 class ControlledPins(Pins):
@@ -408,7 +409,7 @@ class CircuitTask(Strict):
         parts = {c.id: c for c in self.components}
         from .cmn018 import CMN018_MODELS
         model_types = {'generic_diode':'diode', 'generic_npn':'bjt', 'generic_pnp':'bjt',
-                       'generic_pmos':'pmos', 'generic_nmos':'nmos'}
+                       'generic_pmos':'pmos', 'generic_nmos':'nmos', 'nch':'nmos', 'pch':'pmos'}
         for m in self.models:
             model_types[m.id] = CMN018_MODELS[m.name][0] if m.type == 'cmn018' else (
                 ('nmos' if m.polarity == 'n' else 'pmos') if m.type == 'mos1' else m.type)
@@ -420,10 +421,11 @@ class CircuitTask(Strict):
                 raise ValueError(f'{c.id}: missing or incompatible device model {c.model}')
             if c.type in ('pmos', 'nmos'):
                 selected = next((m for m in self.models if m.id == c.model), None)
-                if selected is not None and selected.type == 'cmn018':
-                    _, _, min_l, min_w, max_l, max_w = CMN018_MODELS[selected.name]
+                cmn_name = selected.name if selected is not None and selected.type == 'cmn018' else (c.model if c.model in CMN018_MODELS else None)
+                if cmn_name is not None:
+                    _, _, min_l, min_w, max_l, max_w = CMN018_MODELS[cmn_name]
                     if not (min_l <= c.length_m <= max_l and min_w <= c.width_m <= max_w):
-                        raise ValueError(f'{c.id}: CMN018 {selected.name} W/L outside model-card range')
+                        raise ValueError(f'{c.id}: CMN018 {cmn_name} W/L outside model-card range')
             if c.type in ('cccs','ccvs') and (c.control_source not in parts or parts[c.control_source].type != 'voltage_source'):
                 raise ValueError('Current-controlled sources require an independent voltage-source current probe')
         for a in self.analyses:

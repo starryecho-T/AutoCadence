@@ -18,7 +18,7 @@ def start_local_backend(backend_url, directory):
     try:
         with urlopen(backend_url.rstrip('/') + '/health', timeout=1) as response:
             info = json.load(response)
-        if info.get('name') == 'AutoCadence' and info.get('build') in ('0.7.0', '0.7.1', '0.7.2'):
+        if info.get('name') == 'AutoCadence' and info.get('build') in ('0.7.0', '0.7.1', '0.7.2', '0.7.3'):
             return None
         raise RuntimeError('当前后端版本较旧，请关闭空闲的旧后端后重新打开 AutoCadence。')
     except URLError:
