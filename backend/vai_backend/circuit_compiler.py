@@ -69,12 +69,13 @@ def scripts(task):
     jobs = study_jobs(task)
     t = jobs[0]['task']
     c = compile_task(task)
-    from .schematic_layout import loop_layout
-    loop = loop_layout(c['devices'])
+    from .schematic_layout import ladder_layout, loop_layout
+    ladder = ladder_layout(c['devices'])
+    loop = None if ladder else loop_layout(c['devices'])
     # Draw explicit conductive paths for loops, parallel branches, and buses.
     # Cadence terminal probing and emitted netlist validation remain mandatory.
     nodes = {n for d in c['devices'] for n in d['nodes']}
-    rails = (len(nodes) == 2 and '0' in nodes and len(c['devices']) <= 12 and
+    rails = (not ladder and len(nodes) == 2 and '0' in nodes and len(c['devices']) <= 12 and
              all(len(d['terminals']) == 2 and set(d['nodes']) == nodes for d in c['devices']))
     lines = [BUILD_HEADER]
     if any(d['type'] == 'ideal_opamp' for d in c['devices']):
@@ -103,7 +104,7 @@ dbSave(stopView) dbClose(stopView)
     expected = []
     if rails:
         lines.append('railPins=nil')
-    if not rails and not loop:
+    if not rails and not loop and not ladder:
         lines.append('busPins=nil')
     for i, d in enumerate(c['devices']):
         library = 'LIB' if d['type'] == 'ideal_opamp' else '"analogLib"'
@@ -114,7 +115,11 @@ dbSave(stopView) dbClose(stopView)
             bottom = d['terminals'][d['nodes'].index('0')]
             lines += [f'orientation=if(yCoord(gPos(master {q(top)}))>yCoord(gPos(master {q(bottom)})) then "R0" else "R180")']
         orientation = 'orientation' if rails else '"R0"'
-        if loop:
+        if ladder:
+            anchors = ladder['placements'][i]
+            a, b = anchors
+            placement = f'gBetween(cv master {q(d["instance"])} {q(d["terminals"][0])} {q(d["terminals"][1])} list({a[0]} {a[1]}) list({b[0]} {b[1]}))'
+        elif loop:
             a, b = loop['devices'][i]
             placement = f'gBetween(cv master {q(d["instance"])} {q(d["terminals"][0])} {q(d["terminals"][1])} list({a[0]} {a[1]}) list({b[0]} {b[1]}))'
         else:
@@ -129,11 +134,16 @@ dbSave(stopView) dbClose(stopView)
             node = 'gnd!' if node == '0' else node
             if rails:
                 lines.append(f'railPins=cons(list({q(node)} dbTransformPoint(gPos(master {q(term)}) inst~>transform)) railPins)')
-            elif loop:
-                p = loop['devices'][i][j]
+            elif ladder and j >= 2:
+                # The switched load control pins connect directly to the
+                # pulse generator below, outside the power-rail anchor list.
+                pass
+            elif ladder or loop:
+                p = ladder['placements'][i][j] if ladder else loop['devices'][i][j]
                 lines += [f'point=list({p[0]} {p[1]})',
-                          f'wire=gWire(cv list(point dbTransformPoint(gPos(master {q(term)}) inst~>transform)))',
-                          f'schCreateWireLabel(cv car(wire) point {q(node)} "lowerCenter" "R0" "stick" 0.0625 nil)']
+                          f'wire=gWire(cv list(point dbTransformPoint(gPos(master {q(term)}) inst~>transform)))']
+                if not ladder:
+                    lines.append(f'schCreateWireLabel(cv car(wire) point {q(node)} "lowerCenter" "R0" "stick" 0.0625 nil)')
             else:
                 # Each terminal gets its own vertical lane. Rail crossings are
                 # interior-to-interior; only the target rail has an endpoint.
@@ -174,6 +184,32 @@ foreach(entry railPins
                   'gp=gPos(gm car(gm~>terminals)~>name)',
                   'gi=schCreateInst(cv gm "GND0" list(left-xCoord(gp) lower-0.5-yCoord(gp)) "R0")',
                   'unless(schCreateWire(cv "draw" "orthogonal" list(list(left lower) list(left lower-0.5)) 0.0625 0.0625 0) error("GROUND_WIRE_FAILED"))']
+    elif ladder:
+        placed_rails = set()
+        for node, x0, x1 in ladder['segments']:
+            if x1 <= x0:
+                continue
+            name = 'gnd!' if node == '0' else node
+            lines.append(f'wire=gWire(cv list(list({x0} 3.5) list({x1} 3.5)))')
+            if name not in placed_rails:
+                lines.append(f'schCreateWireLabel(cv car(wire) list({(x0+x1)/2} 3.5) {q(name)} "lowerCenter" "R0" "stick" 0.0625 nil)')
+                placed_rails.add(name)
+        lines += [f'gWire(cv list(list(0 0) list({ladder["ground_end"]} 0)))',
+                  'gp=gPos(gm car(gm~>terminals)~>name)',
+                  'gi=schCreateInst(cv gm "GND0" list(-xCoord(gp) -yCoord(gp)) "R0")']
+        if ladder['switch'] is not None:
+            si, sx = ladder['switch']
+            driver = ladder['control']
+            dx = ladder['placements'][driver][0][0]
+            sw = c['devices'][si]
+            dr = c['devices'][driver]
+            lines += [f'sw=car(setof(x cv~>instances equal(x~>name {q(sw["instance"])})))',
+                      f'drv=car(setof(x cv~>instances equal(x~>name {q(dr["instance"])})))',
+                      'pos=dbTransformPoint(gPos(sw~>master "NC+") sw~>transform)',
+                      'target=dbTransformPoint(gPos(drv~>master "PLUS") drv~>transform)',
+                      f'gWire(cv list(pos list({dx-0.5} cadr(pos)) list({dx-0.5} cadr(target)) target))',
+                      'pos=dbTransformPoint(gPos(sw~>master "NC-") sw~>transform)',
+                      f'gWire(cv list(pos list({dx-0.75} cadr(pos)) list({dx-0.75} 0)))']
     elif loop:
         lines += [f'gWire(cv list(list(0 0) list({loop["width"]} 0)))',
                   'gp=gPos(gm car(gm~>terminals)~>name)',
