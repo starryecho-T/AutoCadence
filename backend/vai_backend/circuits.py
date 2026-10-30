@@ -40,6 +40,8 @@ def normalize(task):
         if c['type'] == 'wire':
             continue
         c = {**c, 'pins': {p: aliases[n] for p, n in c['pins'].items()}}
+        if c['type'] == 'switch' and (c['pins']['p'] == c['pins']['n'] or c['pins']['cp'] == c['pins']['cn']):
+            raise ValueError(f"{c['id']}: 开关通路或控制端被短接")
         if len(set(c['pins'].values())) == 1:
             if c['type'] == 'voltage_source' and (c['dc'] != 0 or c['waveform'] is not None or c['ac_magnitude'] > 0):
                 raise ValueError(f"{c['id']}: 非零电压源被导线短接")
@@ -125,6 +127,13 @@ def component_spec(c, normalized):
         if initial is not None:
             params['ic'] = initial
         return ('cap' if cap else 'ind'), ['PLUS', 'MINUS'], {k: number(v) for k, v in params.items()}, kind, params
+    if kind == 'switch':
+        values = {'vt1': c['threshold_low_v'], 'vt2': c['threshold_high_v'],
+                  'ropen': c['open_resistance_ohm'], 'rclosed': c['closed_resistance_ohm']}
+        properties = {key: number(value) for key, value in values.items()}
+        properties['ro'] = properties.pop('ropen')
+        properties['rc'] = properties.pop('rclosed')
+        return 'switch', ['N+', 'N-', 'NC+', 'NC-'], properties, 'relay', values
     if kind in ('diode', 'bjt', 'pmos', 'nmos'):
         selected = normalized['models'][c['model']]
         model = selected['name'] if selected.get('type') == 'cmn018' else 'dm' + str(normalized['model_ids'].index(c['model']))
@@ -191,7 +200,8 @@ def compile_task(task):
     for c in n['components']:
         symbol, terminals, props, master, params = component_spec(c, n)
         pin_order = {'diode':['a','k'], 'bjt':['c','b','e'], 'pmos':['d','g','s','b'], 'nmos':['d','g','s','b'],
-                     'ideal_opamp':['plus','minus','out'], 'vccs':['p','n','cp','cn'], 'vcvs':['p','n','cp','cn']}.get(c['type'], ['p','n'])
+                     'ideal_opamp':['plus','minus','out'], 'vccs':['p','n','cp','cn'], 'vcvs':['p','n','cp','cn'],
+                     'switch':['p','n','cp','cn']}.get(c['type'], ['p','n'])
         device_nodes = [n['node_map'][c['pins'][p]] for p in pin_order]
         if c['type'] == 'bjt':
             device_nodes.append('0')  # analogLib explicitly grounds the optional substrate.

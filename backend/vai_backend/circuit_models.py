@@ -68,6 +68,29 @@ class Wire(Part):
     type: Literal['wire']
 
 
+class SwitchPins(Pins):
+    cp: Node
+    cn: Node
+
+
+class Switch(Strict):
+    id: Name
+    type: Literal['switch'] = 'switch'
+    pins: SwitchPins
+    threshold_low_v: float = Field(default=0.2, ge=-1e6, le=1e6)
+    threshold_high_v: float = Field(default=0.8, ge=-1e6, le=1e6)
+    open_resistance_ohm: float = Field(default=1e12, gt=0, le=1e15)
+    closed_resistance_ohm: float = Field(default=1e-3, gt=0, le=1e15)
+
+    @model_validator(mode='after')
+    def thresholds_and_resistances(self):
+        if self.threshold_low_v >= self.threshold_high_v:
+            raise ValueError('switch low threshold must be below high threshold')
+        if self.open_resistance_ohm <= self.closed_resistance_ohm:
+            raise ValueError('switch open resistance must exceed closed resistance')
+        return self
+
+
 class BJTPins(Strict):
     c: Node
     b: Node
@@ -170,7 +193,7 @@ class Source(Part):
     waveform: Annotated[Sine | Pulse | Pwl, Field(discriminator='type')] | None = None
 
 
-Component = Annotated[Resistor | Capacitor | Inductor | Diode | Opamp | Wire | Source | BJT | PMOS | NMOS | VoltageControlled | CurrentControlled, Field(discriminator='type')]
+Component = Annotated[Resistor | Capacitor | Inductor | Diode | Opamp | Wire | Switch | Source | BJT | PMOS | NMOS | VoltageControlled | CurrentControlled, Field(discriminator='type')]
 
 
 class DiodeModel(Strict):
@@ -438,7 +461,7 @@ class CircuitTask(Strict):
                 raise ValueError(f'{s.id}: unknown voltage node')
             if s.type in ('current','device_parameter'):
                 part = parts.get(s.component)
-                if part is None or part.type in ('wire','ideal_opamp'):
+                if part is None or part.type in ('wire','ideal_opamp') or part.type == 'switch':
                     raise ValueError(f'{s.id}: invalid current/device reference')
                 if s.type == 'current':
                     allowed = {'bjt':('c','b','e'), 'pmos':('d','g','s','bulk'),

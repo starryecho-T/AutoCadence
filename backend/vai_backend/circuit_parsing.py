@@ -105,6 +105,11 @@ def parse_circuit(text):
                 c = {'id':name,'type':'vccs' if kind=='G' else 'vcvs','pins':dict(zip(('p','n','cp','cn'),args[:4])),'gain':value(args[4])}
             elif kind in 'FH' and len(args) == 4:
                 c = {'id':name,'type':'cccs' if kind=='F' else 'ccvs','pins':dict(zip(('p','n'),args[:2])),'control_source':args[2],'gain':value(args[3])}
+            elif kind == 'S' and len(args) in (4, 8):
+                c = {'id':name,'type':'switch','pins':dict(zip(('p','n','cp','cn'),args[:4]))}
+                if len(args) == 8:
+                    c.update(dict(zip(('threshold_low_v','threshold_high_v','open_resistance_ohm','closed_resistance_ohm'),
+                                      (value(x) for x in args[4:]))))
             elif kind in 'OU' and len(args) == 3:
                 c = {'id': name, 'type': 'ideal_opamp', 'pins': dict(zip(('plus', 'minus', 'out'), args))}
             elif kind == 'W' and len(args) == 2:

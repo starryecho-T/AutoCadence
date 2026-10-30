@@ -183,7 +183,7 @@ export default function App() {
       <div className="history-list">{historyItems()}</div>
       <div className="sidebar-footer"><button className="sidebar-action" disabled={locked || phase === 'running'} onClick={() => setShowConnectionSettings(true)}><Icon name="circuit" />仿真服务器</button><button className="sidebar-action" onClick={() => setShowOcrSettings(true)}><Icon name="settings" />AI 设置</button>
         <button className="sidebar-action" disabled={!health || phase === 'running' || locked} onClick={() => setConnectionAttempt(value => value + 1)}><Icon name="refresh" />重新连接</button>
-        <span className="sidebar-caption">通用模拟电路 · AutoCadence 0.7.3</span>
+        <span className="sidebar-caption">通用模拟电路 · AutoCadence 0.7.4</span>
       </div>
     </aside>
     <div className="app-main">

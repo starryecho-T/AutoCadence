@@ -1013,7 +1013,7 @@
           "$ref": "#/$defs/MOSPins"
         },
         "model": {
-          "default": "generic_nmos",
+          "default": "nch",
           "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
           "title": "Model",
           "type": "string"
@@ -1131,7 +1131,7 @@
           "$ref": "#/$defs/MOSPins"
         },
         "model": {
-          "default": "generic_pmos",
+          "default": "pch",
           "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
           "title": "Model",
           "type": "string"
@@ -1487,6 +1487,92 @@
       "title": "Source",
       "type": "object"
     },
+    "Switch": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "switch",
+          "default": "switch",
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/SwitchPins"
+        },
+        "threshold_low_v": {
+          "default": 0.2,
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Threshold Low V",
+          "type": "number"
+        },
+        "threshold_high_v": {
+          "default": 0.8,
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Threshold High V",
+          "type": "number"
+        },
+        "open_resistance_ohm": {
+          "default": 1000000000000.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000000.0,
+          "title": "Open Resistance Ohm",
+          "type": "number"
+        },
+        "closed_resistance_ohm": {
+          "default": 0.001,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000000.0,
+          "title": "Closed Resistance Ohm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "pins"
+      ],
+      "title": "Switch",
+      "type": "object"
+    },
+    "SwitchPins": {
+      "additionalProperties": false,
+      "properties": {
+        "p": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "P",
+          "type": "string"
+        },
+        "n": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "N",
+          "type": "string"
+        },
+        "cp": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Cp",
+          "type": "string"
+        },
+        "cn": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Cn",
+          "type": "string"
+        }
+      },
+      "required": [
+        "p",
+        "n",
+        "cp",
+        "cn"
+      ],
+      "title": "SwitchPins",
+      "type": "object"
+    },
     "TRAN": {
       "additionalProperties": false,
       "properties": {
@@ -1725,6 +1811,7 @@
             "nmos": "#/$defs/NMOS",
             "pmos": "#/$defs/PMOS",
             "resistor": "#/$defs/Resistor",
+            "switch": "#/$defs/Switch",
             "vccs": "#/$defs/VoltageControlled",
             "vcvs": "#/$defs/VoltageControlled",
             "voltage_source": "#/$defs/Source",
@@ -1750,6 +1837,9 @@
           },
           {
             "$ref": "#/$defs/Wire"
+          },
+          {
+            "$ref": "#/$defs/Switch"
           },
           {
             "$ref": "#/$defs/Source"

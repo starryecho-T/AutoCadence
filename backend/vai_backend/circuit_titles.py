@@ -12,6 +12,8 @@ def circuit_title(task):
         family = 'PMOS 电路'
     elif 'nmos' in kinds:
         family = 'NMOS 电路'
+    elif 'switch' in kinds:
+        family = '开关电路'
     elif 'ideal_opamp' in kinds:
         family = '运放电路'
     elif 'diode' in kinds:

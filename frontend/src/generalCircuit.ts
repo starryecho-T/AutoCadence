@@ -4,16 +4,17 @@ export function circuitTitle(circuit: GeneralCircuit): string {
   if (circuit.title?.trim() && circuit.title !== '通用电路仿真') return circuit.title.trim()
   const kinds = new Set(circuit.components.map(c => c.type))
   const parts = [['resistor', 'R'], ['inductor', 'L'], ['capacitor', 'C']].filter(([k]) => kinds.has(k)).map(([, label]) => label).join('')
-  const family = kinds.has('bjt') ? 'BJT 晶体管电路' : kinds.has('nmos') && kinds.has('pmos') ? 'CMOS 电路' : kinds.has('nmos') ? 'NMOS 电路' : kinds.has('pmos') ? 'PMOS 电路' : kinds.has('ideal_opamp') ? '运放电路' : kinds.has('diode') ? '二极管电路' : parts ? `${parts} 电路` : '电源与受控源电路'
+  const family = kinds.has('bjt') ? 'BJT 晶体管电路' : kinds.has('nmos') && kinds.has('pmos') ? 'CMOS 电路' : kinds.has('nmos') ? 'NMOS 电路' : kinds.has('pmos') ? 'PMOS 电路' : kinds.has('switch') ? '开关电路' : kinds.has('ideal_opamp') ? '运放电路' : kinds.has('diode') ? '二极管电路' : parts ? `${parts} 电路` : '电源与受控源电路'
   const study = circuit.two_port ? '二端口分析' : circuit.bjt_transfer ? '转移特性' : Array.isArray(circuit.parameter_sweeps) && circuit.parameter_sweeps.length ? '参数扫描' : circuit.analyses.map(a => ANALYSIS_LABELS[a.type] || a.type).join(' / ')
   return `${family} · ${study}`.slice(0, 120)
 }
 
-export const COMPONENT_LABELS: Record<string, string> = { resistor: '电阻', capacitor: '电容', inductor: '电感', diode: '二极管', voltage_source: '电压源', current_source: '电流源', ideal_opamp: '理想运放', wire: '导线', bjt:'双极型晶体管', pmos:'PMOS', nmos:'NMOS', vccs:'压控电流源', vcvs:'压控电压源', cccs:'流控电流源', ccvs:'流控电压源' }
+export const COMPONENT_LABELS: Record<string, string> = { resistor: '电阻', capacitor: '电容', inductor: '电感', diode: '二极管', voltage_source: '电压源', current_source: '电流源', ideal_opamp: '理想运放', wire: '导线', switch:'受控开关', bjt:'双极型晶体管', pmos:'PMOS', nmos:'NMOS', vccs:'压控电流源', vcvs:'压控电压源', cccs:'流控电流源', ccvs:'流控电压源' }
 export const PIN_LABELS: Record<string, string> = { p: '正端 / 端点 1', n: '负端 / 端点 2', a: '阳极', k: '阴极', plus: '同相端 +', minus: '反相端 −', out: '输出端', c:'集电极', b:'基极 / 衬底', e:'发射极', d:'漏极', g:'栅极', s:'源极', bulk:'衬底', cp:'控制正端', cn:'控制负端' }
 export const ANALYSIS_LABELS: Record<string, string> = { op: '直流工作点', ac: '交流扫频', tran: '瞬态响应', dc: '直流扫描' }
 export const FIELDS: Record<string, [string, string]> = {
   resistance_ohm: ['阻值', 'Ω'], capacitance_f: ['电容', 'F'], inductance_h: ['电感', 'H'],
+  threshold_low_v: ['断开阈值', 'V'], threshold_high_v: ['闭合阈值', 'V'], open_resistance_ohm: ['断开电阻', 'Ω'], closed_resistance_ohm: ['闭合电阻', 'Ω'],
   initial_voltage_v: ['初始电压', 'V'], initial_current_a: ['初始电流', 'A'],
   dc: ['直流值', ''], ac_magnitude: ['交流幅值', ''], ac_phase_deg: ['交流相位', '°'],
   start_hz: ['起始频率', 'Hz'], stop_hz: ['终止频率', 'Hz'], points_per_decade: ['每十倍频点数', ''],

@@ -1,6 +1,17 @@
 """Reviewable explicit topologies, used by the UI and real regression runner."""
 import json
 EXAMPLES = {
+    'switch_10mhz': ('10 MHz 受控开关与电源去耦', '''V0 supply 0 DC 5
+R1 supply A 10
+R2 A B 10
+Ra A 0 1k
+Rd1 B 0 990
+Radd B switched 99
+S1 switched 0 clock 0 0.2 0.8 1e12 1m
+VCLK clock 0 PULSE 0 1 1n 100p 100p 49.9n 100n
+C1 A 0 27n
+.tran 10u 200p
+.save V(A) V(B)'''),
     'bjt_transfer': ('NPN 共射转移曲线与工作区', '''VIN input 0 DC 0
 VCC supply 0 DC 5
 RB input base 1k

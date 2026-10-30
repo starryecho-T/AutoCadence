@@ -113,7 +113,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
             return JSONResponse(connections.forget_password(),headers={'Cache-Control':'no-store'})
     @app.get('/health')
     def health():
-        return {'status':'ok','name':'AutoCadence','build':'0.7.3','version':__version__,'api_versions':['1.0','2.0'],
+        return {'status':'ok','name':'AutoCadence','build':'0.7.4','version':__version__,'api_versions':['1.0','2.0'],
                 'connection_configured':connections.public()['configured'],
                 'templates':['rc_lowpass','general_circuit'],
                 'queue':manager.stats(),'server_check':'not_run','authentication_required':bool(settings.api_token)}
@@ -130,7 +130,7 @@ def create_app(settings:Settings|None=None,manager:RunManager|None=None):
     @app.get('/api/v2/capabilities',dependencies=deps)
     def circuit_capabilities():
         from .cmn018 import CMN018_MODELS
-        return {'schema_version':'2.0','components':['resistor','capacitor','inductor','diode','voltage_source','current_source','ideal_opamp','wire','bjt','pmos','nmos','vccs','vcvs','cccs','ccvs'],
+        return {'schema_version':'2.0','components':['resistor','capacitor','inductor','diode','voltage_source','current_source','ideal_opamp','wire','switch','bjt','pmos','nmos','vccs','vcvs','cccs','ccvs'],
                 'analyses':['op','dc','ac','tran'],'studies':['parameter_sweeps','two_port_y','y_equivalence','curve_comparisons','bjt_transfer'],
                 'model_types':['diode','bjt_npn_pnp','pmos_mos1','nmos_mos1','cmn018'],
                 'cmn018':{'requires_server_model_file':True,'corners':['tt','ss','ff'], 'models':sorted(CMN018_MODELS)},

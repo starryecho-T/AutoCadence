@@ -142,6 +142,8 @@ dbSave(stopView) dbClose(stopView)
                     side = 1 if term == 'out' else -1
                 elif d['type'] in ('pmos', 'nmos'):
                     side = 1 if term == 'B' else -1
+                elif d['type'] == 'switch':
+                    side = 1 if term in ('NC+','NC-') else -1
                 elif d['type'] == 'bjt' and term == 'B':
                     side = -1
                 x = i*4.0 + side*(1.0 + j*.25)

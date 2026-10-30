@@ -276,6 +276,33 @@
       "title": "BJTTransfer",
       "type": "object"
     },
+    "CMN018Model": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "cmn018",
+          "title": "Type",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "name"
+      ],
+      "title": "CMN018Model",
+      "type": "object"
+    },
     "Capacitor": {
       "additionalProperties": false,
       "properties": {
@@ -368,8 +395,10 @@
                 "diode": "#/$defs/Diode",
                 "ideal_opamp": "#/$defs/Opamp",
                 "inductor": "#/$defs/Inductor",
+                "nmos": "#/$defs/NMOS",
                 "pmos": "#/$defs/PMOS",
                 "resistor": "#/$defs/Resistor",
+                "switch": "#/$defs/Switch",
                 "vccs": "#/$defs/VoltageControlled",
                 "vcvs": "#/$defs/VoltageControlled",
                 "voltage_source": "#/$defs/Source",
@@ -397,6 +426,9 @@
                 "$ref": "#/$defs/Wire"
               },
               {
+                "$ref": "#/$defs/Switch"
+              },
+              {
                 "$ref": "#/$defs/Source"
               },
               {
@@ -404,6 +436,9 @@
               },
               {
                 "$ref": "#/$defs/PMOS"
+              },
+              {
+                "$ref": "#/$defs/NMOS"
               },
               {
                 "$ref": "#/$defs/VoltageControlled"
@@ -429,6 +464,9 @@
               },
               {
                 "$ref": "#/$defs/MOS1Model"
+              },
+              {
+                "$ref": "#/$defs/CMN018Model"
               }
             ]
           },
@@ -546,6 +584,16 @@
           "minimum": -100,
           "title": "Temperature C",
           "type": "number"
+        },
+        "pdk_corner": {
+          "default": "tt",
+          "enum": [
+            "tt",
+            "ss",
+            "ff"
+          ],
+          "title": "Pdk Corner",
+          "type": "string"
         }
       },
       "required": [
@@ -1018,9 +1066,18 @@
           "title": "Type",
           "type": "string"
         },
+        "polarity": {
+          "default": "p",
+          "enum": [
+            "n",
+            "p"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
         "threshold_voltage_v": {
           "default": -0.7,
-          "exclusiveMaximum": 0,
+          "maximum": 1000.0,
           "minimum": -1000.0,
           "title": "Threshold Voltage V",
           "type": "number"
@@ -1201,6 +1258,58 @@
       "title": "Measurement",
       "type": "object"
     },
+    "NMOS": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "nmos",
+          "default": "nmos",
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/MOSPins"
+        },
+        "model": {
+          "default": "nch",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Model",
+          "type": "string"
+        },
+        "width_m": {
+          "default": 1e-05,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Width M",
+          "type": "number"
+        },
+        "length_m": {
+          "default": 1e-06,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Length M",
+          "type": "number"
+        },
+        "multiplicity": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000.0,
+          "title": "Multiplicity",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "pins"
+      ],
+      "title": "NMOS",
+      "type": "object"
+    },
     "OP": {
       "additionalProperties": false,
       "properties": {
@@ -1285,7 +1394,7 @@
           "$ref": "#/$defs/MOSPins"
         },
         "model": {
-          "default": "generic_pmos",
+          "default": "pch",
           "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
           "title": "Model",
           "type": "string"
@@ -1696,6 +1805,92 @@
         "status"
       ],
       "title": "Stage",
+      "type": "object"
+    },
+    "Switch": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "switch",
+          "default": "switch",
+          "title": "Type",
+          "type": "string"
+        },
+        "pins": {
+          "$ref": "#/$defs/SwitchPins"
+        },
+        "threshold_low_v": {
+          "default": 0.2,
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Threshold Low V",
+          "type": "number"
+        },
+        "threshold_high_v": {
+          "default": 0.8,
+          "maximum": 1000000.0,
+          "minimum": -1000000.0,
+          "title": "Threshold High V",
+          "type": "number"
+        },
+        "open_resistance_ohm": {
+          "default": 1000000000000.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000000.0,
+          "title": "Open Resistance Ohm",
+          "type": "number"
+        },
+        "closed_resistance_ohm": {
+          "default": 0.001,
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000000000.0,
+          "title": "Closed Resistance Ohm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "pins"
+      ],
+      "title": "Switch",
+      "type": "object"
+    },
+    "SwitchPins": {
+      "additionalProperties": false,
+      "properties": {
+        "p": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "P",
+          "type": "string"
+        },
+        "n": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "N",
+          "type": "string"
+        },
+        "cp": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Cp",
+          "type": "string"
+        },
+        "cn": {
+          "pattern": "^(?:0|[A-Za-z][A-Za-z0-9_]{0,31})$",
+          "title": "Cn",
+          "type": "string"
+        }
+      },
+      "required": [
+        "p",
+        "n",
+        "cp",
+        "cn"
+      ],
+      "title": "SwitchPins",
       "type": "object"
     },
     "TRAN": {
